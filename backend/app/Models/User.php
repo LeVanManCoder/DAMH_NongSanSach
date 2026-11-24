@@ -7,11 +7,27 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    protected static function booted(): void
+    {
+        static::creating(function (User $user): void {
+            if ($user->role_id === null) {
+                $roleId = DB::table('roles')->where('ten_vai_tro', 'customer')->value('id');
+
+                if ($roleId === null) {
+                    throw new \LogicException('The customer role must exist before creating a user.');
+                }
+
+                $user->role_id = $roleId;
+            }
+        });
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -19,7 +35,7 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
+        'ho_ten',
         'email',
         'password',
     ];
@@ -43,7 +59,10 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'khoa_den' => 'datetime',
             'password' => 'hashed',
+            'diem_tich_luy' => 'integer',
+            'so_lan_dang_nhap_sai' => 'integer',
         ];
     }
 }

@@ -43,7 +43,8 @@ Theo thiết kế đồ án, dữ liệu được lưu trong **MySQL 8.0**, vớ
 │   └── .env.example
 ├── docs/
 │   ├── api-contract.md
-│   └── database-schema.sql
+│   ├── database-schema.sql
+│   └── tu-dien-du-lieu-tuan-3.xlsx
 ├── frontend/                    # ReactJS + Vite + Tailwind CSS
 │   ├── src/
 │   │   ├── api/
