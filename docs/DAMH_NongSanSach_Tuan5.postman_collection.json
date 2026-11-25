@@ -1,0 +1,499 @@
+{
+  "info": {
+    "_postman_id": "1c71ef19-d196-4f34-9915-9d6d927d9e8e",
+    "name": "Nông Lành - RESTful API Tuần 5",
+    "description": "Bộ kiểm thử API Tuần 5: JWT/RBAC, quản lý lô và QR, xuất hủy, đặt đơn FEFO. Trước khi chạy, khởi động Laravel tại http://127.0.0.1:8000, chạy DatabaseSeeder và chạy `php artisan db:seed --class=FefoTestSeeder` để tạo dữ liệu 4 lô LO-FEFO-01..04. Chạy tuần tự từ trên xuống; đơn đầu tiên cần tồn kho FEFO chưa bị thay đổi.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://127.0.0.1:8000/api", "type": "string" },
+    { "key": "customer_token", "value": "", "type": "string" },
+    { "key": "farm_staff_token", "value": "", "type": "string" },
+    { "key": "sales_token", "value": "", "type": "string" },
+    { "key": "product_id", "value": "", "type": "string" },
+    { "key": "fefo_lot_1_id", "value": "", "type": "string" },
+    { "key": "fefo_lot_2_id", "value": "", "type": "string" },
+    { "key": "test_batch_id", "value": "", "type": "string" },
+    { "key": "batch_code", "value": "", "type": "string" },
+    { "key": "harvest_date", "value": "", "type": "string" },
+    { "key": "expiry_date", "value": "", "type": "string" },
+    { "key": "qr_code", "value": "", "type": "string" },
+    { "key": "order_id", "value": "", "type": "string" },
+    { "key": "low_stock_order_id", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "01 - Xác thực & lấy JWT Token",
+      "item": [
+        {
+          "name": "Đăng nhập Customer",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"khachhang@nonganhlanh.local\",\n  \"password\": \"Password@123\"\n}"
+            },
+            "url": "{{base_url}}/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Customer đăng nhập thành công', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.access_token).to.be.a('string');",
+                  "pm.collectionVariables.set('customer_token', body.access_token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Đăng nhập Farm Staff",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nhanvien@nonganhlanh.local\",\n  \"password\": \"Password@123\"\n}"
+            },
+            "url": "{{base_url}}/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Farm Staff đăng nhập thành công', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.access_token).to.be.a('string');",
+                  "pm.collectionVariables.set('farm_staff_token', body.access_token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Đăng nhập Sales",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"banhang@nonganhlanh.local\",\n  \"password\": \"Password@123\"\n}"
+            },
+            "url": "{{base_url}}/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Sales đăng nhập thành công', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.access_token).to.be.a('string');",
+                  "pm.collectionVariables.set('sales_token', body.access_token);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 - Quản lý lô hàng & QR (Farm Staff)",
+      "item": [
+        {
+          "name": "Lấy danh sách lô và nhận diện dữ liệu FEFO",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{farm_staff_token}}", "type": "string" }]
+            },
+            "url": "{{base_url}}/batches?per_page=100"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Lấy danh sách lô thành công', function () { pm.response.to.have.status(200); });",
+                  "const batches = pm.response.json().data || [];",
+                  "const lot1 = batches.find(function (batch) { return batch.ma_lo === 'LO-FEFO-01'; });",
+                  "const lot2 = batches.find(function (batch) { return batch.ma_lo === 'LO-FEFO-02'; });",
+                  "pm.test('Có sản phẩm và 2 lô FEFO kiểm thử', function () { pm.expect(lot1).to.exist; pm.expect(lot2).to.exist; });",
+                  "if (lot1 && lot2) {",
+                  "  pm.collectionVariables.set('product_id', String(lot1.product_id));",
+                  "  pm.collectionVariables.set('fefo_lot_1_id', String(lot1.id));",
+                  "  pm.collectionVariables.set('fefo_lot_2_id', String(lot2.id));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tạo lô hàng mới",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const formatDate = function (date) { return date.toISOString().slice(0, 10); };",
+                  "const harvest = new Date();",
+                  "harvest.setDate(harvest.getDate() - 1);",
+                  "const expiry = new Date();",
+                  "expiry.setDate(expiry.getDate() + 7);",
+                  "pm.collectionVariables.set('batch_code', 'LO-PM-' + Date.now());",
+                  "pm.collectionVariables.set('harvest_date', formatDate(harvest));",
+                  "pm.collectionVariables.set('expiry_date', formatDate(expiry));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Lô hàng được tạo', function () { pm.response.to.have.status(201); });",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('test_batch_id', String(body.data.id));",
+                  "pm.expect(body.data.ma_lo).to.eql(pm.collectionVariables.get('batch_code'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ma_lo\": \"{{batch_code}}\",\n  \"product_id\": {{product_id}},\n  \"ngay_thu_hoach\": \"{{harvest_date}}\",\n  \"ngay_het_han\": \"{{expiry_date}}\",\n  \"so_luong_nhap\": 10,\n  \"so_luong_ton\": 10,\n  \"trang_thai\": \"con_hang\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{farm_staff_token}}", "type": "string" }]
+            },
+            "url": "{{base_url}}/batches"
+          }
+        },
+        {
+          "name": "Cập nhật thông tin lô",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ma_lo\": \"{{batch_code}}-CAPNHAT\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{farm_staff_token}}", "type": "string" }]
+            },
+            "url": "{{base_url}}/batches/{{test_batch_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Cập nhật lô thành công', function () { pm.response.to.have.status(200); });",
+                  "pm.expect(pm.response.json().data.ma_lo).to.eql(pm.collectionVariables.get('batch_code') + '-CAPNHAT');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sinh mã QR cho lô đã thu hoạch",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{farm_staff_token}}", "type": "string" }]
+            },
+            "url": "{{base_url}}/batches/{{fefo_lot_1_id}}/generate-qr"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Sinh QR thành công', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.expect(body.data.qr_code).to.be.a('string');",
+                  "pm.collectionVariables.set('qr_code', body.data.qr_code);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ghi nhận xuất hủy",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"so_luong\": 1,\n  \"ly_do\": \"Dập nát trong quá trình phân loại\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{farm_staff_token}}", "type": "string" }]
+            },
+            "url": "{{base_url}}/batches/{{test_batch_id}}/waste"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Ghi nhận xuất hủy thành công', function () { pm.response.to.have.status(201); });",
+                  "pm.expect(pm.response.json().data.ly_do).to.eql('Dập nát trong quá trình phân loại');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tra cứu QR công khai",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/trace/{{qr_code}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Tra cứu nguồn gốc không cần token', function () { pm.response.to.have.status(200); });",
+                  "pm.expect(pm.response.json().data.farming_logs.length).to.be.above(0);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Customer bị chặn khi tạo lô (403)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ma_lo\": \"LO-CUSTOMER-FORBIDDEN\",\n  \"product_id\": {{product_id}},\n  \"so_luong_nhap\": 1\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }]
+            },
+            "url": "{{base_url}}/batches"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Customer nhận HTTP 403', function () { pm.response.to.have.status(403); });",
+                  "pm.expect(pm.response.json().status).to.eql('error');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 - Đặt hàng & xuất kho FEFO",
+      "item": [
+        {
+          "name": "Customer thêm 10kg cà chua vào giỏ",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_id\": {{product_id}},\n  \"so_luong\": 10\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }]
+            },
+            "url": "{{base_url}}/cart"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Thêm cà chua vào giỏ thành công', function () { pm.response.to.have.status(201); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Customer tạo đơn hàng 10kg",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ten_nguoi_nhan\": \"Nguyễn Thị An\",\n  \"sdt_nguoi_nhan\": \"0901234567\",\n  \"dia_chi_giao\": \"12 Đường Xanh, Đà Lạt\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }]
+            },
+            "url": "{{base_url}}/orders"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Đơn 10kg được tạo, chờ duyệt', function () { pm.response.to.have.status(201); });",
+                  "const order = pm.response.json().data;",
+                  "pm.expect(order.trang_thai).to.eql('cho_duyet');",
+                  "pm.collectionVariables.set('order_id', String(order.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sales duyệt đơn và kiểm tra phân bổ FEFO 3kg + 7kg",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{sales_token}}", "type": "string" }]
+            },
+            "url": "{{base_url}}/orders/{{order_id}}/approve"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Sales duyệt đơn thành công', function () { pm.response.to.have.status(200); });",
+                  "const order = pm.response.json().data;",
+                  "pm.expect(order.trang_thai).to.eql('da_xac_nhan');",
+                  "const details = order.details || [];",
+                  "const lot1 = details.find(function (detail) { return detail.batch && detail.batch.ma_lo === 'LO-FEFO-01'; });",
+                  "const lot2 = details.find(function (detail) { return detail.batch && detail.batch.ma_lo === 'LO-FEFO-02'; });",
+                  "pm.test('3kg lấy từ lô 1 và 7kg từ lô 2', function () {",
+                  "  pm.expect(lot1).to.exist;",
+                  "  pm.expect(lot2).to.exist;",
+                  "  pm.expect(Number(lot1.so_luong)).to.eql(3);",
+                  "  pm.expect(Number(lot2.so_luong)).to.eql(7);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Customer thêm 15kg để kiểm thử thiếu tồn",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_id\": {{product_id}},\n  \"so_luong\": 15\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }]
+            },
+            "url": "{{base_url}}/cart"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Thêm 15kg vào giỏ thành công', function () { pm.response.to.have.status(201); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Customer tạo đơn vượt tồn kho 15kg",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ten_nguoi_nhan\": \"Nguyễn Thị An\",\n  \"sdt_nguoi_nhan\": \"0901234567\",\n  \"dia_chi_giao\": \"12 Đường Xanh, Đà Lạt\"\n}"
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }]
+            },
+            "url": "{{base_url}}/orders"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Đơn vượt tồn được tạo ở trạng thái chờ duyệt', function () { pm.response.to.have.status(201); });",
+                  "const order = pm.response.json().data;",
+                  "pm.expect(order.trang_thai).to.eql('cho_duyet');",
+                  "pm.collectionVariables.set('low_stock_order_id', String(order.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sales duyệt đơn thiếu tồn - kiểm tra JSON chuẩn",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{sales_token}}", "type": "string" }]
+            },
+            "url": "{{base_url}}/orders/{{low_stock_order_id}}/approve"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Duyệt đơn thiếu tồn trả HTTP 422', function () { pm.response.to.have.status(422); });",
+                  "pm.expect(pm.response.json()).to.deep.equal({ status: 'error', message: 'Số lượng tồn kho không đủ' });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
