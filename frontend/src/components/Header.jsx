@@ -52,6 +52,9 @@ function Header() {
           <Link className="hover:text-green-800" to="/staff">
             Khu vực nhân viên
           </Link>
+          <Link className="hover:text-green-800" to="/cart">
+            Giỏ hàng
+          </Link>
           {user ? (
             <div className="flex flex-wrap items-center gap-3">
               <span className="text-slate-600">

@@ -1,7 +1,8 @@
 import axiosClient from './axiosClient.js'
 
 const batchApi = {
-  getBatches: (params) => axiosClient.get('/batches', { params }),
+  getBatches: (params, config) =>
+    axiosClient.get('/batches', { params, ...config }),
   getBatch: (batchId) => axiosClient.get(`/batches/${batchId}`),
   createBatch: (data) => axiosClient.post('/batches', data),
   updateBatch: (batchId, data) => axiosClient.put(`/batches/${batchId}`, data),

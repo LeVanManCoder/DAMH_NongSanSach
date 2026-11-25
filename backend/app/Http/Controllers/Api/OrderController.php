@@ -7,8 +7,8 @@ use App\Http\Requests\StoreOrderRequest;
 use App\Http\Requests\UpdateOrderStatusRequest;
 use App\Models\CartItem;
 use App\Models\Order;
-use App\Models\OrderDetail;
 use App\Services\FefoService;
+use App\Services\ShippingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -48,7 +48,7 @@ class OrderController extends Controller
      *     path="/api/orders",
      *     tags={"Đơn hàng"},
      *     summary="Tạo đơn hàng từ giỏ hàng",
-     *     description="Customer tạo đơn ở trạng thái chờ duyệt; hệ thống chụp giá và làm trống giỏ hàng.",
+     *     description="Customer tạo đơn ở trạng thái chờ duyệt; backend tự tính phí giao hàng theo địa chỉ, chụp giá và làm trống giỏ hàng.",
      *     security={{"bearerAuth":{}}},
      *
      *     @OA\RequestBody(
@@ -60,7 +60,6 @@ class OrderController extends Controller
      *             @OA\Property(property="ten_nguoi_nhan", type="string", example="Nguyễn Thị An"),
      *             @OA\Property(property="sdt_nguoi_nhan", type="string", example="0901234567"),
      *             @OA\Property(property="dia_chi_giao", type="string", example="12 Đường Xanh, Đà Lạt"),
-     *             @OA\Property(property="phi_van_chuyen", type="integer", example=20000),
      *             @OA\Property(property="ngay_giao_du_kien", type="string", format="date", nullable=true, example="2026-11-28"),
      *             @OA\Property(property="ghi_chu", type="string", nullable=true, example="Giao giờ hành chính")
      *         )
@@ -72,9 +71,12 @@ class OrderController extends Controller
      *     @OA\Response(response=422, description="Giỏ hàng trống hoặc dữ liệu giao hàng không hợp lệ.")
      * )
      */
-    public function store(StoreOrderRequest $request): JsonResponse
+    public function store(StoreOrderRequest $request, ShippingService $shipping): JsonResponse
     {
-        $order = DB::transaction(function () use ($request): Order {
+        $validated = $request->validated();
+        $shippingQuote = $shipping->calculate($validated['dia_chi_giao']);
+
+        $order = DB::transaction(function () use ($request, $shippingQuote): Order {
             $userId = $request->user()->getKey();
             $cartItems = CartItem::query()
                 ->where('user_id', $userId)
@@ -109,7 +111,7 @@ class OrderController extends Controller
             });
 
             $subtotal = (int) $details->sum('thanh_tien');
-            $shippingFee = (int) ($request->validated('phi_van_chuyen') ?? 0);
+            $shippingFee = $shippingQuote['phi_van_chuyen'];
             $order = Order::query()->create([
                 'ma_don' => Str::upper(Str::random(20)),
                 'user_id' => $userId,
@@ -117,6 +119,7 @@ class OrderController extends Controller
                 'ten_nguoi_nhan' => $request->validated('ten_nguoi_nhan'),
                 'sdt_nguoi_nhan' => $request->validated('sdt_nguoi_nhan'),
                 'dia_chi_giao' => $request->validated('dia_chi_giao'),
+                'khoang_cach_km' => $shippingQuote['khoang_cach_km'],
                 'phi_van_chuyen' => $shippingFee,
                 'tong_tien_hang' => $subtotal,
                 'tong_thanh_toan' => $subtotal + $shippingFee,
@@ -166,52 +169,7 @@ class OrderController extends Controller
      */
     public function approve(Request $request, int $id, FefoService $fefo): JsonResponse
     {
-        $order = DB::transaction(function () use ($request, $id, $fefo): Order {
-            $order = Order::query()->lockForUpdate()->findOrFail($id);
-
-            if ($order->trang_thai !== 'cho_duyet') {
-                throw new HttpException(409, 'Chỉ đơn hàng đang chờ duyệt mới được xác nhận.');
-            }
-
-            $details = $order->details()->get();
-            if ($details->isEmpty()) {
-                throw ValidationException::withMessages([
-                    'order' => ['Đơn hàng chưa có sản phẩm.'],
-                ]);
-            }
-
-            foreach ($details as $detail) {
-                if ($detail->batch_id !== null) {
-                    throw new HttpException(409, 'Đơn hàng đã được phân bổ lô hàng.');
-                }
-
-                $allocations = $fefo->deduct((int) $detail->product_id, (string) $detail->so_luong);
-                foreach ($allocations as $index => $allocation) {
-                    if ($index === 0) {
-                        $detail->batch_id = $allocation['batch_id'];
-                        $detail->so_luong = $allocation['so_luong'];
-                        $detail->save();
-
-                        continue;
-                    }
-
-                    OrderDetail::query()->create([
-                        'order_id' => $order->getKey(),
-                        'product_id' => $detail->product_id,
-                        'batch_id' => $allocation['batch_id'],
-                        'so_luong' => $allocation['so_luong'],
-                        'don_gia' => $detail->don_gia,
-                    ]);
-                }
-            }
-
-            $order->trang_thai = 'da_xac_nhan';
-            $order->nguoi_duyet_id = $request->user()->getKey();
-            $order->ngay_duyet = now();
-            $order->save();
-
-            return $order->load('details.product', 'details.batch');
-        });
+        $order = $fefo->approveAndAllocateOrder($id, (int) $request->user()->getKey());
 
         return response()->json(['data' => $order]);
     }
@@ -262,6 +220,7 @@ class OrderController extends Controller
             } else {
                 $transitions = [
                     'da_xac_nhan' => ['dang_giao', 'da_huy'],
+                    'da_thanh_toan' => ['dang_giao', 'da_huy'],
                     'dang_giao' => ['da_giao', 'giao_bu', 'da_huy'],
                     'giao_bu' => ['dang_giao', 'da_giao'],
                 ];

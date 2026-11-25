@@ -4,7 +4,9 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BatchController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\ShippingController;
 use App\Http\Controllers\Api\TraceController;
 use App\Models\Address;
 use App\Models\AuditLog;
@@ -23,6 +25,7 @@ Route::get('/products/{slug}', [ProductController::class, 'show']);
 
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/payments/ipn', [PaymentController::class, 'ipn']);
 Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('auth.jwt');
 Route::get('/auth/me', [AuthController::class, 'me'])->middleware('auth.jwt');
 Route::get('/user', [AuthController::class, 'me'])->middleware('auth.jwt');
@@ -52,12 +55,14 @@ Route::middleware('auth.jwt')->group(function (): void {
     });
 
     Route::middleware('role:customer')->group(function (): void {
+        Route::post('/shipping/calculate', [ShippingController::class, 'calculate']);
         Route::get('/cart', [CartController::class, 'index']);
         Route::post('/cart', [CartController::class, 'store']);
         Route::put('/cart/{itemId}', [CartController::class, 'update']);
         Route::patch('/cart/{itemId}', [CartController::class, 'update']);
         Route::delete('/cart/{itemId}', [CartController::class, 'destroy']);
         Route::post('/orders', [OrderController::class, 'store']);
+        Route::post('/payments/create', [PaymentController::class, 'create']);
     });
 
     Route::middleware('role:customer,sales,admin')->group(function (): void {

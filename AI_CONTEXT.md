@@ -95,3 +95,13 @@ Những mục dưới đây là trạng thái mới hơn snapshot lịch sử �
 - Có trang công khai `/trace/:qrCode` gọi `GET /api/trace/{qrCode}`, trình bày sản phẩm, mã lô, mùa vụ/vùng trồng, ngày thu hoạch/hết hạn và timeline nhật ký canh tác. QR trong trang chi tiết sản phẩm hiện dẫn tới URL Frontend này; `VITE_APP_URL` được thêm vào `frontend/.env.example` để cấu hình domain dùng khi phát hành.
 - Kiểm tra: `npm run build` và `npm run lint` đều đạt. Không có thay đổi backend/database; không chạy migration, không tạo commit và không push.
 - Lưu ý bảo mật: JWT hiện lưu trong `localStorage`; cần tiếp tục đánh giá phương án cookie HttpOnly/SameSite nếu threat model hoặc yêu cầu triển khai production đòi hỏi giảm rủi ro XSS.
+
+## Cập nhật sau triển khai Ưu tiên 3 — Checkout, phí ship, thanh toán & quản lý lô (chưa commit)
+
+- Có `POST /api/shipping/calculate` cho Customer, tính phí `5.000đ/km`. Khi có Google Maps key và địa chỉ gốc, server gọi Distance Matrix; nếu không có key, nhận km trực tiếp hoặc dùng Haversine khi có tọa độ; địa chỉ chỉ có text dùng khoảng cách mặc định cấu hình `SHIPPING_FALLBACK_DISTANCE_KM` (mặc định 5 km). Khi có cấu hình Google, địa chỉ giao được gửi tới Google Maps để tính tuyến.
+- `POST /api/orders` không nhận phí/khoảng cách từ client; server tính lại từ địa chỉ trước khi lưu `khoang_cach_km`, `phi_van_chuyen`, tổng thanh toán. Thêm `da_thanh_toan` vào enum bằng migration cộng thêm.
+- Có `POST /api/payments/create` (Customer) tạo giao dịch MoMo/VNPay mô phỏng và QR payload. `POST /api/payments/ipn` kiểm tra mã giao dịch/số tiền, gọi `FefoService::approveAndAllocateOrder` trong transaction, cập nhật payment thành công và order `da_thanh_toan`; callback trùng lặp không trừ kho lần nữa. IPN hiện là mô phỏng, chưa xác minh chữ ký provider; không dùng như luồng thanh toán production.
+- Migration `2026_11_25_230000_add_da_thanh_toan_to_orders_status` đã áp dụng bằng `php artisan migrate` an toàn (không chạy `migrate:fresh`); `migrate:status` xác nhận đã chạy.
+- Frontend có `/cart`, `/checkout`: cập nhật/xóa giỏ, tự gọi API tính phí khi nhập địa chỉ, tạo đơn, hiển thị QR mô phỏng và nút xác nhận IPN. `BatchWasteDashboard.jsx` đọc tồn từ `GET /api/batches` và Farm Staff có form ghi nhận hao hụt; làm mới để đối chiếu tồn sau FEFO.
+- Swagger đã sinh lại, gồm `/api/shipping/calculate`, `/api/payments/create`, `/api/payments/ipn`. Kiểm tra: `php artisan test` đạt 23 tests / 221 assertions; `npm run build`, `npm run lint` và Pint trên các file backend đã sửa đều đạt.
+- Không tạo commit hoặc push trong cập nhật này.

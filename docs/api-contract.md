@@ -66,8 +66,8 @@ QR chỉ được tạo sau khi lô chuyển sang `da_thu_hoach` và đã có í
 | POST | `/cart` | Customer | **Đã triển khai.** Thêm sản phẩm vào giỏ (`product_id`, `so_luong`); cộng số lượng nếu sản phẩm đã có trong giỏ và trả `422` nếu vượt tồn khả dụng. |
 | PUT/PATCH | `/cart/{itemId}` | Customer | **Đã triển khai.** Cập nhật số lượng dương; từ chối nếu vượt tồn khả dụng. |
 | DELETE | `/cart/{itemId}` | Customer | **Đã triển khai.** Bỏ sản phẩm khỏi giỏ. |
-| POST | `/shipping/quotes` | Customer | Tính phí giao hàng từ địa chỉ; tích hợp ship qua service provider. |
-| POST | `/orders` | Customer | Tạo đơn lẻ từ giỏ và snapshot người nhận/địa chỉ tại thời điểm đặt. |
+| POST | `/shipping/calculate` | Customer | **Đã triển khai.** Tính phí `5.000đ/km` từ địa chỉ, khoảng cách hoặc Haversine khi có tọa độ; không có Google Maps key thì dùng khoảng cách dự phòng cấu hình (mặc định 5 km). |
+| POST | `/orders` | Customer | Tạo đơn lẻ từ giỏ; backend tự tính lại khoảng cách/phí theo địa chỉ và không nhận phí ship do client gửi. |
 | GET | `/orders` | Customer | Chỉ xem đơn của chính mình. |
 | GET | `/orders/{order}` | Customer sở hữu đơn | Xem chi tiết đơn và trạng thái. |
 | POST | `/orders/{order}/cancel` | Customer sở hữu đơn, khi còn được phép hủy | Gửi yêu cầu hủy đơn. |
@@ -81,7 +81,9 @@ Khi tạo đơn, kiểm tra giá/trạng thái sản phẩm và tồn khả dụ
 
 | Method | Endpoint | Quyền | Mục đích |
 |---|---|---|---|
-| POST | `/orders/{order}/payments` | Customer sở hữu đơn | Khởi tạo thanh toán cho đơn. |
+| POST | `/payments/create` | Customer sở hữu đơn | **Đã triển khai dạng mô phỏng.** Tạo giao dịch MoMo/VNPay và QR payload cho đơn đang chờ thanh toán. |
+| POST | `/payments/ipn` | Callback mô phỏng | **Đã triển khai dạng mô phỏng.** Kiểm tra mã giao dịch/số tiền, cập nhật `da_thanh_toan` và trừ kho FEFO trong transaction; callback lặp không trừ kho lần nữa. |
+| POST | `/orders/{order}/payments` | Customer sở hữu đơn | Endpoint mục tiêu nếu tích hợp cổng thanh toán thật. |
 | GET | `/orders/{order}/payments` | Customer sở hữu đơn, Sales, Admin | Lịch sử giao dịch được phép xem. |
 | POST | `/subscriptions/{subscription}/payments` | Customer sở hữu gói | Thanh toán trước gói định kỳ. |
 | POST | `/payments/webhooks/{provider}` | Provider, xác thực chữ ký | Nhận callback MoMo/VNPay; không dùng JWT người dùng. |
@@ -166,6 +168,7 @@ Các thao tác duyệt đơn, xuất hủy, hoàn tiền và thay đổi cấu h
 ## Quy tắc nghiệp vụ áp dụng xuyên API
 
 - **FEFO:** chọn lô `con_hang`, tồn `> 0`, chưa hết hạn, sắp xếp `ngay_het_han ASC, ngay_thu_hoach ASC`; khóa dòng và cập nhật tồn trong cùng transaction. Tồn không âm.
+- **IPN mô phỏng:** không thay thế xác minh chữ ký MoMo/VNPay. Trước khi phát hành thật, phải xác minh chữ ký callback, merchant/order reference và idempotency theo tài liệu provider.
 - **Khiếu nại:** Customer chỉ gửi trong 24 giờ từ lúc đơn chuyển `da_giao`; yêu cầu ít nhất một minh chứng. Ảnh JPG/PNG/WEBP tối đa 5 MB; video MP4 tối đa 30 MB. Backend kiểm tra cả phần mở rộng và MIME type.
 - **QR:** truy xuất công khai; sinh QR sau thu hoạch khi lô có nhật ký canh tác.
 - **Tích hợp ngoài:** payment, tính phí giao hàng và media phải qua interface/service; cung cấp mock service local/test.

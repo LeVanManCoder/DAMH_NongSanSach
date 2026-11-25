@@ -153,7 +153,8 @@ class BatchOrderApiTest extends TestCase
             ])
             ->assertCreated()
             ->assertJsonPath('data.trang_thai', 'cho_duyet')
-            ->assertJsonPath('data.tong_thanh_toan', '450000');
+            ->assertJsonPath('data.phi_van_chuyen', '25000')
+            ->assertJsonPath('data.tong_thanh_toan', '475000');
         $orderId = $order->json('data.id');
 
         $this->withToken($customerToken)->getJson('/api/cart')
