@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCartItemRequest;
 use App\Http\Requests\UpdateCartItemRequest;
+use App\Models\Batch;
 use App\Models\CartItem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use OpenApi\Annotations as OA;
 
 class CartController extends Controller
@@ -71,6 +73,7 @@ class CartController extends Controller
                 ->where('product_id', $productId)
                 ->lockForUpdate()
                 ->first();
+            $requestedUnits = $this->toMinorUnits((string) $request->validated('so_luong'));
 
             if ($item === null) {
                 $item = new CartItem([
@@ -79,10 +82,14 @@ class CartController extends Controller
                     'so_luong' => $request->validated('so_luong'),
                 ]);
             } else {
-                $newQuantity = (int) round((float) $item->so_luong * 100)
-                    + (int) round((float) $request->validated('so_luong') * 100);
-                $item->so_luong = sprintf('%d.%02d', intdiv($newQuantity, 100), $newQuantity % 100);
+                $newQuantity = $this->toMinorUnits((string) $item->so_luong) + $requestedUnits;
+                $item->so_luong = $this->fromMinorUnits($newQuantity);
             }
+
+            $this->assertAvailableStock(
+                (int) $productId,
+                $this->toMinorUnits((string) $item->so_luong),
+            );
 
             $item->save();
 
@@ -145,13 +152,25 @@ class CartController extends Controller
      */
     public function update(UpdateCartItemRequest $request, int $itemId): JsonResponse
     {
-        $item = CartItem::query()
-            ->where('user_id', $request->user()->getKey())
-            ->findOrFail($itemId);
-        $item->so_luong = $request->validated('so_luong');
-        $item->save();
+        $item = DB::transaction(function () use ($request, $itemId): CartItem {
+            $item = CartItem::query()
+                ->where('user_id', $request->user()->getKey())
+                ->lockForUpdate()
+                ->findOrFail($itemId);
+            $quantity = (string) $request->validated('so_luong');
 
-        return response()->json(['data' => $item->load('product')]);
+            $this->assertAvailableStock(
+                (int) $item->product_id,
+                $this->toMinorUnits($quantity),
+            );
+
+            $item->so_luong = $quantity;
+            $item->save();
+
+            return $item->load('product');
+        });
+
+        return response()->json(['data' => $item]);
     }
 
     /**
@@ -177,5 +196,35 @@ class CartController extends Controller
             ->delete();
 
         return response()->json(null, 204);
+    }
+
+    private function assertAvailableStock(int $productId, int $requestedUnits): void
+    {
+        $availableUnits = Batch::query()
+            ->where('product_id', $productId)
+            ->where('trang_thai', 'con_hang')
+            ->where('so_luong_ton', '>', 0)
+            ->whereDate('ngay_het_han', '>=', now()->toDateString())
+            ->lockForUpdate()
+            ->get(['id', 'so_luong_ton'])
+            ->sum(fn (Batch $batch): int => $this->toMinorUnits((string) $batch->so_luong_ton));
+
+        if ($requestedUnits > $availableUnits) {
+            throw ValidationException::withMessages([
+                'so_luong' => ['Số lượng yêu cầu vượt quá tồn kho khả dụng.'],
+            ]);
+        }
+    }
+
+    private function toMinorUnits(string $quantity): int
+    {
+        [$whole, $fraction] = array_pad(explode('.', $quantity, 2), 2, '');
+
+        return ((int) $whole * 100) + (int) str_pad(substr($fraction, 0, 2), 2, '0');
+    }
+
+    private function fromMinorUnits(int $quantity): string
+    {
+        return sprintf('%d.%02d', intdiv($quantity, 100), $quantity % 100);
     }
 }

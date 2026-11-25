@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import BatchWasteDashboard from './pages/staff/BatchWasteDashboard.jsx'
 import ProductDetail from './pages/customer/ProductDetail.jsx'
+import ProductList from './pages/customer/ProductList.jsx'
 import MainLayout from './layouts/MainLayout.jsx'
 import StaffLayout from './layouts/StaffLayout.jsx'
 
@@ -9,8 +10,9 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<MainLayout />}>
-          <Route index element={<ProductDetail />} />
-          <Route path="products/:productId" element={<ProductDetail />} />
+          <Route index element={<ProductList />} />
+          <Route path="products" element={<ProductList />} />
+          <Route path="products/:slug" element={<ProductDetail />} />
         </Route>
         <Route path="/staff" element={<StaffLayout />}>
           <Route index element={<BatchWasteDashboard />} />

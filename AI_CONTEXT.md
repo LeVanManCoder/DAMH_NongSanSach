@@ -75,3 +75,15 @@ Snapshot kiểm tra trên nhánh `develop`, tại commit `91ede1d` (trước c�
 5. **Khiếu nại có minh chứng:** thêm API/Form Request/policy, kiểm tra MIME + phần mở rộng + giới hạn dung lượng, lưu trữ an toàn, hạn 24 giờ; bổ sung form frontend và feature tests.
 6. **Subscription và các màn hình theo vai trò:** scheduler sinh lịch/đơn định kỳ, review, CRUD cần thiết cho Farm Staff/Sales/Admin; ưu tiên theo rubric Tuần 6 sau khi xác nhận đề cương.
 7. **Đồng bộ tài liệu:** cập nhật `docs/api-contract.md` theo route, role, mã lỗi và payload thực tế sau từng nhóm API; bổ sung frontend/API integration tests thay vì chỉ dựa vào build.
+
+## Cập nhật sau triển khai Ưu tiên 1 — Sản phẩm & Giỏ hàng (chưa commit)
+
+Những mục dưới đây là trạng thái mới hơn snapshot lịch sử ở trên, trên nhánh `feature/tuan6-tich-hop-fe-be`:
+
+- Backend có endpoint công khai `GET /api/products` (lọc `q`, `category_id`, phân trang) và `GET /api/products/{slug}`. Chỉ sản phẩm đang hoạt động có lô `con_hang`, tồn dương và chưa hết hạn được trả về; payload có mã lô, ngày thu hoạch/hết hạn, tồn khả dụng, mã QR và nhật ký canh tác.
+- `POST /api/cart` và cập nhật `PUT/PATCH /api/cart/{itemId}` kiểm tra tồn khả dụng trong transaction, khóa các dòng lô phù hợp và trả lỗi validation `422` nếu số lượng vượt tồn. Giỏ hàng không giữ chỗ tồn kho; Sales vẫn phải qua FEFO khi duyệt đơn.
+- Frontend có trang danh sách sản phẩm ở `/` và `/products`, chi tiết theo slug tại `/products/:slug`, timeline nhật ký và QR SVG sắc nét trỏ tới endpoint truy xuất công khai `/api/trace/{qr_code}`. Thao tác thêm giỏ hàng dùng Axios async, spinner và toast; Axios tự gắn JWT từ `localStorage.access_token` nếu có. Chưa có màn hình đăng nhập, do đó khách chưa đăng nhập nhận thông báo yêu cầu đăng nhập.
+- Đã thêm `LoadingSpinner`, `ToastNotification`, `cartApi`; `productApi.js` khớp endpoint slug mới và `batchApi.js` chỉ còn các endpoint lô hàng thực tế. OpenAPI được tạo lại tại `backend/storage/api-docs/api-docs.json`, route Swagger UI là `/api/documentation`. `docs/api-contract.md` đã đồng bộ route sản phẩm, giỏ hàng và lỗi tồn kho.
+- Kiểm tra: `php artisan test` đạt 19 tests / 179 assertions; `npm run build` và `npm run lint` đạt; Pint đạt trên các file PHP đã thay đổi. Lệnh Pint toàn dự án còn báo một số file migration và `config/cors.php` cũ, không thuộc thay đổi này.
+- Chưa triển khai: giao diện đăng nhập/khôi phục phiên, trang giỏ hàng và checkout, tính phí giao hàng động, thanh toán/IPN, khiếu nại kèm ảnh/video, cùng các màn hình/luồng vai trò khác nêu trong roadmap.
+- Không chạy `migrate:fresh`, không tạo commit và không push trong cập nhật này.

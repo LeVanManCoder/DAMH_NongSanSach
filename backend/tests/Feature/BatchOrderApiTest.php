@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Batch;
+use App\Models\CartItem;
 use App\Models\OrderDetail;
 use App\Models\Product;
 use App\Models\Season;
@@ -191,16 +192,19 @@ class BatchOrderApiTest extends TestCase
 
     public function test_order_approval_returns_standard_json_and_rolls_back_when_stock_is_insufficient(): void
     {
-        $customerToken = $this->tokenFor('customer');
+        $customer = User::query()
+            ->whereHas('role', fn ($query) => $query->where('ten_vai_tro', 'customer'))
+            ->firstOrFail();
+        $customerToken = app(JwtTokenService::class)->issue($customer);
         $salesToken = $this->tokenFor('sales');
         $product = Product::query()->where('slug', 'ca-chua-huu-co-fefo-test')->firstOrFail();
 
-        $this->withToken($customerToken)
-            ->postJson('/api/cart', [
-                'product_id' => $product->getKey(),
-                'so_luong' => '15.00',
-            ])
-            ->assertCreated();
+        CartItem::query()->create([
+            'user_id' => $customer->getKey(),
+            'product_id' => $product->getKey(),
+            'so_luong' => '15.00',
+        ]);
+
         $orderId = $this->withToken($customerToken)
             ->postJson('/api/orders', [
                 'ten_nguoi_nhan' => 'Trần Văn Bình',
