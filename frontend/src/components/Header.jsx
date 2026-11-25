@@ -45,7 +45,7 @@ function Header() {
         <Link className="text-lg font-bold text-green-800" to="/products">
           Nông sản sạch
         </Link>
-        <div className="flex items-center gap-4 text-sm font-medium text-slate-700">
+        <div className="flex flex-wrap items-center gap-3 text-sm font-medium text-slate-700">
           <Link className="hover:text-green-800" to="/products">
             Sản phẩm
           </Link>
@@ -57,6 +57,11 @@ function Header() {
           </Link>
           {user ? (
             <div className="flex flex-wrap items-center gap-3">
+              {user.role === 'customer' && (
+                <Link className="hover:text-green-800" to="/orders">
+                  Đơn hàng của tôi
+                </Link>
+              )}
               <span className="text-slate-600">
                 {user.ho_ten} · {roleLabels[user.role] ?? user.role}
               </span>

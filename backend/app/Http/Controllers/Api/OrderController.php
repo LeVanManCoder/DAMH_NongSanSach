@@ -37,7 +37,10 @@ class OrderController extends Controller
         $query = Order::query()->with(['details.product', 'details.batch']);
 
         if ($request->user()->role->ten_vai_tro === 'customer') {
-            $query->where('user_id', $request->user()->getKey());
+            $query->where('user_id', $request->user()->getKey())
+                ->with('complaint.media');
+        } else {
+            $query->with('user:id,ho_ten');
         }
 
         return response()->json($query->latest('ngay_tao')->paginate(20));
@@ -175,6 +178,29 @@ class OrderController extends Controller
     }
 
     /**
+     * @OA\Put(
+     *     path="/api/orders/{id}/status",
+     *     tags={"Đơn hàng"},
+     *     summary="Cập nhật trạng thái đơn hàng bằng PUT",
+     *     description="Sales/Admin cập nhật tiến trình giao hàng; Customer chỉ được hủy đơn đang chờ duyệt.",
+     *     security={{"bearerAuth":{}}},
+     *
+     *     @OA\Parameter(name="id", in="path", required=true, description="ID đơn hàng.", @OA\Schema(type="integer")),
+     *
+     *     @OA\RequestBody(required=true, @OA\JsonContent(
+     *         required={"trang_thai"},
+     *
+     *         @OA\Property(property="trang_thai", type="string", enum={"da_huy","dang_giao","da_giao","giao_bu"}, example="da_giao")
+     *     )),
+     *
+     *     @OA\Response(response=200, description="Trạng thái đơn hàng đã được cập nhật."),
+     *     @OA\Response(response=401, description="Thiếu hoặc token không hợp lệ."),
+     *     @OA\Response(response=403, description="Vai trò không được phép cập nhật trạng thái."),
+     *     @OA\Response(response=404, description="Không tìm thấy đơn hàng."),
+     *     @OA\Response(response=409, description="Không thể chuyển trạng thái theo yêu cầu."),
+     *     @OA\Response(response=422, description="Trạng thái không hợp lệ.")
+     * )
+     *
      * @OA\Patch(
      *     path="/api/orders/{id}/status",
      *     tags={"Đơn hàng"},

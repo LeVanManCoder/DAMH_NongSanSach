@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BatchController;
 use App\Http\Controllers\Api\CartController;
+use App\Http\Controllers\Api\ComplaintController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ProductController;
@@ -62,11 +63,13 @@ Route::middleware('auth.jwt')->group(function (): void {
         Route::patch('/cart/{itemId}', [CartController::class, 'update']);
         Route::delete('/cart/{itemId}', [CartController::class, 'destroy']);
         Route::post('/orders', [OrderController::class, 'store']);
+        Route::post('/orders/{id}/complaints', [ComplaintController::class, 'store']);
         Route::post('/payments/create', [PaymentController::class, 'create']);
     });
 
     Route::middleware('role:customer,sales,admin')->group(function (): void {
         Route::get('/orders', [OrderController::class, 'index']);
+        Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']);
         Route::patch('/orders/{id}/status', [OrderController::class, 'updateStatus']);
     });
 

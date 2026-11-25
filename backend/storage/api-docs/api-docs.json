@@ -910,6 +910,87 @@
                 ]
             }
         },
+        "/api/orders/{id}/complaints": {
+            "post": {
+                "tags": [
+                    "Khiếu nại"
+                ],
+                "summary": "Gửi khiếu nại kèm ảnh minh chứng",
+                "description": "Customer chỉ khiếu nại đơn của mình đã giao trong vòng 24 giờ; mỗi đơn chỉ gửi một khiếu nại.",
+                "operationId": "e120b168643908ded84bc574865c2943",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID đơn hàng.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "ly_do",
+                                    "anh_minh_chung"
+                                ],
+                                "properties": {
+                                    "ly_do": {
+                                        "type": "string",
+                                        "enum": [
+                                            "dap_nat",
+                                            "hu_hong",
+                                            "thieu_hang",
+                                            "sai_san_pham",
+                                            "khac"
+                                        ]
+                                    },
+                                    "mo_ta": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "maxLength": 2000
+                                    },
+                                    "anh_minh_chung": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Khiếu nại và ảnh minh chứng đã được ghi nhận."
+                    },
+                    "401": {
+                        "description": "Thiếu hoặc token không hợp lệ."
+                    },
+                    "403": {
+                        "description": "Chỉ Customer được gửi khiếu nại."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy đơn hàng thuộc tài khoản."
+                    },
+                    "409": {
+                        "description": "Đơn hàng đã có khiếu nại."
+                    },
+                    "422": {
+                        "description": "Đơn chưa giao, quá 24 giờ hoặc tệp minh chứng không hợp lệ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/orders": {
             "get": {
                 "tags": [
@@ -1067,6 +1148,75 @@
             }
         },
         "/api/orders/{id}/status": {
+            "put": {
+                "tags": [
+                    "Đơn hàng"
+                ],
+                "summary": "Cập nhật trạng thái đơn hàng bằng PUT",
+                "description": "Sales/Admin cập nhật tiến trình giao hàng; Customer chỉ được hủy đơn đang chờ duyệt.",
+                "operationId": "2b29ab889c21230523d142cbe158780e",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID đơn hàng.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "trang_thai"
+                                ],
+                                "properties": {
+                                    "trang_thai": {
+                                        "type": "string",
+                                        "example": "da_giao",
+                                        "enum": [
+                                            "da_huy",
+                                            "dang_giao",
+                                            "da_giao",
+                                            "giao_bu"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Trạng thái đơn hàng đã được cập nhật."
+                    },
+                    "401": {
+                        "description": "Thiếu hoặc token không hợp lệ."
+                    },
+                    "403": {
+                        "description": "Vai trò không được phép cập nhật trạng thái."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy đơn hàng."
+                    },
+                    "409": {
+                        "description": "Không thể chuyển trạng thái theo yêu cầu."
+                    },
+                    "422": {
+                        "description": "Trạng thái không hợp lệ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
             "patch": {
                 "tags": [
                     "Đơn hàng"
@@ -1487,6 +1637,10 @@
         {
             "name": "Giỏ hàng",
             "description": "Giỏ hàng"
+        },
+        {
+            "name": "Khiếu nại",
+            "description": "Khiếu nại"
         },
         {
             "name": "Đơn hàng",

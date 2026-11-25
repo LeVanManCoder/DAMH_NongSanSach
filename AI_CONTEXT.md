@@ -105,3 +105,17 @@ Những mục dưới đây là trạng thái mới hơn snapshot lịch sử �
 - Frontend có `/cart`, `/checkout`: cập nhật/xóa giỏ, tự gọi API tính phí khi nhập địa chỉ, tạo đơn, hiển thị QR mô phỏng và nút xác nhận IPN. `BatchWasteDashboard.jsx` đọc tồn từ `GET /api/batches` và Farm Staff có form ghi nhận hao hụt; làm mới để đối chiếu tồn sau FEFO.
 - Swagger đã sinh lại, gồm `/api/shipping/calculate`, `/api/payments/create`, `/api/payments/ipn`. Kiểm tra: `php artisan test` đạt 23 tests / 221 assertions; `npm run build`, `npm run lint` và Pint trên các file backend đã sửa đều đạt.
 - Không tạo commit hoặc push trong cập nhật này.
+
+## Cập nhật sau triển khai Ưu tiên 4 — Khiếu nại kèm ảnh minh chứng (chưa commit)
+
+- Thêm `POST /api/orders/{id}/complaints`, chỉ role Customer. Backend giới hạn truy vấn theo `user_id` của JWT (đơn không thuộc về người gửi trả `404`), yêu cầu trạng thái `da_giao` và `ngay_giao_thuc_te` nằm trong 24 giờ gần nhất; mỗi đơn chỉ có một khiếu nại.
+- Form Request kiểm tra lý do, mô tả tối đa 2.000 ký tự và ảnh bắt buộc. Chỉ nhận ảnh thật có MIME/đuôi JPG, JPEG hoặc PNG, dung lượng tối đa 5 MB; lưu file vào disk public (`storage/app/public/complaints`) và ghi đường dẫn, MIME, kích thước vào `complaint_media`. Tạo complaint/media nằm trong transaction; nếu ghi DB thất bại file vừa lưu được dọn lại.
+- API danh sách `/api/orders` tải kèm khiếu nại/media. Frontend có `/orders` hiển thị lịch sử và chi tiết đơn, phân trang “Tải thêm”, trạng thái và khiếu nại hiện hữu. Header chỉ hiện “Đơn hàng của tôi” cho role Customer.
+- Form khiếu nại chỉ hiển thị với đơn `da_giao` chưa quá 24 giờ; trạng thái chỉ `da_thanh_toan` không đủ điều kiện. Form yêu cầu ảnh `.jpg` hoặc `.png`, dung lượng nhỏ hơn 5 MB, kiểm tra ngay trên trình duyệt trước khi gửi `FormData`; lỗi hiện đỏ dưới trường file, có spinner và toast.
+- Phạm vi hiện tại chỉ hỗ trợ một ảnh JPG/JPEG/PNG; video, WEBP, nhiều minh chứng, trang xử lý Sales và các endpoint GET khiếu nại chưa được triển khai.
+
+## Cập nhật Sales — Quản lý và xác nhận giao đơn (chưa commit)
+
+- Thêm trang `/staff/orders` dưới `StaffLayout`, đọc `GET /api/orders` với danh sách phân trang, tên khách hàng, mã đơn, tổng tiền và trạng thái. Chỉ Sales/Admin thấy liên kết; trang từ chối hiển thị dữ liệu cho vai trò khác.
+- Sales có thể bắt đầu giao với đơn đã thanh toán/đã xác nhận, sau đó xác nhận đã giao với đơn đang giao/đang giao bù. Cập nhật trạng thái dùng `PUT /api/orders/{id}/status`, kèm spinner và toast; PATCH hiện tại vẫn được giữ tương thích.
+- Order API eager-load tên khách hàng cho Sales/Admin; phản hồi Customer vẫn giới hạn đơn của chính họ. Đã kiểm thử route PUT và danh sách có tên khách hàng.

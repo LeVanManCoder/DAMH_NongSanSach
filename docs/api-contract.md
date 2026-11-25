@@ -68,10 +68,11 @@ QR chỉ được tạo sau khi lô chuyển sang `da_thu_hoach` và đã có í
 | DELETE | `/cart/{itemId}` | Customer | **Đã triển khai.** Bỏ sản phẩm khỏi giỏ. |
 | POST | `/shipping/calculate` | Customer | **Đã triển khai.** Tính phí `5.000đ/km` từ địa chỉ, khoảng cách hoặc Haversine khi có tọa độ; không có Google Maps key thì dùng khoảng cách dự phòng cấu hình (mặc định 5 km). |
 | POST | `/orders` | Customer | Tạo đơn lẻ từ giỏ; backend tự tính lại khoảng cách/phí theo địa chỉ và không nhận phí ship do client gửi. |
-| GET | `/orders` | Customer | Chỉ xem đơn của chính mình. |
+| GET | `/orders` | Customer; Sales/Admin | Customer chỉ xem đơn của mình; Sales/Admin xem toàn bộ đơn (kèm tên khách hàng). |
 | GET | `/orders/{order}` | Customer sở hữu đơn | Xem chi tiết đơn và trạng thái. |
 | POST | `/orders/{order}/cancel` | Customer sở hữu đơn, khi còn được phép hủy | Gửi yêu cầu hủy đơn. |
-| POST | `/orders/{order}/complaints` | Customer sở hữu đơn đã giao trong 24 giờ | Gửi khiếu nại kèm ít nhất một file minh chứng (`multipart/form-data`). |
+| POST | `/orders/{id}/complaints` | Customer sở hữu đơn đã giao trong 24 giờ | **Đã triển khai.** Gửi một khiếu nại cho đơn bằng `multipart/form-data`, bắt buộc có ảnh JPG/JPEG/PNG tối đa 5 MB. |
+| PUT/PATCH | `/orders/{id}/status` | Customer; Sales/Admin | Cập nhật trạng thái theo state machine; Sales/Admin dùng PUT để cập nhật tiến trình giao hàng. |
 | GET | `/complaints` | Customer | Chỉ xem khiếu nại của chính mình. |
 | GET | `/complaints/{complaint}` | Customer sở hữu khiếu nại | Xem trạng thái xử lý và media minh chứng. |
 
@@ -169,7 +170,7 @@ Các thao tác duyệt đơn, xuất hủy, hoàn tiền và thay đổi cấu h
 
 - **FEFO:** chọn lô `con_hang`, tồn `> 0`, chưa hết hạn, sắp xếp `ngay_het_han ASC, ngay_thu_hoach ASC`; khóa dòng và cập nhật tồn trong cùng transaction. Tồn không âm.
 - **IPN mô phỏng:** không thay thế xác minh chữ ký MoMo/VNPay. Trước khi phát hành thật, phải xác minh chữ ký callback, merchant/order reference và idempotency theo tài liệu provider.
-- **Khiếu nại:** Customer chỉ gửi trong 24 giờ từ lúc đơn chuyển `da_giao`; yêu cầu ít nhất một minh chứng. Ảnh JPG/PNG/WEBP tối đa 5 MB; video MP4 tối đa 30 MB. Backend kiểm tra cả phần mở rộng và MIME type.
+- **Khiếu nại:** Endpoint hiện triển khai chỉ nhận một ảnh minh chứng JPG/JPEG/PNG (kiểm tra phần mở rộng và MIME type, tối đa 5 MB), chỉ chủ đơn được gửi và chỉ trong 24 giờ từ `ngay_giao_thuc_te` của đơn `da_giao`. Hỗ trợ WEBP/video và các API xem/xử lý khiếu nại vẫn là mục tiêu chưa triển khai.
 - **QR:** truy xuất công khai; sinh QR sau thu hoạch khi lô có nhật ký canh tác.
 - **Tích hợp ngoài:** payment, tính phí giao hàng và media phải qua interface/service; cung cấp mock service local/test.
 - **Lỗi tồn kho:** thao tác giỏ hàng trả `422` nếu yêu cầu vượt tồn khả dụng; duyệt đơn trả `422` với JSON lỗi chuẩn và rollback toàn bộ transaction nếu FEFO không đủ hàng.
