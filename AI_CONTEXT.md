@@ -39,3 +39,83 @@ Mọi API yêu cầu xác thực bằng **JWT** (thiếu/sai trả `401`, sai va
 - Tuyệt đối không tự động chạy `git commit` hoặc `git push`. Chỉ thực hiện khi người dùng yêu cầu rõ ràng.
 - Tuyệt đối không chèn dòng `Co-authored-by:` hoặc bất kỳ dấu vết đồng tác giả AI nào vào commit message.
 - Mọi commit message phải viết bằng tiếng Việt có dấu, ngắn gọn và theo chuẩn Conventional Commits với các type được phép: `feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `chore:`.
+
+## 5. Trạng thái dự án đã xác minh (2026-11-25)
+
+Snapshot kiểm tra trên nhánh `develop`, tại commit `91ede1d` (trước cập nhật trạng thái này). Đây là tình trạng mã nguồn hiện tại, không phải xác nhận đã đáp ứng toàn bộ rubric Tuần 6.
+
+### Đã có và đã kiểm tra
+
+- Backend Laravel có 28 migration files; 24 migration nghiệp vụ tạo 24 bảng theo thiết kế. `php artisan migrate:status` báo tất cả migration đã chạy trên database cấu hình hiện tại. Có 24 Eloquent Models.
+- JWT HS256, thời hạn 3.600 giây, lưu hash token để thu hồi; đăng nhập, đăng ký Customer, đăng xuất, `/auth/me`, khóa đăng nhập 15 phút sau 5 lần sai và middleware RBAC `401`/`403`.
+- Global JSON error handling; API giỏ hàng và đơn hàng; quản lý lô (xem/tạo/sửa/xóa có điều kiện), ghi nhận hao hụt; QR truy xuất công khai; duyệt đơn Sales gọi FEFO trong transaction.
+- Swagger UI/OpenAPI và Postman Collection v2.1 đã được thêm. Route Swagger là `/api/documentation`.
+- Backend test: `php artisan test` đạt 16 tests / 155 assertions. PHPUnit dùng SQLite `:memory:`; kết quả này không thay thế kiểm thử tích hợp trên MySQL/MariaDB.
+- Frontend React/Vite/Tailwind build thành công và `npm run lint` đạt; cấu hình Axios có `VITE_API_BASE_URL`.
+- Route API hiện có 27 route first-party (bao gồm health check, alias `/user` và các route hỗ trợ). Các nhóm nghiệp vụ chính đã triển khai là auth, batches/QR/waste, cart, orders và trace.
+
+### Chưa triển khai hoặc chưa nối hoàn chỉnh
+
+- Frontend vẫn là khung: `ProductDetail.jsx` và `BatchWasteDashboard.jsx` là placeholder; chưa có màn hình đăng nhập, danh sách sản phẩm chạy dữ liệu thật, giỏ hàng, checkout, đơn hàng, thanh toán, khiếu nại hay quản trị. Các `productApi.js`/`batchApi.js` chưa được component sử dụng.
+- Chưa có API `/products` hoặc `/products/{id}` dù `productApi.js` gọi hai đường dẫn này. `batchApi.getWasteDashboard()` gọi `GET /batches/waste`, route này không tồn tại; backend hiện có danh sách `GET /batches` và ghi hao hụt `POST /batches/{id}/waste`.
+- Backend từ chối JWT hết hạn bằng `401`, nhưng chưa có refresh-token endpoint; frontend chưa lưu/đính kèm token, interceptor xử lý `401` hoặc luồng đăng nhập lại.
+- Chưa có tính phí giao hàng động/quote: `OrderController` nhận phí tùy chọn từ payload và mặc định `phi_van_chuyen = 0`.
+- Chưa có payment controller/provider, callback/webhook IPN, xác thực chữ ký, idempotency hoặc refund flow. Bảng/model `payments` chỉ là nền dữ liệu.
+- Chưa có API/kênh upload và xử lý khiếu nại/media; bảng và model complaint hiện chỉ là nền dữ liệu.
+- Subscription, delivery scheduling, reviews, product/category CRUD, phần lớn address CRUD, farming-log CRUD/harvest, notification và admin reporting chưa có API nghiệp vụ tương ứng; hiện có schema/model hoặc một số route đọc mẫu.
+- `docs/api-contract.md` là hợp đồng mục tiêu và có ghi chú trạng thái triển khai đã cũ. Tên route cart/order trong tài liệu khác route đang chạy; tài liệu quy định thiếu tồn `409` trong khi code/test hiện trả `422`. Ví dụ JSON lỗi tài liệu chưa có `status: "error"` như response thực tế.
+- Trong repository không tìm thấy lịch/rubric nghiệm thu Tuần 6; cần đối chiếu với đề cương chính thức của môn trước khi kết luận đạt/chưa đạt theo tuần.
+
+### Ưu tiên cho phiên triển khai kế tiếp
+
+1. **Nối luồng sản phẩm:** tạo Product/Category API và test; sửa `backend/routes/api.php`, bổ sung controller/request, nối `frontend/src/pages/customer/ProductDetail.jsx` với `frontend/src/api/productApi.js`; bỏ hoặc triển khai đúng `GET /batches/waste` trong `frontend/src/api/batchApi.js`.
+2. **Hoàn thiện đăng nhập và hết hạn phiên:** thêm trang/route đăng nhập, auth state và lưu token theo quyết định bảo mật; cập nhật `frontend/src/api/axiosClient.js` để gắn Bearer token và xử lý `401` (xóa phiên, thông báo và yêu cầu đăng nhập lại). Chỉ thêm refresh token nếu đặc tả chính thức yêu cầu.
+3. **Triển khai báo phí giao hàng:** thêm endpoint quote, interface/provider cùng mock local/test; checkout chỉ gửi địa chỉ/quote hợp lệ, backend tự tính và xác nhận phí trong `backend/app/Http/Controllers/Api/OrderController.php`.
+4. **Thanh toán:** thêm payment service/provider, endpoint khởi tạo và webhook/IPN có xác thực chữ ký, idempotency, chuyển trạng thái và test giả lập; không tin trạng thái thanh toán do client gửi.
+5. **Khiếu nại có minh chứng:** thêm API/Form Request/policy, kiểm tra MIME + phần mở rộng + giới hạn dung lượng, lưu trữ an toàn, hạn 24 giờ; bổ sung form frontend và feature tests.
+6. **Subscription và các màn hình theo vai trò:** scheduler sinh lịch/đơn định kỳ, review, CRUD cần thiết cho Farm Staff/Sales/Admin; ưu tiên theo rubric Tuần 6 sau khi xác nhận đề cương.
+7. **Đồng bộ tài liệu:** cập nhật `docs/api-contract.md` theo route, role, mã lỗi và payload thực tế sau từng nhóm API; bổ sung frontend/API integration tests thay vì chỉ dựa vào build.
+
+## Cập nhật sau triển khai Ưu tiên 1 — Sản phẩm & Giỏ hàng (chưa commit)
+
+Những mục dưới đây là trạng thái mới hơn snapshot lịch sử ở trên, trên nhánh `feature/tuan6-tich-hop-fe-be`:
+
+- Backend có endpoint công khai `GET /api/products` (lọc `q`, `category_id`, phân trang) và `GET /api/products/{slug}`. Chỉ sản phẩm đang hoạt động có lô `con_hang`, tồn dương và chưa hết hạn được trả về; payload có mã lô, ngày thu hoạch/hết hạn, tồn khả dụng, mã QR và nhật ký canh tác.
+- `POST /api/cart` và cập nhật `PUT/PATCH /api/cart/{itemId}` kiểm tra tồn khả dụng trong transaction, khóa các dòng lô phù hợp và trả lỗi validation `422` nếu số lượng vượt tồn. Giỏ hàng không giữ chỗ tồn kho; Sales vẫn phải qua FEFO khi duyệt đơn.
+- Frontend có trang danh sách sản phẩm ở `/` và `/products`, chi tiết theo slug tại `/products/:slug`, timeline nhật ký và QR SVG sắc nét trỏ tới endpoint truy xuất công khai `/api/trace/{qr_code}`. Thao tác thêm giỏ hàng dùng Axios async, spinner và toast; Axios tự gắn JWT từ `localStorage.access_token` nếu có. Chưa có màn hình đăng nhập, do đó khách chưa đăng nhập nhận thông báo yêu cầu đăng nhập.
+- Đã thêm `LoadingSpinner`, `ToastNotification`, `cartApi`; `productApi.js` khớp endpoint slug mới và `batchApi.js` chỉ còn các endpoint lô hàng thực tế. OpenAPI được tạo lại tại `backend/storage/api-docs/api-docs.json`, route Swagger UI là `/api/documentation`. `docs/api-contract.md` đã đồng bộ route sản phẩm, giỏ hàng và lỗi tồn kho.
+- Kiểm tra: `php artisan test` đạt 19 tests / 179 assertions; `npm run build` và `npm run lint` đạt; Pint đạt trên các file PHP đã thay đổi. Lệnh Pint toàn dự án còn báo một số file migration và `config/cors.php` cũ, không thuộc thay đổi này.
+- Chưa triển khai: giao diện đăng nhập/khôi phục phiên, trang giỏ hàng và checkout, tính phí giao hàng động, thanh toán/IPN, khiếu nại kèm ảnh/video, cùng các màn hình/luồng vai trò khác nêu trong roadmap.
+- Không chạy `migrate:fresh`, không tạo commit và không push trong cập nhật này.
+
+## Cập nhật sau triển khai Ưu tiên 2 — Đăng nhập, phiên JWT & truy xuất QR (chưa commit)
+
+- Frontend có `AuthProvider`/`useAuth` quản lý phiên và trang `/login` gọi `POST /api/auth/login`; lưu `access_token` cùng user/role vào `localStorage`. Header hiển thị tên, nhãn vai trò và gọi `POST /api/auth/logout` khi đăng xuất.
+- Axios tự gắn Bearer token. Khi một request dùng JWT hiện tại bị `401` (ngoại trừ request đăng nhập), token và user cũ được xóa, sau đó hiển thị popup tiếng Việt có nút chuyển tới `/login`. Không có refresh-token endpoint; người dùng đăng nhập lại để tạo phiên mới.
+- Có trang công khai `/trace/:qrCode` gọi `GET /api/trace/{qrCode}`, trình bày sản phẩm, mã lô, mùa vụ/vùng trồng, ngày thu hoạch/hết hạn và timeline nhật ký canh tác. QR trong trang chi tiết sản phẩm hiện dẫn tới URL Frontend này; `VITE_APP_URL` được thêm vào `frontend/.env.example` để cấu hình domain dùng khi phát hành.
+- Kiểm tra: `npm run build` và `npm run lint` đều đạt. Không có thay đổi backend/database; không chạy migration, không tạo commit và không push.
+- Lưu ý bảo mật: JWT hiện lưu trong `localStorage`; cần tiếp tục đánh giá phương án cookie HttpOnly/SameSite nếu threat model hoặc yêu cầu triển khai production đòi hỏi giảm rủi ro XSS.
+
+## Cập nhật sau triển khai Ưu tiên 3 — Checkout, phí ship, thanh toán & quản lý lô (chưa commit)
+
+- Có `POST /api/shipping/calculate` cho Customer, tính phí `5.000đ/km`. Khi có Google Maps key và địa chỉ gốc, server gọi Distance Matrix; nếu không có key, nhận km trực tiếp hoặc dùng Haversine khi có tọa độ; địa chỉ chỉ có text dùng khoảng cách mặc định cấu hình `SHIPPING_FALLBACK_DISTANCE_KM` (mặc định 5 km). Khi có cấu hình Google, địa chỉ giao được gửi tới Google Maps để tính tuyến.
+- `POST /api/orders` không nhận phí/khoảng cách từ client; server tính lại từ địa chỉ trước khi lưu `khoang_cach_km`, `phi_van_chuyen`, tổng thanh toán. Thêm `da_thanh_toan` vào enum bằng migration cộng thêm.
+- Có `POST /api/payments/create` (Customer) tạo giao dịch MoMo/VNPay mô phỏng và QR payload. `POST /api/payments/ipn` kiểm tra mã giao dịch/số tiền, gọi `FefoService::approveAndAllocateOrder` trong transaction, cập nhật payment thành công và order `da_thanh_toan`; callback trùng lặp không trừ kho lần nữa. IPN hiện là mô phỏng, chưa xác minh chữ ký provider; không dùng như luồng thanh toán production.
+- Migration `2026_11_25_230000_add_da_thanh_toan_to_orders_status` đã áp dụng bằng `php artisan migrate` an toàn (không chạy `migrate:fresh`); `migrate:status` xác nhận đã chạy.
+- Frontend có `/cart`, `/checkout`: cập nhật/xóa giỏ, tự gọi API tính phí khi nhập địa chỉ, tạo đơn, hiển thị QR mô phỏng và nút xác nhận IPN. `BatchWasteDashboard.jsx` đọc tồn từ `GET /api/batches` và Farm Staff có form ghi nhận hao hụt; làm mới để đối chiếu tồn sau FEFO.
+- Swagger đã sinh lại, gồm `/api/shipping/calculate`, `/api/payments/create`, `/api/payments/ipn`. Kiểm tra: `php artisan test` đạt 23 tests / 221 assertions; `npm run build`, `npm run lint` và Pint trên các file backend đã sửa đều đạt.
+- Không tạo commit hoặc push trong cập nhật này.
+
+## Cập nhật sau triển khai Ưu tiên 4 — Khiếu nại kèm ảnh minh chứng (chưa commit)
+
+- Thêm `POST /api/orders/{id}/complaints`, chỉ role Customer. Backend giới hạn truy vấn theo `user_id` của JWT (đơn không thuộc về người gửi trả `404`), yêu cầu trạng thái `da_giao` và `ngay_giao_thuc_te` nằm trong 24 giờ gần nhất; mỗi đơn chỉ có một khiếu nại.
+- Form Request kiểm tra lý do, mô tả tối đa 2.000 ký tự và ảnh bắt buộc. Chỉ nhận ảnh thật có MIME/đuôi JPG, JPEG hoặc PNG, dung lượng tối đa 5 MB; lưu file vào disk public (`storage/app/public/complaints`) và ghi đường dẫn, MIME, kích thước vào `complaint_media`. Tạo complaint/media nằm trong transaction; nếu ghi DB thất bại file vừa lưu được dọn lại.
+- API danh sách `/api/orders` tải kèm khiếu nại/media. Frontend có `/orders` hiển thị lịch sử và chi tiết đơn, phân trang “Tải thêm”, trạng thái và khiếu nại hiện hữu. Header chỉ hiện “Đơn hàng của tôi” cho role Customer.
+- Form khiếu nại chỉ hiển thị với đơn `da_giao` chưa quá 24 giờ; trạng thái chỉ `da_thanh_toan` không đủ điều kiện. Form yêu cầu ảnh `.jpg` hoặc `.png`, dung lượng nhỏ hơn 5 MB, kiểm tra ngay trên trình duyệt trước khi gửi `FormData`; lỗi hiện đỏ dưới trường file, có spinner và toast.
+- Phạm vi hiện tại chỉ hỗ trợ một ảnh JPG/JPEG/PNG; video, WEBP, nhiều minh chứng, trang xử lý Sales và các endpoint GET khiếu nại chưa được triển khai.
+
+## Cập nhật Sales — Quản lý và xác nhận giao đơn (chưa commit)
+
+- Thêm trang `/staff/orders` dưới `StaffLayout`, đọc `GET /api/orders` với danh sách phân trang, tên khách hàng, mã đơn, tổng tiền và trạng thái. Chỉ Sales/Admin thấy liên kết; trang từ chối hiển thị dữ liệu cho vai trò khác.
+- Sales có thể bắt đầu giao với đơn đã thanh toán/đã xác nhận, sau đó xác nhận đã giao với đơn đang giao/đang giao bù. Cập nhật trạng thái dùng `PUT /api/orders/{id}/status`, kèm spinner và toast; PATCH hiện tại vẫn được giữ tương thích.
+- Order API eager-load tên khách hàng cho Sales/Admin; phản hồi Customer vẫn giới hạn đơn của chính họ. Đã kiểm thử route PUT và danh sách có tên khách hàng.

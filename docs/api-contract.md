@@ -1,6 +1,6 @@
 # Hợp đồng RESTful API — Nông Lành
 
-> **Trạng thái:** Đây là hợp đồng API mục tiêu được tổng hợp từ `AI_CONTEXT.md` và báo cáo Chương 3. Ngoại trừ `GET /api/ping` và route mẫu `GET /api/user` đang có trong boilerplate, các endpoint bên dưới là đặc tả để triển khai, chưa phải cam kết rằng route/controller đã được cài đặt. Báo cáo Chương 3 không cung cấp danh sách endpoint cụ thể; danh sách này ánh xạ các use case UC01–UC05 và quyền RBAC thành API nhất quán.
+> **Trạng thái:** Tài liệu gồm cả API đã triển khai và API mục tiêu. Hiện `GET /api/products`, `GET /api/products/{slug}` và nhóm giỏ hàng `/api/cart` đã được triển khai; các phần còn lại cần đối chiếu mã nguồn trước khi coi là cam kết đã hoàn thành. Báo cáo Chương 3 không cung cấp danh sách endpoint cụ thể; danh sách này ánh xạ các use case UC01–UC05 và quyền RBAC thành API nhất quán.
 
 Tên bảng trong cơ sở dữ liệu giữ tiếng Anh theo thiết kế; tên cột, enum và ràng buộc được đồng bộ theo workbook [`tu-dien-du-lieu-tuan-3.xlsx`](./tu-dien-du-lieu-tuan-3.xlsx). Payload ví dụ dùng cùng các tên trường như `ho_ten`, `ten_san_pham`, `so_luong`, `ngay_het_han`, `ten_nguoi_nhan` và `dia_chi`.
 
@@ -15,6 +15,7 @@ Tên bảng trong cơ sở dữ liệu giữ tiếng Anh theo thiết kế; tên
 
 ```json
 {
+  "status": "error",
   "message": "Dữ liệu không hợp lệ.",
   "errors": {
     "field": ["Nội dung lỗi."]
@@ -22,7 +23,7 @@ Tên bảng trong cơ sở dữ liệu giữ tiếng Anh theo thiết kế; tên
 }
 ```
 
-- Quy ước mã HTTP: `200` đọc/cập nhật thành công, `201` tạo thành công, `204` xóa thành công, `401` chưa xác thực, `403` không đủ quyền, `404` không tìm thấy, `409` xung đột trạng thái/tồn kho, `422` dữ liệu không hợp lệ, `429` vượt giới hạn.
+- Quy ước mã HTTP: `200` đọc/cập nhật thành công, `201` tạo thành công, `204` xóa thành công, `401` chưa xác thực, `403` không đủ quyền, `404` không tìm thấy, `409` xung đột trạng thái, `422` dữ liệu không hợp lệ hoặc tồn kho khả dụng không đủ, `429` vượt giới hạn.
 - Không trả thông tin khách hàng, đơn hàng hay doanh thu cho Farm Staff. Sales không được tạo lô, sửa tồn kho trực tiếp, sửa nhật ký canh tác hoặc ghi nhận xuất hủy.
 
 ## Kiểm tra dịch vụ & xác thực
@@ -43,8 +44,8 @@ Tên bảng trong cơ sở dữ liệu giữ tiếng Anh theo thiết kế; tên
 | Method | Endpoint | Quyền | Mục đích |
 |---|---|---|---|
 | GET | `/categories` | Công khai | Danh mục đang hoạt động. |
-| GET | `/products` | Công khai | Danh sách sản phẩm; lọc `category_id`, `q`, `page`, `per_page`. |
-| GET | `/products/{product}` | Công khai | Chi tiết sản phẩm và thông tin lô có thể bán, không lộ dữ liệu nội bộ. |
+| GET | `/products` | Công khai | **Đã triển khai.** Danh sách sản phẩm đang hoạt động có ít nhất một lô còn hạn, còn tồn; lọc `category_id`, `q`, `per_page` (mặc định 20, tối đa 100), có phân trang. |
+| GET | `/products/{slug}` | Công khai | **Đã triển khai.** Chi tiết theo slug, gồm danh mục, lô đang mở bán, tồn khả dụng, mã QR và nhật ký canh tác công khai. |
 | GET | `/products/{product}/reviews` | Công khai | Đánh giá đã công bố. |
 | GET | `/trace/{qr_code}` | Công khai | Truy xuất nguồn gốc lô: sản phẩm, mùa vụ, ngày thu hoạch, chứng nhận nếu có và timeline canh tác. |
 | GET | `/batches/{batch}/trace` | Customer, Sales, Admin; Farm Staff chỉ lô thuộc nghiệp vụ được cấp | Tra cứu timeline nội bộ theo mã lô. |
@@ -61,16 +62,17 @@ QR chỉ được tạo sau khi lô chuyển sang `da_thu_hoach` và đã có í
 | GET | `/addresses/{address}` | Chủ địa chỉ | Xem địa chỉ của chính mình. |
 | PUT/PATCH | `/addresses/{address}` | Chủ địa chỉ | Cập nhật địa chỉ của chính mình. |
 | DELETE | `/addresses/{address}` | Chủ địa chỉ | Xóa địa chỉ nếu không bị ràng buộc bởi lịch sử giao dịch. |
-| GET | `/cart` | Customer | Xem giỏ hàng hiện tại. |
-| POST | `/cart/items` | Customer | Thêm sản phẩm vào giỏ (`product_id`, `so_luong`). |
-| PATCH | `/cart/items/{item}` | Customer | Cập nhật số lượng dương. |
-| DELETE | `/cart/items/{item}` | Customer | Bỏ sản phẩm khỏi giỏ. |
-| POST | `/shipping/quotes` | Customer | Tính phí giao hàng từ địa chỉ; tích hợp ship qua service provider. |
-| POST | `/orders` | Customer | Tạo đơn lẻ từ giỏ và snapshot người nhận/địa chỉ tại thời điểm đặt. |
-| GET | `/orders` | Customer | Chỉ xem đơn của chính mình. |
+| GET | `/cart` | Customer | **Đã triển khai.** Xem giỏ hàng hiện tại. |
+| POST | `/cart` | Customer | **Đã triển khai.** Thêm sản phẩm vào giỏ (`product_id`, `so_luong`); cộng số lượng nếu sản phẩm đã có trong giỏ và trả `422` nếu vượt tồn khả dụng. |
+| PUT/PATCH | `/cart/{itemId}` | Customer | **Đã triển khai.** Cập nhật số lượng dương; từ chối nếu vượt tồn khả dụng. |
+| DELETE | `/cart/{itemId}` | Customer | **Đã triển khai.** Bỏ sản phẩm khỏi giỏ. |
+| POST | `/shipping/calculate` | Customer | **Đã triển khai.** Tính phí `5.000đ/km` từ địa chỉ, khoảng cách hoặc Haversine khi có tọa độ; không có Google Maps key thì dùng khoảng cách dự phòng cấu hình (mặc định 5 km). |
+| POST | `/orders` | Customer | Tạo đơn lẻ từ giỏ; backend tự tính lại khoảng cách/phí theo địa chỉ và không nhận phí ship do client gửi. |
+| GET | `/orders` | Customer; Sales/Admin | Customer chỉ xem đơn của mình; Sales/Admin xem toàn bộ đơn (kèm tên khách hàng). |
 | GET | `/orders/{order}` | Customer sở hữu đơn | Xem chi tiết đơn và trạng thái. |
 | POST | `/orders/{order}/cancel` | Customer sở hữu đơn, khi còn được phép hủy | Gửi yêu cầu hủy đơn. |
-| POST | `/orders/{order}/complaints` | Customer sở hữu đơn đã giao trong 24 giờ | Gửi khiếu nại kèm ít nhất một file minh chứng (`multipart/form-data`). |
+| POST | `/orders/{id}/complaints` | Customer sở hữu đơn đã giao trong 24 giờ | **Đã triển khai.** Gửi một khiếu nại cho đơn bằng `multipart/form-data`, bắt buộc có ảnh JPG/JPEG/PNG tối đa 5 MB. |
+| PUT/PATCH | `/orders/{id}/status` | Customer; Sales/Admin | Cập nhật trạng thái theo state machine; Sales/Admin dùng PUT để cập nhật tiến trình giao hàng. |
 | GET | `/complaints` | Customer | Chỉ xem khiếu nại của chính mình. |
 | GET | `/complaints/{complaint}` | Customer sở hữu khiếu nại | Xem trạng thái xử lý và media minh chứng. |
 
@@ -80,7 +82,9 @@ Khi tạo đơn, kiểm tra giá/trạng thái sản phẩm và tồn khả dụ
 
 | Method | Endpoint | Quyền | Mục đích |
 |---|---|---|---|
-| POST | `/orders/{order}/payments` | Customer sở hữu đơn | Khởi tạo thanh toán cho đơn. |
+| POST | `/payments/create` | Customer sở hữu đơn | **Đã triển khai dạng mô phỏng.** Tạo giao dịch MoMo/VNPay và QR payload cho đơn đang chờ thanh toán. |
+| POST | `/payments/ipn` | Callback mô phỏng | **Đã triển khai dạng mô phỏng.** Kiểm tra mã giao dịch/số tiền, cập nhật `da_thanh_toan` và trừ kho FEFO trong transaction; callback lặp không trừ kho lần nữa. |
+| POST | `/orders/{order}/payments` | Customer sở hữu đơn | Endpoint mục tiêu nếu tích hợp cổng thanh toán thật. |
 | GET | `/orders/{order}/payments` | Customer sở hữu đơn, Sales, Admin | Lịch sử giao dịch được phép xem. |
 | POST | `/subscriptions/{subscription}/payments` | Customer sở hữu gói | Thanh toán trước gói định kỳ. |
 | POST | `/payments/webhooks/{provider}` | Provider, xác thực chữ ký | Nhận callback MoMo/VNPay; không dùng JWT người dùng. |
@@ -165,7 +169,8 @@ Các thao tác duyệt đơn, xuất hủy, hoàn tiền và thay đổi cấu h
 ## Quy tắc nghiệp vụ áp dụng xuyên API
 
 - **FEFO:** chọn lô `con_hang`, tồn `> 0`, chưa hết hạn, sắp xếp `ngay_het_han ASC, ngay_thu_hoach ASC`; khóa dòng và cập nhật tồn trong cùng transaction. Tồn không âm.
-- **Khiếu nại:** Customer chỉ gửi trong 24 giờ từ lúc đơn chuyển `da_giao`; yêu cầu ít nhất một minh chứng. Ảnh JPG/PNG/WEBP tối đa 5 MB; video MP4 tối đa 30 MB. Backend kiểm tra cả phần mở rộng và MIME type.
+- **IPN mô phỏng:** không thay thế xác minh chữ ký MoMo/VNPay. Trước khi phát hành thật, phải xác minh chữ ký callback, merchant/order reference và idempotency theo tài liệu provider.
+- **Khiếu nại:** Endpoint hiện triển khai chỉ nhận một ảnh minh chứng JPG/JPEG/PNG (kiểm tra phần mở rộng và MIME type, tối đa 5 MB), chỉ chủ đơn được gửi và chỉ trong 24 giờ từ `ngay_giao_thuc_te` của đơn `da_giao`. Hỗ trợ WEBP/video và các API xem/xử lý khiếu nại vẫn là mục tiêu chưa triển khai.
 - **QR:** truy xuất công khai; sinh QR sau thu hoạch khi lô có nhật ký canh tác.
 - **Tích hợp ngoài:** payment, tính phí giao hàng và media phải qua interface/service; cung cấp mock service local/test.
-- **Lỗi tồn kho khi duyệt đơn:** trả `409 Conflict`, rollback toàn bộ transaction và không để lại cập nhật một phần.
+- **Lỗi tồn kho:** thao tác giỏ hàng trả `422` nếu yêu cầu vượt tồn khả dụng; duyệt đơn trả `422` với JSON lỗi chuẩn và rollback toàn bộ transaction nếu FEFO không đủ hàng.

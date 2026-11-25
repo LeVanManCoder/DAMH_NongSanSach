@@ -23,7 +23,7 @@ return new class extends Migration
             $table->decimal('tong_tien_hang', 12, 0)->default(0);
             $table->decimal('phi_van_chuyen', 12, 0)->default(0);
             $table->decimal('tong_thanh_toan', 12, 0)->default(0);
-            $table->enum('trang_thai', ['cho_duyet', 'da_xac_nhan', 'dang_giao', 'da_giao', 'da_huy', 'hoan_tien', 'giao_bu'])->default('cho_duyet');
+            $table->enum('trang_thai', ['cho_duyet', 'da_thanh_toan', 'da_xac_nhan', 'dang_giao', 'da_giao', 'da_huy', 'hoan_tien', 'giao_bu'])->default('cho_duyet');
             $table->date('ngay_giao_du_kien')->nullable();
             $table->dateTime('ngay_giao_thuc_te')->nullable();
             $table->unsignedBigInteger('nguoi_duyet_id')->nullable();

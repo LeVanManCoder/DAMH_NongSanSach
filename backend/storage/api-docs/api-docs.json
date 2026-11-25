@@ -910,6 +910,87 @@
                 ]
             }
         },
+        "/api/orders/{id}/complaints": {
+            "post": {
+                "tags": [
+                    "Khiếu nại"
+                ],
+                "summary": "Gửi khiếu nại kèm ảnh minh chứng",
+                "description": "Customer chỉ khiếu nại đơn của mình đã giao trong vòng 24 giờ; mỗi đơn chỉ gửi một khiếu nại.",
+                "operationId": "e120b168643908ded84bc574865c2943",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID đơn hàng.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "ly_do",
+                                    "anh_minh_chung"
+                                ],
+                                "properties": {
+                                    "ly_do": {
+                                        "type": "string",
+                                        "enum": [
+                                            "dap_nat",
+                                            "hu_hong",
+                                            "thieu_hang",
+                                            "sai_san_pham",
+                                            "khac"
+                                        ]
+                                    },
+                                    "mo_ta": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "maxLength": 2000
+                                    },
+                                    "anh_minh_chung": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Khiếu nại và ảnh minh chứng đã được ghi nhận."
+                    },
+                    "401": {
+                        "description": "Thiếu hoặc token không hợp lệ."
+                    },
+                    "403": {
+                        "description": "Chỉ Customer được gửi khiếu nại."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy đơn hàng thuộc tài khoản."
+                    },
+                    "409": {
+                        "description": "Đơn hàng đã có khiếu nại."
+                    },
+                    "422": {
+                        "description": "Đơn chưa giao, quá 24 giờ hoặc tệp minh chứng không hợp lệ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/orders": {
             "get": {
                 "tags": [
@@ -940,7 +1021,7 @@
                     "Đơn hàng"
                 ],
                 "summary": "Tạo đơn hàng từ giỏ hàng",
-                "description": "Customer tạo đơn ở trạng thái chờ duyệt; hệ thống chụp giá và làm trống giỏ hàng.",
+                "description": "Customer tạo đơn ở trạng thái chờ duyệt; backend tự tính phí giao hàng theo địa chỉ, chụp giá và làm trống giỏ hàng.",
                 "operationId": "2123ba58dadb22bd6f2c8081af562230",
                 "requestBody": {
                     "required": true,
@@ -964,10 +1045,6 @@
                                     "dia_chi_giao": {
                                         "type": "string",
                                         "example": "12 Đường Xanh, Đà Lạt"
-                                    },
-                                    "phi_van_chuyen": {
-                                        "type": "integer",
-                                        "example": 20000
                                     },
                                     "ngay_giao_du_kien": {
                                         "type": "string",
@@ -1071,6 +1148,75 @@
             }
         },
         "/api/orders/{id}/status": {
+            "put": {
+                "tags": [
+                    "Đơn hàng"
+                ],
+                "summary": "Cập nhật trạng thái đơn hàng bằng PUT",
+                "description": "Sales/Admin cập nhật tiến trình giao hàng; Customer chỉ được hủy đơn đang chờ duyệt.",
+                "operationId": "2b29ab889c21230523d142cbe158780e",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID đơn hàng.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "trang_thai"
+                                ],
+                                "properties": {
+                                    "trang_thai": {
+                                        "type": "string",
+                                        "example": "da_giao",
+                                        "enum": [
+                                            "da_huy",
+                                            "dang_giao",
+                                            "da_giao",
+                                            "giao_bu"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Trạng thái đơn hàng đã được cập nhật."
+                    },
+                    "401": {
+                        "description": "Thiếu hoặc token không hợp lệ."
+                    },
+                    "403": {
+                        "description": "Vai trò không được phép cập nhật trạng thái."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy đơn hàng."
+                    },
+                    "409": {
+                        "description": "Không thể chuyển trạng thái theo yêu cầu."
+                    },
+                    "422": {
+                        "description": "Trạng thái không hợp lệ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
             "patch": {
                 "tags": [
                     "Đơn hàng"
@@ -1132,6 +1278,263 @@
                     },
                     "422": {
                         "description": "Trạng thái không hợp lệ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/payments/create": {
+            "post": {
+                "tags": [
+                    "Thanh toán"
+                ],
+                "summary": "Tạo giao dịch thanh toán mô phỏng",
+                "description": "Tạo giao dịch MoMo/VNPay giả lập và QR payload cho đơn hàng hiện tại.",
+                "operationId": "26dedad4479cbe8f6d6a694bd352a654",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "order_id",
+                                    "phuong_thuc"
+                                ],
+                                "properties": {
+                                    "order_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "phuong_thuc": {
+                                        "type": "string",
+                                        "example": "momo",
+                                        "enum": [
+                                            "momo",
+                                            "vnpay"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Giao dịch và QR payload đã được tạo."
+                    },
+                    "401": {
+                        "description": "Thiếu hoặc token không hợp lệ."
+                    },
+                    "403": {
+                        "description": "Chỉ chủ đơn hàng được tạo giao dịch."
+                    },
+                    "409": {
+                        "description": "Đơn không còn chờ thanh toán hoặc đã có giao dịch khác."
+                    },
+                    "422": {
+                        "description": "Dữ liệu thanh toán không hợp lệ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/payments/ipn": {
+            "post": {
+                "tags": [
+                    "Thanh toán"
+                ],
+                "summary": "Nhận callback thanh toán mô phỏng",
+                "description": "Callback demo chỉ chấp nhận mã giao dịch tồn tại và khớp số tiền. Khi thành công, cập nhật trạng thái đơn và phân bổ FEFO trong cùng transaction. Production phải xác minh chữ ký của cổng thanh toán.",
+                "operationId": "1ac70b4340a24ce4fa14a6bd0782b1a2",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "ma_giao_dich",
+                                    "so_tien",
+                                    "trang_thai"
+                                ],
+                                "properties": {
+                                    "ma_giao_dich": {
+                                        "type": "string",
+                                        "example": "NL-6B53C05E-5DD2-4A4D-A869-7C4AFB0D1BA0"
+                                    },
+                                    "so_tien": {
+                                        "type": "integer",
+                                        "example": 475000
+                                    },
+                                    "trang_thai": {
+                                        "type": "string",
+                                        "example": "thanh_cong",
+                                        "enum": [
+                                            "thanh_cong",
+                                            "that_bai"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Callback được xử lý; lặp lại callback thành công không trừ kho lần nữa."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy giao dịch."
+                    },
+                    "409": {
+                        "description": "Giao dịch hoặc đơn hàng không thể chuyển trạng thái."
+                    },
+                    "422": {
+                        "description": "Số tiền callback không khớp hoặc dữ liệu không hợp lệ."
+                    }
+                }
+            }
+        },
+        "/api/products": {
+            "get": {
+                "tags": [
+                    "Sản phẩm"
+                ],
+                "summary": "Danh sách sản phẩm đang mở bán",
+                "description": "Chỉ trả sản phẩm đang hoạt động có ít nhất một lô còn hạn và còn tồn kho; kèm thông tin lô và nhật ký canh tác.",
+                "operationId": "d97d1c3727cbac49708b85f7d11f7d58",
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "description": "Tìm theo tên hoặc mô tả sản phẩm.",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "category_id",
+                        "in": "query",
+                        "description": "Lọc theo danh mục.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Số sản phẩm mỗi trang (1-100).",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 20,
+                            "maximum": 100,
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Danh sách sản phẩm đang mở bán, có phân trang."
+                    },
+                    "422": {
+                        "description": "Tham số tìm kiếm không hợp lệ."
+                    }
+                }
+            }
+        },
+        "/api/products/{slug}": {
+            "get": {
+                "tags": [
+                    "Sản phẩm"
+                ],
+                "summary": "Chi tiết sản phẩm theo slug",
+                "description": "Trả thông tin sản phẩm, các lô đang mở bán, mã QR và timeline nhật ký canh tác.",
+                "operationId": "5bbb6d725346d38781b256ed5c715d62",
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "description": "Slug sản phẩm.",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "ca-chua-bi-huu-co"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Chi tiết sản phẩm đang mở bán."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy sản phẩm đang mở bán."
+                    }
+                }
+            }
+        },
+        "/api/shipping/calculate": {
+            "post": {
+                "tags": [
+                    "Giao hàng"
+                ],
+                "summary": "Tính khoảng cách và phí giao hàng",
+                "description": "Phí được tính theo 5.000 đồng/km. Có thể cung cấp địa chỉ giao hoặc khoảng cách đã biết.",
+                "operationId": "3235d48c86c4ac70373de329e0759a8d",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "dia_chi_giao": {
+                                        "type": "string",
+                                        "example": "12 Đường Xanh, Đà Lạt"
+                                    },
+                                    "khoang_cach_km": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 4.5
+                                    },
+                                    "vi_do": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 11.94
+                                    },
+                                    "kinh_do": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 108.45
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Khoảng cách, phương pháp ước tính và phí giao hàng."
+                    },
+                    "401": {
+                        "description": "Thiếu hoặc token không hợp lệ."
+                    },
+                    "403": {
+                        "description": "Chỉ khách hàng được tính phí giao hàng."
+                    },
+                    "422": {
+                        "description": "Cần cung cấp địa chỉ hoặc khoảng cách hợp lệ."
                     }
                 },
                 "security": [
@@ -1236,8 +1639,24 @@
             "description": "Giỏ hàng"
         },
         {
+            "name": "Khiếu nại",
+            "description": "Khiếu nại"
+        },
+        {
             "name": "Đơn hàng",
             "description": "Đơn hàng"
+        },
+        {
+            "name": "Thanh toán",
+            "description": "Thanh toán"
+        },
+        {
+            "name": "Sản phẩm",
+            "description": "Sản phẩm"
+        },
+        {
+            "name": "Giao hàng",
+            "description": "Giao hàng"
         },
         {
             "name": "Truy xuất nguồn gốc",

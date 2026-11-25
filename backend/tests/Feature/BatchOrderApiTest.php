@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Batch;
+use App\Models\CartItem;
+use App\Models\Order;
 use App\Models\OrderDetail;
 use App\Models\Product;
 use App\Models\Season;
@@ -152,7 +154,8 @@ class BatchOrderApiTest extends TestCase
             ])
             ->assertCreated()
             ->assertJsonPath('data.trang_thai', 'cho_duyet')
-            ->assertJsonPath('data.tong_thanh_toan', '450000');
+            ->assertJsonPath('data.phi_van_chuyen', '25000')
+            ->assertJsonPath('data.tong_thanh_toan', '475000');
         $orderId = $order->json('data.id');
 
         $this->withToken($customerToken)->getJson('/api/cart')
@@ -191,16 +194,19 @@ class BatchOrderApiTest extends TestCase
 
     public function test_order_approval_returns_standard_json_and_rolls_back_when_stock_is_insufficient(): void
     {
-        $customerToken = $this->tokenFor('customer');
+        $customer = User::query()
+            ->whereHas('role', fn ($query) => $query->where('ten_vai_tro', 'customer'))
+            ->firstOrFail();
+        $customerToken = app(JwtTokenService::class)->issue($customer);
         $salesToken = $this->tokenFor('sales');
         $product = Product::query()->where('slug', 'ca-chua-huu-co-fefo-test')->firstOrFail();
 
-        $this->withToken($customerToken)
-            ->postJson('/api/cart', [
-                'product_id' => $product->getKey(),
-                'so_luong' => '15.00',
-            ])
-            ->assertCreated();
+        CartItem::query()->create([
+            'user_id' => $customer->getKey(),
+            'product_id' => $product->getKey(),
+            'so_luong' => '15.00',
+        ]);
+
         $orderId = $this->withToken($customerToken)
             ->postJson('/api/orders', [
                 'ten_nguoi_nhan' => 'Trần Văn Bình',
@@ -222,6 +228,36 @@ class BatchOrderApiTest extends TestCase
         $this->assertSame('10.00', Batch::query()->where('ma_lo', 'LO-FEFO-02')->value('so_luong_ton'));
         $this->assertDatabaseHas('orders', ['id' => $orderId, 'trang_thai' => 'cho_duyet']);
         $this->assertDatabaseHas('order_details', ['order_id' => $orderId, 'batch_id' => null]);
+    }
+
+    public function test_sales_can_confirm_delivery_with_put_and_see_customer_names_in_order_list(): void
+    {
+        $customer = User::query()->where('email', 'khachhang@nonganhlanh.local')->firstOrFail();
+        $order = Order::query()->create([
+            'ma_don' => 'TEST-DELIVERY-PUT',
+            'user_id' => $customer->getKey(),
+            'loai_don' => 'le',
+            'ten_nguoi_nhan' => 'Khách hàng mẫu',
+            'sdt_nguoi_nhan' => '0901234567',
+            'dia_chi_giao' => 'Địa chỉ kiểm thử',
+            'tong_tien_hang' => 100000,
+            'phi_van_chuyen' => 0,
+            'tong_thanh_toan' => 100000,
+            'trang_thai' => 'dang_giao',
+        ]);
+        $salesToken = $this->tokenFor('sales');
+
+        $this->withToken($salesToken)
+            ->getJson('/api/orders')
+            ->assertOk()
+            ->assertJsonPath('data.0.user.ho_ten', 'Khách hàng mẫu');
+
+        $this->withToken($salesToken)
+            ->putJson('/api/orders/'.$order->getKey().'/status', ['trang_thai' => 'da_giao'])
+            ->assertOk()
+            ->assertJsonPath('data.trang_thai', 'da_giao');
+
+        $this->assertNotNull($order->refresh()->ngay_giao_thuc_te);
     }
 
     public function test_api_not_found_validation_and_system_errors_use_the_standard_json_shape(): void
