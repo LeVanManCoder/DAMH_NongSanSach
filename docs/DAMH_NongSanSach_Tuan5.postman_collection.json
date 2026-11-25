@@ -34,7 +34,11 @@
               "mode": "raw",
               "raw": "{\n  \"email\": \"khachhang@nonganhlanh.local\",\n  \"password\": \"Password@123\"\n}"
             },
-            "url": "{{base_url}}/auth/login"
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth","login"]
+            }
           },
           "event": [
             {
@@ -60,7 +64,11 @@
               "mode": "raw",
               "raw": "{\n  \"email\": \"nhanvien@nonganhlanh.local\",\n  \"password\": \"Password@123\"\n}"
             },
-            "url": "{{base_url}}/auth/login"
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth","login"]
+            }
           },
           "event": [
             {
@@ -86,7 +94,11 @@
               "mode": "raw",
               "raw": "{\n  \"email\": \"banhang@nonganhlanh.local\",\n  \"password\": \"Password@123\"\n}"
             },
-            "url": "{{base_url}}/auth/login"
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth","login"]
+            }
           },
           "event": [
             {
@@ -117,7 +129,12 @@
               "type": "bearer",
               "bearer": [{ "key": "token", "value": "{{farm_staff_token}}", "type": "string" }]
             },
-            "url": "{{base_url}}/batches?per_page=100"
+            "url": {
+              "raw": "{{base_url}}/batches?per_page=100",
+              "host": ["{{base_url}}"],
+              "path": ["batches"],
+              "query": [{"key":"per_page","value":"100"}]
+            }
           },
           "event": [
             {
@@ -183,7 +200,11 @@
               "type": "bearer",
               "bearer": [{ "key": "token", "value": "{{farm_staff_token}}", "type": "string" }]
             },
-            "url": "{{base_url}}/batches"
+            "url": {
+              "raw": "{{base_url}}/batches",
+              "host": ["{{base_url}}"],
+              "path": ["batches"]
+            }
           }
         },
         {
@@ -199,7 +220,11 @@
               "type": "bearer",
               "bearer": [{ "key": "token", "value": "{{farm_staff_token}}", "type": "string" }]
             },
-            "url": "{{base_url}}/batches/{{test_batch_id}}"
+            "url": {
+              "raw": "{{base_url}}/batches/{{test_batch_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["batches","{{test_batch_id}}"]
+            }
           },
           "event": [
             {
@@ -223,7 +248,11 @@
               "type": "bearer",
               "bearer": [{ "key": "token", "value": "{{farm_staff_token}}", "type": "string" }]
             },
-            "url": "{{base_url}}/batches/{{fefo_lot_1_id}}/generate-qr"
+            "url": {
+              "raw": "{{base_url}}/batches/{{fefo_lot_1_id}}/generate-qr",
+              "host": ["{{base_url}}"],
+              "path": ["batches","{{fefo_lot_1_id}}","generate-qr"]
+            }
           },
           "event": [
             {
@@ -253,7 +282,11 @@
               "type": "bearer",
               "bearer": [{ "key": "token", "value": "{{farm_staff_token}}", "type": "string" }]
             },
-            "url": "{{base_url}}/batches/{{test_batch_id}}/waste"
+            "url": {
+              "raw": "{{base_url}}/batches/{{test_batch_id}}/waste",
+              "host": ["{{base_url}}"],
+              "path": ["batches","{{test_batch_id}}","waste"]
+            }
           },
           "event": [
             {
@@ -273,7 +306,11 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{base_url}}/trace/{{qr_code}}"
+            "url": {
+              "raw": "{{base_url}}/trace/{{qr_code}}",
+              "host": ["{{base_url}}"],
+              "path": ["trace","{{qr_code}}"]
+            }
           },
           "event": [
             {
@@ -301,7 +338,11 @@
               "type": "bearer",
               "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }]
             },
-            "url": "{{base_url}}/batches"
+            "url": {
+              "raw": "{{base_url}}/batches",
+              "host": ["{{base_url}}"],
+              "path": ["batches"]
+            }
           },
           "event": [
             {
@@ -334,7 +375,11 @@
               "type": "bearer",
               "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }]
             },
-            "url": "{{base_url}}/cart"
+            "url": {
+              "raw": "{{base_url}}/cart",
+              "host": ["{{base_url}}"],
+              "path": ["cart"]
+            }
           },
           "event": [
             {
@@ -361,7 +406,11 @@
               "type": "bearer",
               "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }]
             },
-            "url": "{{base_url}}/orders"
+            "url": {
+              "raw": "{{base_url}}/orders",
+              "host": ["{{base_url}}"],
+              "path": ["orders"]
+            }
           },
           "event": [
             {
@@ -387,7 +436,11 @@
               "type": "bearer",
               "bearer": [{ "key": "token", "value": "{{sales_token}}", "type": "string" }]
             },
-            "url": "{{base_url}}/orders/{{order_id}}/approve"
+            "url": {
+              "raw": "{{base_url}}/orders/{{order_id}}/approve",
+              "host": ["{{base_url}}"],
+              "path": ["orders","{{order_id}}","approve"]
+            }
           },
           "event": [
             {
@@ -425,7 +478,11 @@
               "type": "bearer",
               "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }]
             },
-            "url": "{{base_url}}/cart"
+            "url": {
+              "raw": "{{base_url}}/cart",
+              "host": ["{{base_url}}"],
+              "path": ["cart"]
+            }
           },
           "event": [
             {
@@ -452,7 +509,11 @@
               "type": "bearer",
               "bearer": [{ "key": "token", "value": "{{customer_token}}", "type": "string" }]
             },
-            "url": "{{base_url}}/orders"
+            "url": {
+              "raw": "{{base_url}}/orders",
+              "host": ["{{base_url}}"],
+              "path": ["orders"]
+            }
           },
           "event": [
             {
@@ -478,7 +539,11 @@
               "type": "bearer",
               "bearer": [{ "key": "token", "value": "{{sales_token}}", "type": "string" }]
             },
-            "url": "{{base_url}}/orders/{{low_stock_order_id}}/approve"
+            "url": {
+              "raw": "{{base_url}}/orders/{{low_stock_order_id}}/approve",
+              "host": ["{{base_url}}"],
+              "path": ["orders","{{low_stock_order_id}}","approve"]
+            }
           },
           "event": [
             {
