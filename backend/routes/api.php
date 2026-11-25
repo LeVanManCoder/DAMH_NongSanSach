@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BatchController;
+use App\Http\Controllers\Api\CartController;
+use App\Http\Controllers\Api\OrderController;
 use App\Models\Address;
 use App\Models\AuditLog;
 use App\Models\Batch;
@@ -70,4 +72,20 @@ Route::middleware('auth.jwt')->group(function (): void {
         Route::post('/{id}/generate-qr', [BatchController::class, 'generateQr']);
         Route::post('/{id}/waste', [BatchController::class, 'waste']);
     });
+
+    Route::middleware('role:customer')->group(function (): void {
+        Route::get('/cart', [CartController::class, 'index']);
+        Route::post('/cart', [CartController::class, 'store']);
+        Route::put('/cart/{itemId}', [CartController::class, 'update']);
+        Route::patch('/cart/{itemId}', [CartController::class, 'update']);
+        Route::delete('/cart/{itemId}', [CartController::class, 'destroy']);
+        Route::post('/orders', [OrderController::class, 'store']);
+    });
+
+    Route::middleware('role:customer,sales,admin')->group(function (): void {
+        Route::get('/orders', [OrderController::class, 'index']);
+        Route::patch('/orders/{id}/status', [OrderController::class, 'updateStatus']);
+    });
+
+    Route::middleware('role:sales')->patch('/orders/{id}/approve', [OrderController::class, 'approve']);
 });
