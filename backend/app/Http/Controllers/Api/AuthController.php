@@ -45,7 +45,10 @@ class AuthController extends Controller
         $user = User::query()->where('email', $validated['email'])->first();
 
         if ($user === null || ! $user->is_active) {
-            return response()->json(['message' => 'Thông tin đăng nhập không chính xác.'], 401);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Thông tin đăng nhập không chính xác.',
+            ], 401);
         }
 
         if ($user->khoa_den !== null && $user->khoa_den->isFuture()) {
@@ -96,7 +99,10 @@ class AuthController extends Controller
         });
 
         if ($token === '') {
-            return response()->json(['message' => 'Tài khoản đang bị khóa hoặc đã bị vô hiệu hóa.'], 429);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Tài khoản đang bị khóa hoặc đã bị vô hiệu hóa.',
+            ], 429);
         }
 
         return response()->json([
@@ -136,6 +142,7 @@ class AuthController extends Controller
         $retryAfter = max(1, now()->diffInSeconds($lockUntil, false));
 
         return response()->json([
+            'status' => 'error',
             'message' => 'Tài khoản tạm khóa do đăng nhập sai quá nhiều lần.',
             'retry_after' => $retryAfter,
         ], 429)->header('Retry-After', (string) $retryAfter);

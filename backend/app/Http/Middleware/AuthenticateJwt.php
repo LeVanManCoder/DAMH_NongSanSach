@@ -18,7 +18,10 @@ class AuthenticateJwt
         $user = $token ? $this->tokens->authenticate($token) : null;
 
         if ($user === null) {
-            return response()->json(['message' => 'Chưa xác thực hoặc token không hợp lệ.'], 401);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Chưa xác thực hoặc token không hợp lệ.',
+            ], 401);
         }
 
         $request->setUserResolver(fn () => $user);
