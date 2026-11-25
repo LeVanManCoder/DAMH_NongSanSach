@@ -1,6 +1,41 @@
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import authApi from '../api/authApi.js'
+import useAuth from '../contexts/useAuth.js'
+
+const roleLabels = {
+  customer: 'Khách hàng',
+  farm_staff: 'Nhân viên nông trại',
+  sales: 'Nhân viên bán hàng',
+  admin: 'Quản trị viên',
+}
 
 function Header() {
+  const { user, clearSession } = useAuth()
+  const navigate = useNavigate()
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+  async function handleLogout() {
+    setIsLoggingOut(true)
+    let notice = ''
+
+    try {
+      await authApi.logout()
+    } catch (error) {
+      if (error.response?.status !== 401) {
+        notice =
+          'Đã xóa phiên đăng nhập trên thiết bị nhưng chưa xác nhận được đăng xuất với máy chủ.'
+      }
+    } finally {
+      clearSession()
+      navigate('/login', {
+        replace: true,
+        state: notice ? { notice } : undefined,
+      })
+      setIsLoggingOut(false)
+    }
+  }
+
   return (
     <header className="border-b border-green-100 bg-white">
       <nav
@@ -17,6 +52,25 @@ function Header() {
           <Link className="hover:text-green-800" to="/staff">
             Khu vực nhân viên
           </Link>
+          {user ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-slate-600">
+                {user.ho_ten} · {roleLabels[user.role] ?? user.role}
+              </span>
+              <button
+                type="button"
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="font-semibold text-green-800 hover:underline disabled:opacity-60"
+              >
+                {isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}
+              </button>
+            </div>
+          ) : (
+            <Link className="font-semibold text-green-800 hover:underline" to="/login">
+              Đăng nhập
+            </Link>
+          )}
         </div>
       </nav>
     </header>

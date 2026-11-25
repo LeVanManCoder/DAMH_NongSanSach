@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
-import axiosClient from '../../api/axiosClient.js'
 import cartApi from '../../api/cartApi.js'
 import productApi from '../../api/productApi.js'
 import Button from '../../components/Button.jsx'
@@ -102,8 +101,10 @@ function ProductDetail() {
   }
 
   const traceUrl = (qrCode) => {
-    const apiBaseUrl = (axiosClient.defaults.baseURL ?? '').replace(/\/+$/, '')
-    return `${apiBaseUrl}/trace/${encodeURIComponent(qrCode)}`
+    const frontendBaseUrl = (
+      import.meta.env.VITE_APP_URL || window.location.origin
+    ).replace(/\/+$/, '')
+    return `${frontendBaseUrl}/trace/${encodeURIComponent(qrCode)}`
   }
 
   if (isLoading) {

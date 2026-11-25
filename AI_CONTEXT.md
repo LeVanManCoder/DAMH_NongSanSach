@@ -87,3 +87,11 @@ Những mục dưới đây là trạng thái mới hơn snapshot lịch sử �
 - Kiểm tra: `php artisan test` đạt 19 tests / 179 assertions; `npm run build` và `npm run lint` đạt; Pint đạt trên các file PHP đã thay đổi. Lệnh Pint toàn dự án còn báo một số file migration và `config/cors.php` cũ, không thuộc thay đổi này.
 - Chưa triển khai: giao diện đăng nhập/khôi phục phiên, trang giỏ hàng và checkout, tính phí giao hàng động, thanh toán/IPN, khiếu nại kèm ảnh/video, cùng các màn hình/luồng vai trò khác nêu trong roadmap.
 - Không chạy `migrate:fresh`, không tạo commit và không push trong cập nhật này.
+
+## Cập nhật sau triển khai Ưu tiên 2 — Đăng nhập, phiên JWT & truy xuất QR (chưa commit)
+
+- Frontend có `AuthProvider`/`useAuth` quản lý phiên và trang `/login` gọi `POST /api/auth/login`; lưu `access_token` cùng user/role vào `localStorage`. Header hiển thị tên, nhãn vai trò và gọi `POST /api/auth/logout` khi đăng xuất.
+- Axios tự gắn Bearer token. Khi một request dùng JWT hiện tại bị `401` (ngoại trừ request đăng nhập), token và user cũ được xóa, sau đó hiển thị popup tiếng Việt có nút chuyển tới `/login`. Không có refresh-token endpoint; người dùng đăng nhập lại để tạo phiên mới.
+- Có trang công khai `/trace/:qrCode` gọi `GET /api/trace/{qrCode}`, trình bày sản phẩm, mã lô, mùa vụ/vùng trồng, ngày thu hoạch/hết hạn và timeline nhật ký canh tác. QR trong trang chi tiết sản phẩm hiện dẫn tới URL Frontend này; `VITE_APP_URL` được thêm vào `frontend/.env.example` để cấu hình domain dùng khi phát hành.
+- Kiểm tra: `npm run build` và `npm run lint` đều đạt. Không có thay đổi backend/database; không chạy migration, không tạo commit và không push.
+- Lưu ý bảo mật: JWT hiện lưu trong `localStorage`; cần tiếp tục đánh giá phương án cookie HttpOnly/SameSite nếu threat model hoặc yêu cầu triển khai production đòi hỏi giảm rủi ro XSS.
