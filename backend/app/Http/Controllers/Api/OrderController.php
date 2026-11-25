@@ -14,10 +14,24 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use OpenApi\Annotations as OA;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class OrderController extends Controller
 {
+    /**
+     * @OA\Get(
+     *     path="/api/orders",
+     *     tags={"Đơn hàng"},
+     *     summary="Danh sách đơn hàng",
+     *     description="Khách hàng chỉ xem đơn của mình; Sales và Admin xem toàn bộ đơn hàng.",
+     *     security={{"bearerAuth":{}}},
+     *
+     *     @OA\Response(response=200, description="Danh sách đơn hàng phân trang, kèm chi tiết sản phẩm và lô."),
+     *     @OA\Response(response=401, description="Thiếu hoặc token không hợp lệ."),
+     *     @OA\Response(response=403, description="Vai trò không được phép xem đơn hàng.")
+     * )
+     */
     public function index(Request $request): JsonResponse
     {
         $query = Order::query()->with(['details.product', 'details.batch']);
@@ -29,6 +43,35 @@ class OrderController extends Controller
         return response()->json($query->latest('ngay_tao')->paginate(20));
     }
 
+    /**
+     * @OA\Post(
+     *     path="/api/orders",
+     *     tags={"Đơn hàng"},
+     *     summary="Tạo đơn hàng từ giỏ hàng",
+     *     description="Customer tạo đơn ở trạng thái chờ duyệt; hệ thống chụp giá và làm trống giỏ hàng.",
+     *     security={{"bearerAuth":{}}},
+     *
+     *     @OA\RequestBody(
+     *         required=true,
+     *
+     *         @OA\JsonContent(
+     *             required={"ten_nguoi_nhan","sdt_nguoi_nhan","dia_chi_giao"},
+     *
+     *             @OA\Property(property="ten_nguoi_nhan", type="string", example="Nguyễn Thị An"),
+     *             @OA\Property(property="sdt_nguoi_nhan", type="string", example="0901234567"),
+     *             @OA\Property(property="dia_chi_giao", type="string", example="12 Đường Xanh, Đà Lạt"),
+     *             @OA\Property(property="phi_van_chuyen", type="integer", example=20000),
+     *             @OA\Property(property="ngay_giao_du_kien", type="string", format="date", nullable=true, example="2026-11-28"),
+     *             @OA\Property(property="ghi_chu", type="string", nullable=true, example="Giao giờ hành chính")
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=201, description="Đơn hàng đã được tạo và đang chờ duyệt."),
+     *     @OA\Response(response=401, description="Thiếu hoặc token không hợp lệ."),
+     *     @OA\Response(response=403, description="Chỉ khách hàng được tạo đơn."),
+     *     @OA\Response(response=422, description="Giỏ hàng trống hoặc dữ liệu giao hàng không hợp lệ.")
+     * )
+     */
     public function store(StoreOrderRequest $request): JsonResponse
     {
         $order = DB::transaction(function () use ($request): Order {
@@ -94,6 +137,33 @@ class OrderController extends Controller
         return response()->json(['data' => $order], 201);
     }
 
+    /**
+     * @OA\Patch(
+     *     path="/api/orders/{id}/approve",
+     *     tags={"Đơn hàng"},
+     *     summary="Duyệt đơn và phân bổ tồn kho theo FEFO",
+     *     description="Chỉ Sales được duyệt đơn. Hệ thống trừ hàng từ các lô còn hạn theo ngày hết hạn gần nhất và lưu chi tiết phân bổ.",
+     *     security={{"bearerAuth":{}}},
+     *
+     *     @OA\Parameter(name="id", in="path", required=true, description="ID đơn hàng.", @OA\Schema(type="integer")),
+     *
+     *     @OA\Response(response=200, description="Đơn được duyệt và hàng đã được phân bổ theo FEFO."),
+     *     @OA\Response(response=401, description="Thiếu hoặc token không hợp lệ."),
+     *     @OA\Response(response=403, description="Chỉ Sales được duyệt đơn."),
+     *     @OA\Response(response=404, description="Không tìm thấy đơn hàng."),
+     *     @OA\Response(response=409, description="Đơn hàng không ở trạng thái chờ duyệt."),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Tồn kho khả dụng không đủ; giao dịch được rollback.",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="status", type="string", example="error"),
+     *             @OA\Property(property="message", type="string", example="Số lượng tồn kho không đủ")
+     *         )
+     *     )
+     * )
+     */
     public function approve(Request $request, int $id, FefoService $fefo): JsonResponse
     {
         $order = DB::transaction(function () use ($request, $id, $fefo): Order {
@@ -146,6 +216,34 @@ class OrderController extends Controller
         return response()->json(['data' => $order]);
     }
 
+    /**
+     * @OA\Patch(
+     *     path="/api/orders/{id}/status",
+     *     tags={"Đơn hàng"},
+     *     summary="Cập nhật trạng thái đơn hàng",
+     *     description="Customer chỉ được hủy đơn đang chờ duyệt; Sales/Admin cập nhật các bước giao hàng hợp lệ.",
+     *     security={{"bearerAuth":{}}},
+     *
+     *     @OA\Parameter(name="id", in="path", required=true, description="ID đơn hàng.", @OA\Schema(type="integer")),
+     *
+     *     @OA\RequestBody(
+     *         required=true,
+     *
+     *         @OA\JsonContent(
+     *             required={"trang_thai"},
+     *
+     *             @OA\Property(property="trang_thai", type="string", enum={"da_huy","dang_giao","da_giao","giao_bu"}, example="dang_giao")
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=200, description="Trạng thái đơn hàng đã được cập nhật."),
+     *     @OA\Response(response=401, description="Thiếu hoặc token không hợp lệ."),
+     *     @OA\Response(response=403, description="Vai trò không được phép cập nhật trạng thái."),
+     *     @OA\Response(response=404, description="Không tìm thấy đơn hàng."),
+     *     @OA\Response(response=409, description="Không thể chuyển trạng thái theo yêu cầu."),
+     *     @OA\Response(response=422, description="Trạng thái không hợp lệ.")
+     * )
+     */
     public function updateStatus(UpdateOrderStatusRequest $request, int $id): JsonResponse
     {
         $order = DB::transaction(function () use ($request, $id): Order {

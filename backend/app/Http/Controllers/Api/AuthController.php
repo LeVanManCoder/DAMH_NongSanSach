@@ -12,9 +12,44 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
+use OpenApi\Annotations as OA;
 
 class AuthController extends Controller
 {
+    /**
+     * @OA\Post(
+     *     path="/api/auth/register",
+     *     tags={"Xác thực"},
+     *     summary="Đăng ký tài khoản khách hàng",
+     *     description="Tạo tài khoản mới với vai trò customer.",
+     *
+     *     @OA\RequestBody(
+     *         required=true,
+     *
+     *         @OA\JsonContent(
+     *             required={"ho_ten","email","password"},
+     *
+     *             @OA\Property(property="ho_ten", type="string", maxLength=100, example="Nguyễn Thị An"),
+     *             @OA\Property(property="email", type="string", format="email", example="an@example.com"),
+     *             @OA\Property(property="so_dien_thoai", type="string", nullable=true, example="0901234567"),
+     *             @OA\Property(property="password", type="string", format="password", minLength=8, example="Password@123")
+     *         )
+     *     ),
+     *
+     *     @OA\Response(
+     *         response=201,
+     *         description="Tạo tài khoản thành công.",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="message", type="string", example="Tạo tài khoản thành công."),
+     *             @OA\Property(property="data", type="object")
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=422, description="Dữ liệu đăng ký không hợp lệ.")
+     * )
+     */
     public function register(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -35,6 +70,41 @@ class AuthController extends Controller
         ], 201);
     }
 
+    /**
+     * @OA\Post(
+     *     path="/api/auth/login",
+     *     tags={"Xác thực"},
+     *     summary="Đăng nhập và nhận JWT",
+     *     description="Đăng nhập bằng email và mật khẩu. Tài khoản bị tạm khóa 15 phút sau 5 lần nhập sai liên tiếp.",
+     *
+     *     @OA\RequestBody(
+     *         required=true,
+     *
+     *         @OA\JsonContent(
+     *             required={"email","password"},
+     *
+     *             @OA\Property(property="email", type="string", format="email", example="khachhang@nonganhlanh.local"),
+     *             @OA\Property(property="password", type="string", format="password", example="Password@123")
+     *         )
+     *     ),
+     *
+     *     @OA\Response(
+     *         response=200,
+     *         description="Đăng nhập thành công.",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="token_type", type="string", example="Bearer"),
+     *             @OA\Property(property="access_token", type="string"),
+     *             @OA\Property(property="expires_in", type="integer", example=3600),
+     *             @OA\Property(property="user", type="object")
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=401, description="Thông tin đăng nhập không chính xác."),
+     *     @OA\Response(response=422, description="Thiếu hoặc sai định dạng thông tin đăng nhập.")
+     * )
+     */
     public function login(Request $request, JwtTokenService $tokens): JsonResponse
     {
         $validated = $request->validate([
@@ -113,6 +183,27 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * @OA\Post(
+     *     path="/api/auth/logout",
+     *     tags={"Xác thực"},
+     *     summary="Đăng xuất",
+     *     description="Thu hồi JWT hiện tại.",
+     *     security={{"bearerAuth":{}}},
+     *
+     *     @OA\Response(
+     *         response=200,
+     *         description="Đăng xuất thành công.",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="message", type="string", example="Đăng xuất thành công.")
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=401, description="Thiếu hoặc token không hợp lệ.")
+     * )
+     */
     public function logout(Request $request, JwtTokenService $tokens): JsonResponse
     {
         $tokens->revoke((string) $request->bearerToken());
@@ -120,6 +211,26 @@ class AuthController extends Controller
         return response()->json(['message' => 'Đăng xuất thành công.']);
     }
 
+    /**
+     * @OA\Get(
+     *     path="/api/auth/me",
+     *     tags={"Xác thực"},
+     *     summary="Lấy thông tin tài khoản hiện tại",
+     *     security={{"bearerAuth":{}}},
+     *
+     *     @OA\Response(
+     *         response=200,
+     *         description="Thông tin tài khoản và vai trò hiện tại.",
+     *
+     *         @OA\JsonContent(
+     *
+     *             @OA\Property(property="data", type="object")
+     *         )
+     *     ),
+     *
+     *     @OA\Response(response=401, description="Thiếu hoặc token không hợp lệ.")
+     * )
+     */
     public function me(Request $request): JsonResponse
     {
         return response()->json(['data' => $this->userData($request->user()->load('role'))]);

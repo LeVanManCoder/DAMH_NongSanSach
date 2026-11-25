@@ -4,9 +4,9 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BatchController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\TraceController;
 use App\Models\Address;
 use App\Models\AuditLog;
-use App\Models\Batch;
 use App\Models\Order;
 use App\Models\Season;
 use Illuminate\Http\Request;
@@ -16,32 +16,7 @@ Route::get('/ping', function () {
     return response()->json(['status' => 'ok']);
 });
 
-Route::get('/trace/{qrCode}', function (string $qrCode) {
-    $batch = Batch::query()
-        ->where('qr_code', $qrCode)
-        ->with([
-            'product:id,ten_san_pham,slug,don_vi_tinh',
-            'season:id,ten_mua_vu,khu_vuc_canh_tac',
-            'farmingLogs' => fn ($query) => $query->orderBy('thoi_gian'),
-        ])
-        ->firstOrFail();
-
-    return response()->json([
-        'data' => [
-            'ma_lo' => $batch->ma_lo,
-            'ngay_thu_hoach' => $batch->ngay_thu_hoach?->toDateString(),
-            'ngay_het_han' => $batch->ngay_het_han?->toDateString(),
-            'product' => $batch->product,
-            'season' => $batch->season,
-            'farming_logs' => $batch->farmingLogs->map(fn ($log) => [
-                'hanh_dong' => $log->hanh_dong,
-                'ghi_chu' => $log->ghi_chu,
-                'hinh_anh_minh_chung' => $log->hinh_anh_minh_chung,
-                'thoi_gian' => $log->thoi_gian,
-            ])->values(),
-        ],
-    ]);
-});
+Route::get('/trace/{qrCode}', [TraceController::class, 'show']);
 
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
