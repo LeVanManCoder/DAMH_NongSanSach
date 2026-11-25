@@ -14,7 +14,10 @@ class CheckRole
         $role = $request->user()?->role?->ten_vai_tro;
 
         if ($role === null || ! in_array($role, $roles, true)) {
-            return response()->json(['message' => 'Bạn không có quyền thực hiện thao tác này.'], 403);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Bạn không có quyền thực hiện thao tác này.',
+            ], 403);
         }
 
         return $next($request);
