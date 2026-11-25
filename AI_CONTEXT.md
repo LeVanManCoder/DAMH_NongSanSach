@@ -39,3 +39,39 @@ Mọi API yêu cầu xác thực bằng **JWT** (thiếu/sai trả `401`, sai va
 - Tuyệt đối không tự động chạy `git commit` hoặc `git push`. Chỉ thực hiện khi người dùng yêu cầu rõ ràng.
 - Tuyệt đối không chèn dòng `Co-authored-by:` hoặc bất kỳ dấu vết đồng tác giả AI nào vào commit message.
 - Mọi commit message phải viết bằng tiếng Việt có dấu, ngắn gọn và theo chuẩn Conventional Commits với các type được phép: `feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `chore:`.
+
+## 5. Trạng thái dự án đã xác minh (2026-11-25)
+
+Snapshot kiểm tra trên nhánh `develop`, tại commit `91ede1d` (trước cập nhật trạng thái này). Đây là tình trạng mã nguồn hiện tại, không phải xác nhận đã đáp ứng toàn bộ rubric Tuần 6.
+
+### Đã có và đã kiểm tra
+
+- Backend Laravel có 28 migration files; 24 migration nghiệp vụ tạo 24 bảng theo thiết kế. `php artisan migrate:status` báo tất cả migration đã chạy trên database cấu hình hiện tại. Có 24 Eloquent Models.
+- JWT HS256, thời hạn 3.600 giây, lưu hash token để thu hồi; đăng nhập, đăng ký Customer, đăng xuất, `/auth/me`, khóa đăng nhập 15 phút sau 5 lần sai và middleware RBAC `401`/`403`.
+- Global JSON error handling; API giỏ hàng và đơn hàng; quản lý lô (xem/tạo/sửa/xóa có điều kiện), ghi nhận hao hụt; QR truy xuất công khai; duyệt đơn Sales gọi FEFO trong transaction.
+- Swagger UI/OpenAPI và Postman Collection v2.1 đã được thêm. Route Swagger là `/api/documentation`.
+- Backend test: `php artisan test` đạt 16 tests / 155 assertions. PHPUnit dùng SQLite `:memory:`; kết quả này không thay thế kiểm thử tích hợp trên MySQL/MariaDB.
+- Frontend React/Vite/Tailwind build thành công và `npm run lint` đạt; cấu hình Axios có `VITE_API_BASE_URL`.
+- Route API hiện có 27 route first-party (bao gồm health check, alias `/user` và các route hỗ trợ). Các nhóm nghiệp vụ chính đã triển khai là auth, batches/QR/waste, cart, orders và trace.
+
+### Chưa triển khai hoặc chưa nối hoàn chỉnh
+
+- Frontend vẫn là khung: `ProductDetail.jsx` và `BatchWasteDashboard.jsx` là placeholder; chưa có màn hình đăng nhập, danh sách sản phẩm chạy dữ liệu thật, giỏ hàng, checkout, đơn hàng, thanh toán, khiếu nại hay quản trị. Các `productApi.js`/`batchApi.js` chưa được component sử dụng.
+- Chưa có API `/products` hoặc `/products/{id}` dù `productApi.js` gọi hai đường dẫn này. `batchApi.getWasteDashboard()` gọi `GET /batches/waste`, route này không tồn tại; backend hiện có danh sách `GET /batches` và ghi hao hụt `POST /batches/{id}/waste`.
+- Backend từ chối JWT hết hạn bằng `401`, nhưng chưa có refresh-token endpoint; frontend chưa lưu/đính kèm token, interceptor xử lý `401` hoặc luồng đăng nhập lại.
+- Chưa có tính phí giao hàng động/quote: `OrderController` nhận phí tùy chọn từ payload và mặc định `phi_van_chuyen = 0`.
+- Chưa có payment controller/provider, callback/webhook IPN, xác thực chữ ký, idempotency hoặc refund flow. Bảng/model `payments` chỉ là nền dữ liệu.
+- Chưa có API/kênh upload và xử lý khiếu nại/media; bảng và model complaint hiện chỉ là nền dữ liệu.
+- Subscription, delivery scheduling, reviews, product/category CRUD, phần lớn address CRUD, farming-log CRUD/harvest, notification và admin reporting chưa có API nghiệp vụ tương ứng; hiện có schema/model hoặc một số route đọc mẫu.
+- `docs/api-contract.md` là hợp đồng mục tiêu và có ghi chú trạng thái triển khai đã cũ. Tên route cart/order trong tài liệu khác route đang chạy; tài liệu quy định thiếu tồn `409` trong khi code/test hiện trả `422`. Ví dụ JSON lỗi tài liệu chưa có `status: "error"` như response thực tế.
+- Trong repository không tìm thấy lịch/rubric nghiệm thu Tuần 6; cần đối chiếu với đề cương chính thức của môn trước khi kết luận đạt/chưa đạt theo tuần.
+
+### Ưu tiên cho phiên triển khai kế tiếp
+
+1. **Nối luồng sản phẩm:** tạo Product/Category API và test; sửa `backend/routes/api.php`, bổ sung controller/request, nối `frontend/src/pages/customer/ProductDetail.jsx` với `frontend/src/api/productApi.js`; bỏ hoặc triển khai đúng `GET /batches/waste` trong `frontend/src/api/batchApi.js`.
+2. **Hoàn thiện đăng nhập và hết hạn phiên:** thêm trang/route đăng nhập, auth state và lưu token theo quyết định bảo mật; cập nhật `frontend/src/api/axiosClient.js` để gắn Bearer token và xử lý `401` (xóa phiên, thông báo và yêu cầu đăng nhập lại). Chỉ thêm refresh token nếu đặc tả chính thức yêu cầu.
+3. **Triển khai báo phí giao hàng:** thêm endpoint quote, interface/provider cùng mock local/test; checkout chỉ gửi địa chỉ/quote hợp lệ, backend tự tính và xác nhận phí trong `backend/app/Http/Controllers/Api/OrderController.php`.
+4. **Thanh toán:** thêm payment service/provider, endpoint khởi tạo và webhook/IPN có xác thực chữ ký, idempotency, chuyển trạng thái và test giả lập; không tin trạng thái thanh toán do client gửi.
+5. **Khiếu nại có minh chứng:** thêm API/Form Request/policy, kiểm tra MIME + phần mở rộng + giới hạn dung lượng, lưu trữ an toàn, hạn 24 giờ; bổ sung form frontend và feature tests.
+6. **Subscription và các màn hình theo vai trò:** scheduler sinh lịch/đơn định kỳ, review, CRUD cần thiết cho Farm Staff/Sales/Admin; ưu tiên theo rubric Tuần 6 sau khi xác nhận đề cương.
+7. **Đồng bộ tài liệu:** cập nhật `docs/api-contract.md` theo route, role, mã lỗi và payload thực tế sau từng nhóm API; bổ sung frontend/API integration tests thay vì chỉ dựa vào build.
