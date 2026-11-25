@@ -301,7 +301,6 @@
                         "application/json": {
                             "schema": {
                                 "required": [
-                                    "ma_lo",
                                     "product_id",
                                     "so_luong_nhap"
                                 ],
@@ -910,6 +909,20 @@
                 ]
             }
         },
+        "/api/categories": {
+            "get": {
+                "tags": [
+                    "Danh mục"
+                ],
+                "summary": "Danh sách danh mục sản phẩm đang hoạt động",
+                "operationId": "ac9c4d978ea4e5b72915ca9728e5b8b1",
+                "responses": {
+                    "200": {
+                        "description": "Danh sách danh mục."
+                    }
+                }
+            }
+        },
         "/api/orders/{id}/complaints": {
             "post": {
                 "tags": [
@@ -982,6 +995,85 @@
                     },
                     "422": {
                         "description": "Đơn chưa giao, quá 24 giờ hoặc tệp minh chứng không hợp lệ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/batches/{id}/farming-logs": {
+            "post": {
+                "tags": [
+                    "Nhật ký canh tác"
+                ],
+                "summary": "Ghi nhật ký canh tác cho một lô hàng",
+                "description": "Farm Staff tạo nhật ký; khi lô đã có ngày thu hoạch, QR được sinh tự động sau nhật ký đầu tiên.",
+                "operationId": "311b299fca09223b244d070a5b822ce8",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "hanh_dong",
+                                    "ghi_chu",
+                                    "thoi_gian"
+                                ],
+                                "properties": {
+                                    "hanh_dong": {
+                                        "type": "string",
+                                        "enum": [
+                                            "gieo_hat",
+                                            "bon_phan",
+                                            "tuoi_nuoc",
+                                            "phun_thuoc",
+                                            "cham_soc",
+                                            "thu_hoach",
+                                            "khac"
+                                        ]
+                                    },
+                                    "ghi_chu": {
+                                        "type": "string"
+                                    },
+                                    "thoi_gian": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                    },
+                                    "hinh_anh_minh_chung": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Nhật ký đã được ghi nhận; có thể kèm QR mới."
+                    },
+                    "403": {
+                        "description": "Chỉ Farm Staff được ghi nhật ký."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy lô."
+                    },
+                    "422": {
+                        "description": "Dữ liệu nhật ký không hợp lệ."
                     }
                 },
                 "security": [
@@ -1414,9 +1506,18 @@
                 "operationId": "d97d1c3727cbac49708b85f7d11f7d58",
                 "parameters": [
                     {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Tìm theo tên sản phẩm.",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
                         "name": "q",
                         "in": "query",
-                        "description": "Tìm theo tên hoặc mô tả sản phẩm.",
+                        "description": "Từ khóa tương thích ngược, tìm theo tên hoặc mô tả.",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -1441,6 +1542,19 @@
                             "default": 20,
                             "maximum": 100,
                             "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "Thứ tự: name hoặc newest.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "name",
+                                "newest"
+                            ]
                         }
                     }
                 ],
@@ -1482,6 +1596,85 @@
                         "description": "Không tìm thấy sản phẩm đang mở bán."
                     }
                 }
+            }
+        },
+        "/api/seasons": {
+            "get": {
+                "tags": [
+                    "Mùa vụ"
+                ],
+                "summary": "Danh sách mùa vụ",
+                "operationId": "f55b17cd44508137a1e2315a5891ac42",
+                "responses": {
+                    "200": {
+                        "description": "Danh sách mùa vụ cho Farm Staff."
+                    },
+                    "403": {
+                        "description": "Chỉ Farm Staff được xem mùa vụ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Mùa vụ"
+                ],
+                "summary": "Tạo mùa vụ",
+                "operationId": "f15e050263ea25449cfe8e4388aae9fb",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "ten_mua_vu",
+                                    "ngay_bat_dau"
+                                ],
+                                "properties": {
+                                    "ten_mua_vu": {
+                                        "type": "string",
+                                        "maxLength": 120
+                                    },
+                                    "khu_vuc_canh_tac": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "maxLength": 100
+                                    },
+                                    "ngay_bat_dau": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "ngay_ket_thuc_du_kien": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Mùa vụ đã được tạo."
+                    },
+                    "403": {
+                        "description": "Chỉ Farm Staff được tạo mùa vụ."
+                    },
+                    "422": {
+                        "description": "Dữ liệu mùa vụ không hợp lệ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/shipping/calculate": {
@@ -1639,8 +1832,16 @@
             "description": "Giỏ hàng"
         },
         {
+            "name": "Danh mục",
+            "description": "Danh mục"
+        },
+        {
             "name": "Khiếu nại",
             "description": "Khiếu nại"
+        },
+        {
+            "name": "Nhật ký canh tác",
+            "description": "Nhật ký canh tác"
         },
         {
             "name": "Đơn hàng",
@@ -1653,6 +1854,10 @@
         {
             "name": "Sản phẩm",
             "description": "Sản phẩm"
+        },
+        {
+            "name": "Mùa vụ",
+            "description": "Mùa vụ"
         },
         {
             "name": "Giao hàng",

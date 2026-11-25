@@ -119,3 +119,11 @@ Những mục dưới đây là trạng thái mới hơn snapshot lịch sử �
 - Thêm trang `/staff/orders` dưới `StaffLayout`, đọc `GET /api/orders` với danh sách phân trang, tên khách hàng, mã đơn, tổng tiền và trạng thái. Chỉ Sales/Admin thấy liên kết; trang từ chối hiển thị dữ liệu cho vai trò khác.
 - Sales có thể bắt đầu giao với đơn đã thanh toán/đã xác nhận, sau đó xác nhận đã giao với đơn đang giao/đang giao bù. Cập nhật trạng thái dùng `PUT /api/orders/{id}/status`, kèm spinner và toast; PATCH hiện tại vẫn được giữ tương thích.
 - Order API eager-load tên khách hàng cho Sales/Admin; phản hồi Customer vẫn giới hạn đơn của chính họ. Đã kiểm thử route PUT và danh sách có tên khách hàng.
+
+## Cập nhật Giai đoạn hoàn thiện — Trang chủ, tìm kiếm và nghiệp vụ nông trại
+
+- Trang `/` là trang chủ mới với banner, danh mục nổi bật và sản phẩm mới nhất; Header có liên kết riêng tới `/` và `/products`. Trang `/products` hỗ trợ tìm theo tên qua `search`, lọc `category_id`, sắp xếp theo tên/mới nhất; API vẫn giữ `q` tương thích ngược.
+- Backend công khai `GET /api/categories`; Farm Staff có `GET/POST /api/seasons`, `GET /api/farm/products` để chọn sản phẩm kể cả khi chưa có tồn, và `POST /api/batches` tự sinh mã lô nếu client bỏ trống `ma_lo`.
+- Khu vực `/staff/batches` có form tạo lô, gắn sản phẩm/mùa vụ, ngày thu hoạch/hạn dùng/số lượng và form ghi nhật ký theo từng lô. `POST /api/batches/{id}/farming-logs` nhận hành động, ghi chú, thời gian và ảnh tùy chọn; API `/batches` tải kèm nhật ký để cập nhật giao diện.
+- Giữ quy tắc truy xuất: không sinh QR khi lô chưa có ngày thu hoạch hoặc nhật ký. Sau khi lô có ngày thu hoạch, nhật ký đầu tiên tự kích hoạt sinh QR; nhật ký hiển thị qua trang `/trace/:qrCode`.
+- Feature tests bao phủ tìm kiếm/lọc, danh mục, quyền mùa vụ và luồng Farm Staff tạo mùa vụ → lô → nhật ký → QR/truy xuất. Toàn bộ backend đạt 33 tests / 284 assertions; frontend lint/build đạt. Chưa commit/push.

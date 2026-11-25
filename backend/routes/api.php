@@ -3,16 +3,18 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BatchController;
 use App\Http\Controllers\Api\CartController;
+use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\ComplaintController;
+use App\Http\Controllers\Api\FarmingLogController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\SeasonController;
 use App\Http\Controllers\Api\ShippingController;
 use App\Http\Controllers\Api\TraceController;
 use App\Models\Address;
 use App\Models\AuditLog;
 use App\Models\Order;
-use App\Models\Season;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -21,6 +23,7 @@ Route::get('/ping', function () {
 });
 
 Route::get('/trace/{qrCode}', [TraceController::class, 'show']);
+Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{slug}', [ProductController::class, 'show']);
 
@@ -36,7 +39,12 @@ Route::middleware('auth.jwt')->group(function (): void {
         return Address::query()->where('user_id', $request->user()->getKey())->get();
     });
 
-    Route::middleware('role:farm_staff')->get('/farm/seasons', fn () => Season::query()->get());
+    Route::middleware('role:farm_staff')->group(function (): void {
+        Route::get('/farm/products', [ProductController::class, 'farmIndex']);
+        Route::get('/seasons', [SeasonController::class, 'index']);
+        Route::post('/seasons', [SeasonController::class, 'store']);
+        Route::get('/farm/seasons', [SeasonController::class, 'index']);
+    });
 
     Route::middleware('role:sales,admin')->get('/sales/orders', fn () => Order::query()->latest('ngay_tao')->paginate(20));
 
@@ -52,6 +60,7 @@ Route::middleware('auth.jwt')->group(function (): void {
         Route::put('/{id}', [BatchController::class, 'update']);
         Route::delete('/{id}', [BatchController::class, 'destroy']);
         Route::post('/{id}/generate-qr', [BatchController::class, 'generateQr']);
+        Route::post('/{id}/farming-logs', [FarmingLogController::class, 'store']);
         Route::post('/{id}/waste', [BatchController::class, 'waste']);
     });
 

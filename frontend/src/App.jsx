@@ -4,6 +4,7 @@ import BatchWasteDashboard from './pages/staff/BatchWasteDashboard.jsx'
 import StaffOrdersPage from './pages/staff/StaffOrdersPage.jsx'
 import CartPage from './pages/customer/CartPage.jsx'
 import CheckoutPage from './pages/customer/CheckoutPage.jsx'
+import HomePage from './pages/customer/HomePage.jsx'
 import ProductDetail from './pages/customer/ProductDetail.jsx'
 import LoginPage from './pages/customer/LoginPage.jsx'
 import ProductList from './pages/customer/ProductList.jsx'
@@ -20,7 +21,7 @@ function App() {
         <SessionExpiredModal />
         <Routes>
           <Route path="/" element={<MainLayout />}>
-            <Route index element={<ProductList />} />
+            <Route index element={<HomePage />} />
             <Route path="products" element={<ProductList />} />
             <Route path="products/:slug" element={<ProductDetail />} />
             <Route path="login" element={<LoginPage />} />
@@ -31,6 +32,7 @@ function App() {
           </Route>
           <Route path="/staff" element={<StaffLayout />}>
             <Route index element={<BatchWasteDashboard />} />
+            <Route path="batches" element={<BatchWasteDashboard />} />
             <Route path="orders" element={<StaffOrdersPage />} />
             <Route path="batches/waste" element={<BatchWasteDashboard />} />
           </Route>

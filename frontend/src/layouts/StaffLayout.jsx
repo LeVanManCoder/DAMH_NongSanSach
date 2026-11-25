@@ -16,7 +16,7 @@ function StaffLayout() {
               </Link>
             )}
             {user?.role === 'farm_staff' && (
-              <Link className="text-green-100 hover:text-white" to="/staff">
+              <Link className="text-green-100 hover:text-white" to="/staff/batches">
                 Quản lý lô hàng
               </Link>
             )}

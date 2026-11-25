@@ -15,7 +15,7 @@ class StoreBatchRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'ma_lo' => ['required', 'string', 'max:30', 'unique:batches,ma_lo'],
+            'ma_lo' => ['sometimes', 'required', 'string', 'max:30', 'unique:batches,ma_lo'],
             'product_id' => ['required', 'integer', 'exists:products,id'],
             'season_id' => ['nullable', 'integer', 'exists:seasons,id'],
             'ngay_thu_hoach' => ['nullable', 'date'],

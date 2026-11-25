@@ -276,7 +276,7 @@ class BatchOrderApiTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonPath('status', 'error')
             ->assertJsonPath('message', 'Dữ liệu gửi lên không hợp lệ.')
-            ->assertJsonStructure(['errors' => ['ma_lo', 'product_id', 'so_luong_nhap']]);
+            ->assertJsonStructure(['errors' => ['product_id', 'so_luong_nhap']]);
 
         Route::get('/api/__test-system-error', function (): void {
             throw new \RuntimeException('Không được tiết lộ chi tiết lỗi nội bộ.');

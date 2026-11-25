@@ -13,6 +13,16 @@ use OpenApi\Annotations as OA;
 
 class ProductController extends Controller
 {
+    public function farmIndex(): JsonResponse
+    {
+        $products = Product::query()
+            ->where('is_active', true)
+            ->orderBy('ten_san_pham')
+            ->get(['id', 'ten_san_pham', 'don_vi_tinh']);
+
+        return response()->json(['data' => $products]);
+    }
+
     /**
      * @OA\Get(
      *     path="/api/products",
@@ -20,9 +30,11 @@ class ProductController extends Controller
      *     summary="Danh sách sản phẩm đang mở bán",
      *     description="Chỉ trả sản phẩm đang hoạt động có ít nhất một lô còn hạn và còn tồn kho; kèm thông tin lô và nhật ký canh tác.",
      *
-     *     @OA\Parameter(name="q", in="query", required=false, description="Tìm theo tên hoặc mô tả sản phẩm.", @OA\Schema(type="string")),
+     *     @OA\Parameter(name="search", in="query", required=false, description="Tìm theo tên sản phẩm.", @OA\Schema(type="string")),
+     *     @OA\Parameter(name="q", in="query", required=false, description="Từ khóa tương thích ngược, tìm theo tên hoặc mô tả.", @OA\Schema(type="string")),
      *     @OA\Parameter(name="category_id", in="query", required=false, description="Lọc theo danh mục.", @OA\Schema(type="integer")),
      *     @OA\Parameter(name="per_page", in="query", required=false, description="Số sản phẩm mỗi trang (1-100).", @OA\Schema(type="integer", minimum=1, maximum=100, default=20)),
+     *     @OA\Parameter(name="sort", in="query", required=false, description="Thứ tự: name hoặc newest.", @OA\Schema(type="string", enum={"name","newest"})),
      *
      *     @OA\Response(response=200, description="Danh sách sản phẩm đang mở bán, có phân trang."),
      *     @OA\Response(response=422, description="Tham số tìm kiếm không hợp lệ.")
@@ -31,10 +43,14 @@ class ProductController extends Controller
     public function index(Request $request): JsonResponse
     {
         $filters = $request->validate([
+            'search' => ['sometimes', 'nullable', 'string', 'max:120'],
             'q' => ['sometimes', 'string', 'max:120'],
             'category_id' => ['sometimes', 'integer', 'exists:categories,id'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'sort' => ['sometimes', 'in:name,newest'],
         ]);
+        $search = $filters['search'] ?? null;
+        $legacyQuery = $filters['q'] ?? null;
 
         $products = Product::query()
             ->select([
@@ -49,11 +65,14 @@ class ProductController extends Controller
             ])
             ->where('is_active', true)
             ->when(isset($filters['category_id']), fn (Builder $query) => $query->where('category_id', $filters['category_id']))
-            ->when(isset($filters['q']), function (Builder $query) use ($filters): void {
-                $search = '%'.$filters['q'].'%';
-                $query->where(function (Builder $query) use ($search): void {
-                    $query->where('ten_san_pham', 'like', $search)
-                        ->orWhere('mo_ta', 'like', $search);
+            ->when($search !== null && $search !== '', function (Builder $query) use ($search): void {
+                $query->where('ten_san_pham', 'like', '%'.$search.'%');
+            })
+            ->when(($search === null || $search === '') && $legacyQuery !== null && $legacyQuery !== '', function (Builder $query) use ($legacyQuery): void {
+                $searchTerm = '%'.$legacyQuery.'%';
+                $query->where(function (Builder $query) use ($searchTerm): void {
+                    $query->where('ten_san_pham', 'like', $searchTerm)
+                        ->orWhere('mo_ta', 'like', $searchTerm);
                 });
             })
             ->whereHas('batches', fn (Builder $query) => $this->applyAvailableBatchFilters($query))
@@ -76,7 +95,11 @@ class ProductController extends Controller
                     ]);
                 },
             ])
-            ->orderBy('ten_san_pham')
+            ->when(
+                ($filters['sort'] ?? 'name') === 'newest',
+                fn (Builder $query) => $query->orderByDesc('created_at'),
+                fn (Builder $query) => $query->orderBy('ten_san_pham'),
+            )
             ->paginate($filters['per_page'] ?? 20)
             ->through(fn (Product $product): array => $this->presentProduct($product));
 

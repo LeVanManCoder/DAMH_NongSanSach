@@ -42,10 +42,13 @@ function Header() {
         aria-label="Điều hướng chính"
         className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6"
       >
-        <Link className="text-lg font-bold text-green-800" to="/products">
+        <Link className="text-lg font-bold text-green-800" to="/">
           Nông sản sạch
         </Link>
         <div className="flex flex-wrap items-center gap-3 text-sm font-medium text-slate-700">
+          <Link className="hover:text-green-800" to="/">
+            Trang chủ
+          </Link>
           <Link className="hover:text-green-800" to="/products">
             Sản phẩm
           </Link>

@@ -1,6 +1,6 @@
 # Hợp đồng RESTful API — Nông Lành
 
-> **Trạng thái:** Tài liệu gồm cả API đã triển khai và API mục tiêu. Hiện `GET /api/products`, `GET /api/products/{slug}` và nhóm giỏ hàng `/api/cart` đã được triển khai; các phần còn lại cần đối chiếu mã nguồn trước khi coi là cam kết đã hoàn thành. Báo cáo Chương 3 không cung cấp danh sách endpoint cụ thể; danh sách này ánh xạ các use case UC01–UC05 và quyền RBAC thành API nhất quán.
+> **Trạng thái:** Tài liệu gồm cả API đã triển khai và API mục tiêu. `GET /api/categories`, `GET /api/products`, `GET /api/products/{slug}`, nhóm giỏ hàng `/api/cart`, và các API mùa vụ/nhật ký canh tác được đánh dấu theo phần mô tả bên dưới; các phần còn lại cần đối chiếu mã nguồn trước khi coi là cam kết đã hoàn thành. Báo cáo Chương 3 không cung cấp danh sách endpoint cụ thể; danh sách này ánh xạ các use case UC01–UC05 và quyền RBAC thành API nhất quán.
 
 Tên bảng trong cơ sở dữ liệu giữ tiếng Anh theo thiết kế; tên cột, enum và ràng buộc được đồng bộ theo workbook [`tu-dien-du-lieu-tuan-3.xlsx`](./tu-dien-du-lieu-tuan-3.xlsx). Payload ví dụ dùng cùng các tên trường như `ho_ten`, `ten_san_pham`, `so_luong`, `ngay_het_han`, `ten_nguoi_nhan` và `dia_chi`.
 
@@ -43,8 +43,8 @@ Tên bảng trong cơ sở dữ liệu giữ tiếng Anh theo thiết kế; tên
 
 | Method | Endpoint | Quyền | Mục đích |
 |---|---|---|---|
-| GET | `/categories` | Công khai | Danh mục đang hoạt động. |
-| GET | `/products` | Công khai | **Đã triển khai.** Danh sách sản phẩm đang hoạt động có ít nhất một lô còn hạn, còn tồn; lọc `category_id`, `q`, `per_page` (mặc định 20, tối đa 100), có phân trang. |
+| GET | `/categories` | Công khai | **Đã triển khai.** Danh sách danh mục đang hoạt động. |
+| GET | `/products` | Công khai | **Đã triển khai.** Danh sách sản phẩm đang hoạt động có ít nhất một lô còn hạn, còn tồn; lọc theo `search` (tên), `category_id`, `per_page`, `sort=name|newest` (mặc định 20, tối đa 100), có phân trang. Tham số cũ `q` vẫn được hỗ trợ tương thích ngược. |
 | GET | `/products/{slug}` | Công khai | **Đã triển khai.** Chi tiết theo slug, gồm danh mục, lô đang mở bán, tồn khả dụng, mã QR và nhật ký canh tác công khai. |
 | GET | `/products/{product}/reviews` | Công khai | Đánh giá đã công bố. |
 | GET | `/trace/{qr_code}` | Công khai | Truy xuất nguồn gốc lô: sản phẩm, mùa vụ, ngày thu hoạch, chứng nhận nếu có và timeline canh tác. |
@@ -113,6 +113,11 @@ Laravel Scheduler quét `delivery_schedules` và sinh đơn con trước ngày g
 | Method | Endpoint | Quyền | Mục đích |
 |---|---|---|---|
 | GET | `/farm/seasons` | Farm Staff | Danh sách mùa vụ. |
+| GET | `/seasons` | Farm Staff | **Đã triển khai.** Danh sách mùa vụ để gắn vào lô mới. |
+| POST | `/seasons` | Farm Staff | **Đã triển khai.** Tạo mùa vụ, tự gắn nhân viên tạo. |
+| GET | `/farm/products` | Farm Staff | **Đã triển khai.** Danh sách sản phẩm hoạt động, kể cả sản phẩm chưa có tồn, để tạo lô. |
+| POST | `/batches` | Farm Staff | **Đã triển khai.** Tạo lô mới; nếu không gửi `ma_lo`, backend tự sinh mã lô. QR được tự sinh sau khi lô có ngày thu hoạch và nhật ký đầu tiên. |
+| POST | `/batches/{id}/farming-logs` | Farm Staff | **Đã triển khai.** Tạo nhật ký canh tác có hành động, ghi chú, thời gian và ảnh minh chứng tùy chọn. |
 | POST | `/farm/seasons` | Farm Staff | Tạo mùa vụ. |
 | GET | `/farm/seasons/{season}` | Farm Staff | Chi tiết mùa vụ. |
 | PATCH | `/farm/seasons/{season}` | Farm Staff | Cập nhật mùa vụ. |
