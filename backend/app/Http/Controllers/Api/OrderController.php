@@ -38,7 +38,7 @@ class OrderController extends Controller
 
         if ($request->user()->role->ten_vai_tro === 'customer') {
             $query->where('user_id', $request->user()->getKey())
-                ->with('complaint.media');
+                ->with(['complaint.media', 'reviews']);
         } else {
             $query->with('user:id,ho_ten');
         }
@@ -77,7 +77,12 @@ class OrderController extends Controller
     public function store(StoreOrderRequest $request, ShippingService $shipping): JsonResponse
     {
         $validated = $request->validated();
-        $shippingQuote = $shipping->calculate($validated['dia_chi_giao']);
+        $shippingQuote = $shipping->calculate(
+            $validated['dia_chi_giao'],
+            null,
+            isset($validated['vi_do']) ? (float) $validated['vi_do'] : null,
+            isset($validated['kinh_do']) ? (float) $validated['kinh_do'] : null,
+        );
 
         $order = DB::transaction(function () use ($request, $shippingQuote): Order {
             $userId = $request->user()->getKey();

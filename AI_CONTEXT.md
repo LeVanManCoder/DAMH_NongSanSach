@@ -119,3 +119,39 @@ Những mục dưới đây là trạng thái mới hơn snapshot lịch sử �
 - Thêm trang `/staff/orders` dưới `StaffLayout`, đọc `GET /api/orders` với danh sách phân trang, tên khách hàng, mã đơn, tổng tiền và trạng thái. Chỉ Sales/Admin thấy liên kết; trang từ chối hiển thị dữ liệu cho vai trò khác.
 - Sales có thể bắt đầu giao với đơn đã thanh toán/đã xác nhận, sau đó xác nhận đã giao với đơn đang giao/đang giao bù. Cập nhật trạng thái dùng `PUT /api/orders/{id}/status`, kèm spinner và toast; PATCH hiện tại vẫn được giữ tương thích.
 - Order API eager-load tên khách hàng cho Sales/Admin; phản hồi Customer vẫn giới hạn đơn của chính họ. Đã kiểm thử route PUT và danh sách có tên khách hàng.
+
+## Cập nhật Giai đoạn hoàn thiện — Trang chủ, tìm kiếm và nghiệp vụ nông trại
+
+- Trang `/` là trang chủ mới với banner, danh mục nổi bật và sản phẩm mới nhất; Header có liên kết riêng tới `/` và `/products`. Trang `/products` hỗ trợ tìm theo tên qua `search`, lọc `category_id`, sắp xếp theo tên/mới nhất; API vẫn giữ `q` tương thích ngược.
+- Backend công khai `GET /api/categories`; Farm Staff có `GET/POST /api/seasons`, `GET /api/farm/products` để chọn sản phẩm kể cả khi chưa có tồn, và `POST /api/batches` tự sinh mã lô nếu client bỏ trống `ma_lo`.
+- Khu vực `/staff/batches` có form tạo lô, gắn sản phẩm/mùa vụ, ngày thu hoạch/hạn dùng/số lượng và form ghi nhật ký theo từng lô. `POST /api/batches/{id}/farming-logs` nhận hành động, ghi chú, thời gian và ảnh tùy chọn; API `/batches` tải kèm nhật ký để cập nhật giao diện.
+- Giữ quy tắc truy xuất: không sinh QR khi lô chưa có ngày thu hoạch hoặc nhật ký. Sau khi lô có ngày thu hoạch, nhật ký đầu tiên tự kích hoạt sinh QR; nhật ký hiển thị qua trang `/trace/:qrCode`.
+- Feature tests bao phủ tìm kiếm/lọc, danh mục, quyền mùa vụ và luồng Farm Staff tạo mùa vụ → lô → nhật ký → QR/truy xuất. Toàn bộ backend đạt 33 tests / 284 assertions; frontend lint/build đạt. Chưa commit/push.
+
+## Cập nhật Giai đoạn hoàn thiện — Sales xử lý khiếu nại & Customer đánh giá
+
+- Thêm migration mở rộng trạng thái khiếu nại với `chap_nhan` và trường `phan_hoi`; phiên bản SQLite dùng cột string để tương thích test, MySQL/MariaDB nâng enum bằng migration tăng tiến. Sales có thể quyết định một lần trên khiếu nại đang chờ; ghi người xử lý, thời điểm và phản hồi. Từ chối cũng lưu phản hồi vào `ly_do_tu_choi` để giữ tương thích ràng buộc hiện hành.
+- `GET /api/complaints` chỉ Sales/Admin, trả dữ liệu phân trang kèm đơn, khách hàng, người xử lý và public URL ảnh. `PUT /api/complaints/{id}` chỉ Sales, nhận `chap_nhan|tu_choi` và ghi chú bắt buộc.
+- Ảnh được lưu trên disk `public`; liên kết tĩnh theo chuẩn Laravel `/storage/complaints/...` được tạo bằng `php artisan storage:link`. `public/storage` bị ignore để không đưa symlink máy cá nhân vào Git; cần chạy lệnh này sau deploy nếu chưa có liên kết.
+- Thêm `GET /api/products/{id}/reviews` công khai, phân trang và trả điểm trung bình; `POST` chỉ Customer có đơn `da_giao` chứa sản phẩm đó, rating 1–5, bình luận tối đa 500 ký tự và duy nhất mỗi đơn/sản phẩm.
+- Frontend có `/staff/complaints` cho Sales/Admin xem/phóng to ảnh, phản hồi và chấp nhận/từ chối. `/orders` hiển thị trạng thái/phản hồi khiếu nại và form đánh giá theo sản phẩm trên đơn đã giao; Product Detail hiển thị điểm trung bình và bình luận.
+- Feature tests mới cho quyền, ảnh công khai, chấp nhận/từ chối, feedback bắt buộc, điều kiện đơn đánh giá, rating và chống đánh giá trùng. Toàn bộ backend đạt 39 tests / 319 assertions; frontend lint, build, PHP syntax/Pint và sinh Swagger đều đạt. Đã tạo `backend/public/storage` junction tới `storage/app/public` bằng `php artisan storage:link`. Chưa commit/push; không thêm chữ ký AI vào commit.
+
+## Cập nhật Giai đoạn hoàn thiện — Sổ địa chỉ & gói định kỳ
+
+- Customer có API quản lý địa chỉ `/api/addresses`: GET/POST/PUT/DELETE và PATCH `/{id}/default`. Mỗi địa chỉ gắn với chủ sở hữu; địa chỉ đầu tiên thành mặc định, chọn mặc định sẽ bỏ mặc định cũ, xóa địa chỉ mặc định sẽ chuyển sang địa chỉ còn lại gần nhất. Địa chỉ đang được subscription sử dụng không thể xóa. Latitude/longitude tùy chọn phải gửi theo cặp và được giới hạn trong miền tọa độ hợp lệ.
+- Checkout tải sổ địa chỉ, tự điền địa chỉ mặc định, cho chọn nhanh địa chỉ đã lưu hoặc nhập địa chỉ mới. Khi địa chỉ có tọa độ, phí ship preview và server tính lại lúc tạo đơn đều nhận tọa độ để dùng Haversine dự phòng.
+- Có GET công khai `/api/subscription-plans`, cùng GET/POST `/api/subscriptions` và PATCH `/api/subscriptions/{id}/status` chỉ cho Customer. Đăng ký lưu gói, địa chỉ thuộc khách, ngày bắt đầu, sản phẩm và số lượng mỗi lần, thứ giao, snapshot đơn giá và tổng giá trị mỗi lần giao.
+- Thêm `chu_ky_giao_ngay` trên subscription với giá trị 7 hoặc 14 ngày (tách khỏi thời hạn gói `subscription_plans.chu_ky_ngay`). Gói tạo mới bắt đầu ở `dang_hoat_dong`; chuyển trạng thái hỗ trợ tạm dừng, tiếp tục và hủy; không thể khởi động lại gói đã hủy.
+- Frontend có `/profile` để thêm/xóa/đặt mặc định địa chỉ và `/subscriptions` để đăng ký, xem, tạm dừng/tiếp tục/hủy gói. Header Customer có liên kết tới hai trang.
+- Giai đoạn này chưa triển khai thu tiền subscription và Scheduler sinh delivery schedules/đơn định kỳ; đăng ký hiện hoạt động trực tiếp để quản lý/demo luồng.
+- Migration `2026_11_26_000002_add_delivery_interval_to_subscriptions` đã được áp dụng thành công bằng `php artisan migrate --force` sau khi xác nhận đây là migration duy nhất đang chờ. Toàn bộ backend đạt 43 tests / 359 assertions; frontend lint/build, PHP syntax/Pint và Swagger đạt. Không dùng `migrate:fresh`; không tự commit/push.
+
+## Cập nhật Giai đoạn hoàn thiện — Khu vực Admin (chưa commit)
+
+- Bổ sung `GET /api/admin/dashboard` với doanh thu đơn đã thanh toán/đã giao, tổng đơn và phân bố trạng thái, số Customer, số lượng/tỷ lệ lô cận hạn theo `inventory.expiry_warning_days`, và thống kê xuất hủy/hao hụt.
+- Bổ sung `GET /api/admin/users` có lọc tên/email, vai trò, trạng thái và phân trang; `PATCH /api/admin/users/{id}/status` khóa/mở tài khoản. Admin không thể tự khóa; thay đổi trạng thái được ghi cùng transaction vào `audit_logs` với dữ liệu trước/sau và IP.
+- Bổ sung `GET /api/admin/audit-logs` phân trang, lọc `hanh_dong`/`doi_tuong`, kèm người thao tác. Việc khóa tài khoản làm JWT đã cấp mất hiệu lực ngay; đăng nhập và gọi API bằng tài khoản bị khóa đều bị từ chối.
+- Frontend có `/admin/dashboard`, `/admin/users`, `/admin/audit-logs` trong `AdminLayout`; trang tổng quan có KPI/biểu đồ trạng thái, quản lý tài khoản có tìm kiếm/lọc/khóa-mở, nhật ký có lọc và xem thay đổi. Header chỉ hiện liên kết quản trị cho Admin; layout chặn vai trò khác.
+- Đã bổ sung Feature Tests cho số liệu, phân quyền, khóa/mở khóa, tự khóa, vô hiệu hóa token và lọc nhật ký. Toàn bộ backend đạt 47 tests / 398 assertions; `npm run lint`, `npm run build`, PHP syntax, Pint và `l5-swagger:generate` đều đạt. Đã xác nhận bốn Admin routes xuất hiện trong route list; chưa có migration mới.
+- Cập nhật `docs/api-contract.md` cho các endpoint Admin vừa triển khai. Chưa tự commit/push; không chạy `migrate:fresh`.

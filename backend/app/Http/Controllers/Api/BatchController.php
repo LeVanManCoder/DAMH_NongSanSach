@@ -13,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
@@ -47,7 +48,10 @@ class BatchController extends Controller
         ]);
 
         $batches = Batch::query()
-            ->with('product:id,ten_san_pham,slug,don_vi_tinh')
+            ->with([
+                'product:id,ten_san_pham,slug,don_vi_tinh',
+                'farmingLogs' => fn ($query) => $query->orderBy('thoi_gian'),
+            ])
             ->when(isset($filters['product_id']), fn ($query) => $query->where('product_id', $filters['product_id']))
             ->when(isset($filters['trang_thai']), fn ($query) => $query->where('trang_thai', $filters['trang_thai']))
             ->orderByDesc('created_at')
@@ -102,7 +106,7 @@ class BatchController extends Controller
      *         required=true,
      *
      *         @OA\JsonContent(
-     *             required={"ma_lo","product_id","so_luong_nhap"},
+     *             required={"product_id","so_luong_nhap"},
      *
      *             @OA\Property(property="ma_lo", type="string", example="LO-2026-001"),
      *             @OA\Property(property="product_id", type="integer", example=1),
@@ -129,6 +133,7 @@ class BatchController extends Controller
 
         $batch = Batch::query()->create([
             ...$data,
+            'ma_lo' => $data['ma_lo'] ?? 'LO-'.now()->format('YmdHis').'-'.Str::upper(Str::random(4)),
             'so_luong_ton' => $data['so_luong_ton'] ?? ($status === 'dang_canh_tac' ? 0 : $received),
             'so_luong_hao_hut' => $data['so_luong_hao_hut'] ?? 0,
             'trang_thai' => $status,

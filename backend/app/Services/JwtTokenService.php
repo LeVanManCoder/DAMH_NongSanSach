@@ -103,7 +103,12 @@ class JwtTokenService
             ->where('expires_at', '>', now())
             ->first();
 
-        return $tokenRecord ? User::query()->find((int) $claims['sub']) : null;
+        return $tokenRecord
+            ? User::query()
+                ->whereKey((int) $claims['sub'])
+                ->where('is_active', true)
+                ->first()
+            : null;
     }
 
     public function revoke(string $token): void

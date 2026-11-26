@@ -42,25 +42,41 @@ function Header() {
         aria-label="Điều hướng chính"
         className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6"
       >
-        <Link className="text-lg font-bold text-green-800" to="/products">
+        <Link className="text-lg font-bold text-green-800" to="/">
           Nông sản sạch
         </Link>
         <div className="flex flex-wrap items-center gap-3 text-sm font-medium text-slate-700">
+          <Link className="hover:text-green-800" to="/">
+            Trang chủ
+          </Link>
           <Link className="hover:text-green-800" to="/products">
             Sản phẩm
           </Link>
           <Link className="hover:text-green-800" to="/staff">
             Khu vực nhân viên
           </Link>
+          {user?.role === 'admin' && (
+            <Link className="font-semibold text-green-800 hover:underline" to="/admin/dashboard">
+              Quản trị hệ thống
+            </Link>
+          )}
           <Link className="hover:text-green-800" to="/cart">
             Giỏ hàng
           </Link>
           {user ? (
             <div className="flex flex-wrap items-center gap-3">
               {user.role === 'customer' && (
-                <Link className="hover:text-green-800" to="/orders">
-                  Đơn hàng của tôi
-                </Link>
+                <>
+                  <Link className="hover:text-green-800" to="/orders">
+                    Đơn hàng của tôi
+                  </Link>
+                  <Link className="hover:text-green-800" to="/profile">
+                    Sổ địa chỉ
+                  </Link>
+                  <Link className="hover:text-green-800" to="/subscriptions">
+                    Gói định kỳ
+                  </Link>
+                </>
               )}
               <span className="text-slate-600">
                 {user.ho_ten} · {roleLabels[user.role] ?? user.role}

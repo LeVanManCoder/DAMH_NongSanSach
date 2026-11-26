@@ -15,8 +15,13 @@ function StaffLayout() {
                 Quản lý đơn hàng
               </Link>
             )}
+            {['sales', 'admin'].includes(user?.role) && (
+              <Link className="text-green-100 hover:text-white" to="/staff/complaints">
+                Khiếu nại
+              </Link>
+            )}
             {user?.role === 'farm_staff' && (
-              <Link className="text-green-100 hover:text-white" to="/staff">
+              <Link className="text-green-100 hover:text-white" to="/staff/batches">
                 Quản lý lô hàng
               </Link>
             )}

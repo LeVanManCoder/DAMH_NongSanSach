@@ -15,7 +15,11 @@ return new class extends Migration
             $table->unsignedBigInteger('user_id');
             $table->enum('ly_do', ['dap_nat', 'hu_hong', 'thieu_hang', 'sai_san_pham', 'khac']);
             $table->text('mo_ta')->nullable();
-            $table->enum('trang_thai', ['cho_xu_ly', 'hoan_tien', 'giao_bu', 'tu_choi'])->default('cho_xu_ly');
+            if (DB::getDriverName() === 'sqlite') {
+                $table->string('trang_thai', 20)->default('cho_xu_ly');
+            } else {
+                $table->enum('trang_thai', ['cho_xu_ly', 'chap_nhan', 'hoan_tien', 'giao_bu', 'tu_choi'])->default('cho_xu_ly');
+            }
             $table->string('ly_do_tu_choi', 255)->nullable();
             $table->unsignedBigInteger('nguoi_xu_ly_id')->nullable();
             $table->dateTime('created_at')->useCurrent();

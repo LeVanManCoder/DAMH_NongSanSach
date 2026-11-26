@@ -1,6 +1,6 @@
 # Hợp đồng RESTful API — Nông Lành
 
-> **Trạng thái:** Tài liệu gồm cả API đã triển khai và API mục tiêu. Hiện `GET /api/products`, `GET /api/products/{slug}` và nhóm giỏ hàng `/api/cart` đã được triển khai; các phần còn lại cần đối chiếu mã nguồn trước khi coi là cam kết đã hoàn thành. Báo cáo Chương 3 không cung cấp danh sách endpoint cụ thể; danh sách này ánh xạ các use case UC01–UC05 và quyền RBAC thành API nhất quán.
+> **Trạng thái:** Tài liệu gồm cả API đã triển khai và API mục tiêu. `GET /api/categories`, `GET /api/products`, `GET /api/products/{slug}`, nhóm giỏ hàng `/api/cart`, và các API mùa vụ/nhật ký canh tác được đánh dấu theo phần mô tả bên dưới; các phần còn lại cần đối chiếu mã nguồn trước khi coi là cam kết đã hoàn thành. Báo cáo Chương 3 không cung cấp danh sách endpoint cụ thể; danh sách này ánh xạ các use case UC01–UC05 và quyền RBAC thành API nhất quán.
 
 Tên bảng trong cơ sở dữ liệu giữ tiếng Anh theo thiết kế; tên cột, enum và ràng buộc được đồng bộ theo workbook [`tu-dien-du-lieu-tuan-3.xlsx`](./tu-dien-du-lieu-tuan-3.xlsx). Payload ví dụ dùng cùng các tên trường như `ho_ten`, `ten_san_pham`, `so_luong`, `ngay_het_han`, `ten_nguoi_nhan` và `dia_chi`.
 
@@ -43,13 +43,14 @@ Tên bảng trong cơ sở dữ liệu giữ tiếng Anh theo thiết kế; tên
 
 | Method | Endpoint | Quyền | Mục đích |
 |---|---|---|---|
-| GET | `/categories` | Công khai | Danh mục đang hoạt động. |
-| GET | `/products` | Công khai | **Đã triển khai.** Danh sách sản phẩm đang hoạt động có ít nhất một lô còn hạn, còn tồn; lọc `category_id`, `q`, `per_page` (mặc định 20, tối đa 100), có phân trang. |
+| GET | `/categories` | Công khai | **Đã triển khai.** Danh sách danh mục đang hoạt động. |
+| GET | `/products` | Công khai | **Đã triển khai.** Danh sách sản phẩm đang hoạt động có ít nhất một lô còn hạn, còn tồn; lọc theo `search` (tên), `category_id`, `per_page`, `sort=name|newest` (mặc định 20, tối đa 100), có phân trang. Tham số cũ `q` vẫn được hỗ trợ tương thích ngược. |
 | GET | `/products/{slug}` | Công khai | **Đã triển khai.** Chi tiết theo slug, gồm danh mục, lô đang mở bán, tồn khả dụng, mã QR và nhật ký canh tác công khai. |
 | GET | `/products/{product}/reviews` | Công khai | Đánh giá đã công bố. |
 | GET | `/trace/{qr_code}` | Công khai | Truy xuất nguồn gốc lô: sản phẩm, mùa vụ, ngày thu hoạch, chứng nhận nếu có và timeline canh tác. |
 | GET | `/batches/{batch}/trace` | Customer, Sales, Admin; Farm Staff chỉ lô thuộc nghiệp vụ được cấp | Tra cứu timeline nội bộ theo mã lô. |
-| POST | `/products/{product}/reviews` | Customer | Đánh giá sản phẩm đã mua; chỉ đơn đã giao mới đủ điều kiện. |
+| GET | `/products/{id}/reviews` | Công khai | **Đã triển khai.** Danh sách đánh giá phân trang, tên người đánh giá, điểm trung bình và tổng số đánh giá. |
+| POST | `/products/{id}/reviews` | Customer | **Đã triển khai.** Đánh giá 1–5 sao, bình luận tùy chọn; yêu cầu đơn của chính khách ở trạng thái `da_giao` và có sản phẩm, mỗi cặp đơn/sản phẩm chỉ đánh giá một lần. |
 
 QR chỉ được tạo sau khi lô chuyển sang `da_thu_hoach` và đã có ít nhất một nhật ký canh tác. Sau thu hoạch, không cho sửa/xóa các mốc canh tác trước đó.
 
@@ -57,11 +58,11 @@ QR chỉ được tạo sau khi lô chuyển sang `da_thu_hoach` và đã có í
 
 | Method | Endpoint | Quyền | Mục đích |
 |---|---|---|---|
-| GET | `/addresses` | Customer | Danh sách địa chỉ của chính khách hàng. |
-| POST | `/addresses` | Customer | Thêm địa chỉ giao hàng, có thể lưu tọa độ. |
-| GET | `/addresses/{address}` | Chủ địa chỉ | Xem địa chỉ của chính mình. |
-| PUT/PATCH | `/addresses/{address}` | Chủ địa chỉ | Cập nhật địa chỉ của chính mình. |
-| DELETE | `/addresses/{address}` | Chủ địa chỉ | Xóa địa chỉ nếu không bị ràng buộc bởi lịch sử giao dịch. |
+| GET | `/addresses` | Customer | **Đã triển khai.** Danh sách địa chỉ của chính khách hàng, mặc định đứng đầu. |
+| POST | `/addresses` | Customer | **Đã triển khai.** Thêm địa chỉ giao hàng, tùy chọn cặp tọa độ; địa chỉ đầu tiên tự thành mặc định. |
+| PUT | `/addresses/{id}` | Customer sở hữu địa chỉ | **Đã triển khai.** Cập nhật tên người nhận, điện thoại, địa chỉ và tọa độ. |
+| PATCH | `/addresses/{id}/default` | Customer sở hữu địa chỉ | **Đã triển khai.** Chọn một địa chỉ mặc định trong sổ địa chỉ của chính khách hàng. |
+| DELETE | `/addresses/{id}` | Customer sở hữu địa chỉ | **Đã triển khai.** Xóa địa chỉ; nếu xóa địa chỉ mặc định thì chọn địa chỉ gần nhất còn lại. Không xóa địa chỉ đang được gắn với subscription. |
 | GET | `/cart` | Customer | **Đã triển khai.** Xem giỏ hàng hiện tại. |
 | POST | `/cart` | Customer | **Đã triển khai.** Thêm sản phẩm vào giỏ (`product_id`, `so_luong`); cộng số lượng nếu sản phẩm đã có trong giỏ và trả `422` nếu vượt tồn khả dụng. |
 | PUT/PATCH | `/cart/{itemId}` | Customer | **Đã triển khai.** Cập nhật số lượng dương; từ chối nếu vượt tồn khả dụng. |
@@ -73,8 +74,8 @@ QR chỉ được tạo sau khi lô chuyển sang `da_thu_hoach` và đã có í
 | POST | `/orders/{order}/cancel` | Customer sở hữu đơn, khi còn được phép hủy | Gửi yêu cầu hủy đơn. |
 | POST | `/orders/{id}/complaints` | Customer sở hữu đơn đã giao trong 24 giờ | **Đã triển khai.** Gửi một khiếu nại cho đơn bằng `multipart/form-data`, bắt buộc có ảnh JPG/JPEG/PNG tối đa 5 MB. |
 | PUT/PATCH | `/orders/{id}/status` | Customer; Sales/Admin | Cập nhật trạng thái theo state machine; Sales/Admin dùng PUT để cập nhật tiến trình giao hàng. |
-| GET | `/complaints` | Customer | Chỉ xem khiếu nại của chính mình. |
-| GET | `/complaints/{complaint}` | Customer sở hữu khiếu nại | Xem trạng thái xử lý và media minh chứng. |
+| GET | `/complaints` | Sales, Admin | **Đã triển khai.** Danh sách phân trang kèm đơn hàng, khách hàng, người xử lý và URL ảnh minh chứng công khai. |
+| PUT | `/complaints/{id}` | Sales | **Đã triển khai.** Xử lý khiếu nại đang chờ với `trang_thai` là `chap_nhan` hoặc `tu_choi`, bắt buộc ghi `phan_hoi`; lưu Sales xử lý và thời điểm xử lý. |
 
 Khi tạo đơn, kiểm tra giá/trạng thái sản phẩm và tồn khả dụng; không ghi tồn kho vào `products`. Sales duyệt đơn mới kích hoạt trừ tồn FEFO trong transaction có khóa dòng.
 
@@ -96,12 +97,12 @@ Các dịch vụ thanh toán phải được gọi qua interface/service, có mo
 
 | Method | Endpoint | Quyền | Mục đích |
 |---|---|---|---|
-| GET | `/subscription-plans` | Công khai | Danh sách gói đang mở bán. |
+| GET | `/subscription-plans` | Công khai | **Đã triển khai.** Danh sách gói đang hoạt động. |
 | GET | `/subscription-plans/{plan}` | Công khai | Chi tiết gói. |
-| POST | `/subscriptions` | Customer | Đăng ký gói, gồm `plan_id`, sản phẩm/số lượng, địa chỉ và các ngày giao trong tuần. |
-| GET | `/subscriptions` | Customer | Danh sách gói của chính mình. |
+| POST | `/subscriptions` | Customer | **Đã triển khai.** Đăng ký gói với `plan_id`, địa chỉ, ngày bắt đầu, sản phẩm/số lượng mỗi lần giao, `chu_ky_giao_ngay` 7 hoặc 14 và ngày giao trong tuần (mặc định là thứ trong ngày bắt đầu). |
+| GET | `/subscriptions` | Customer | **Đã triển khai.** Danh sách gói của chính mình, kèm sản phẩm, địa chỉ, chu kỳ giao và ngày giao. |
 | GET | `/subscriptions/{subscription}` | Customer sở hữu gói | Chi tiết gói, sản phẩm và lịch giao. |
-| PATCH | `/subscriptions/{subscription}` | Customer sở hữu gói, theo trạng thái cho phép | Cập nhật tùy chọn giao/sản phẩm. |
+| PATCH | `/subscriptions/{id}/status` | Customer sở hữu gói | **Đã triển khai.** Tạm dừng, tiếp tục hoặc hủy theo chuyển trạng thái hợp lệ. |
 | POST | `/subscriptions/{subscription}/cancel` | Customer sở hữu gói | Hủy gói theo chính sách. |
 | GET | `/subscriptions/{subscription}/schedules` | Customer sở hữu gói, Sales | Lịch giao và đơn con đã sinh. |
 | POST | `/sales/delivery-schedules/{schedule}/substitutions` | Sales | Đề xuất sản phẩm thay thế khi thiếu hàng, lưu quyết định vào lịch/đơn. |
@@ -113,6 +114,11 @@ Laravel Scheduler quét `delivery_schedules` và sinh đơn con trước ngày g
 | Method | Endpoint | Quyền | Mục đích |
 |---|---|---|---|
 | GET | `/farm/seasons` | Farm Staff | Danh sách mùa vụ. |
+| GET | `/seasons` | Farm Staff | **Đã triển khai.** Danh sách mùa vụ để gắn vào lô mới. |
+| POST | `/seasons` | Farm Staff | **Đã triển khai.** Tạo mùa vụ, tự gắn nhân viên tạo. |
+| GET | `/farm/products` | Farm Staff | **Đã triển khai.** Danh sách sản phẩm hoạt động, kể cả sản phẩm chưa có tồn, để tạo lô. |
+| POST | `/batches` | Farm Staff | **Đã triển khai.** Tạo lô mới; nếu không gửi `ma_lo`, backend tự sinh mã lô. QR được tự sinh sau khi lô có ngày thu hoạch và nhật ký đầu tiên. |
+| POST | `/batches/{id}/farming-logs` | Farm Staff | **Đã triển khai.** Tạo nhật ký canh tác có hành động, ghi chú, thời gian và ảnh minh chứng tùy chọn. |
 | POST | `/farm/seasons` | Farm Staff | Tạo mùa vụ. |
 | GET | `/farm/seasons/{season}` | Farm Staff | Chi tiết mùa vụ. |
 | PATCH | `/farm/seasons/{season}` | Farm Staff | Cập nhật mùa vụ. |
@@ -139,9 +145,8 @@ Farm Staff không được gọi API đơn hàng hoặc xem thông tin khách; c
 | GET | `/sales/batches/expiring` | Sales, Admin | Lô còn hàng sắp hết hạn theo ngưỡng cấu hình (mặc định 2 ngày). |
 | GET | `/sales/notifications` | Sales | Danh sách cảnh báo lô cận hạn/thiếu hàng. |
 | PATCH | `/sales/notifications/{notification}/read` | Sales | Đánh dấu đã đọc. |
-| GET | `/sales/complaints` | Sales | Danh sách khiếu nại cần xử lý. |
-| GET | `/sales/complaints/{complaint}` | Sales | Chi tiết khiếu nại và media minh chứng. |
-| POST | `/sales/complaints/{complaint}/resolve` | Sales | Xử lý theo hướng `refund` hoặc `replacement`; ghi audit log. |
+| GET | `/complaints` | Sales, Admin | **Đã triển khai.** Danh sách khiếu nại cùng thông tin đơn, khách hàng và ảnh minh chứng. |
+| PUT | `/complaints/{id}` | Sales | **Đã triển khai.** Chấp nhận/từ chối khiếu nại đang chờ, kèm phản hồi gửi khách hàng. |
 
 Sales không được gọi API tạo lô, cập nhật tồn thủ công, sửa nhật ký canh tác hoặc ghi nhận xuất hủy; các yêu cầu này trả `403`.
 
@@ -153,18 +158,19 @@ Sales không được gọi API tạo lô, cập nhật tồn thủ công, sửa
 | GET/PUT/PATCH/DELETE | `/admin/categories/{category}` | Admin | Đọc/cập nhật/ngừng sử dụng danh mục. |
 | GET/POST | `/admin/products` | Admin | Danh sách/tạo sản phẩm. |
 | GET/PUT/PATCH/DELETE | `/admin/products/{product}` | Admin | Đọc/cập nhật/ngừng bán sản phẩm. |
+| GET | `/admin/dashboard` | Admin | **Đã triển khai.** Tổng doanh thu đơn đã thanh toán/đã giao, đơn theo trạng thái, khách hàng, lô cận hạn và hao hụt. |
 | GET | `/admin/users` | Admin | Danh sách tài khoản, lọc role/trạng thái. |
 | GET | `/admin/users/{user}` | Admin | Chi tiết tài khoản. |
 | PATCH | `/admin/users/{user}/role` | Admin | Gán role hợp lệ. |
-| PATCH | `/admin/users/{user}/status` | Admin | Khóa/mở tài khoản. |
+| PATCH | `/admin/users/{id}/status` | Admin | **Đã triển khai.** Khóa/mở tài khoản; không cho tự khóa, ghi audit log và vô hiệu hóa JWT đang hoạt động của tài khoản bị khóa. |
 | GET | `/admin/reports/overview` | Admin | Báo cáo tổng quan bán hàng/kho. |
 | GET | `/admin/reports/waste` | Admin | Báo cáo hao hụt theo lô/mùa vụ/thời gian. |
 | GET | `/admin/system-settings` | Admin | Xem cấu hình hệ thống. |
 | PUT | `/admin/system-settings/{key}` | Admin | Cấu hình, gồm ngưỡng cảnh báo xả hàng. |
-| GET | `/admin/audit-logs` | Admin | Tra cứu thao tác nhạy cảm, có phân trang và lọc. |
+| GET | `/admin/audit-logs` | Admin | **Đã triển khai.** Tra cứu có phân trang, lọc theo hành động/bảng và thông tin người thao tác. |
 | GET | `/admin/batches` | Admin | Chỉ đọc thông tin lô; không sửa lịch sử canh tác đã thu hoạch. |
 
-Các thao tác duyệt đơn, xuất hủy, hoàn tiền và thay đổi cấu hình nhạy cảm phải ghi `audit_logs` với người thực hiện, thời gian, đối tượng và chi tiết. Lưu trữ audit log tối thiểu 90 ngày.
+Thay đổi trạng thái tài khoản qua Admin hiện ghi `audit_logs` với người thực hiện, thời gian, đối tượng, IP và dữ liệu trước/sau. Audit log cho duyệt đơn, xuất hủy, hoàn tiền và thay đổi cấu hình nhạy cảm vẫn cần được triển khai; lưu trữ audit log tối thiểu 90 ngày.
 
 ## Quy tắc nghiệp vụ áp dụng xuyên API
 

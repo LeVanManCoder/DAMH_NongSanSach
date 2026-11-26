@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import LoadingSpinner from '../../components/LoadingSpinner.jsx'
-import ToastNotification from '../../components/ToastNotification.jsx'
 import productApi from '../../api/productApi.js'
 
 const currencyFormatter = new Intl.NumberFormat('vi-VN', {
@@ -11,51 +10,88 @@ const currencyFormatter = new Intl.NumberFormat('vi-VN', {
 })
 
 function ProductList() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const search = searchParams.get('search') ?? ''
+  const categoryId = searchParams.get('category_id') ?? ''
+  const sort = searchParams.get('sort') ?? 'name'
   const [products, setProducts] = useState([])
+  const [categories, setCategories] = useState([])
   const [isLoading, setIsLoading] = useState(true)
-  const [toast, setToast] = useState(null)
-  const dismissToast = useCallback(() => setToast(null), [])
+  const [errorMessage, setErrorMessage] = useState('')
+  const [categoryError, setCategoryError] = useState('')
 
   useEffect(() => {
     const controller = new AbortController()
 
-    async function loadProducts() {
+    async function loadCategories() {
       try {
-        const response = await productApi.getProducts(
-          { per_page: 24 },
-          { signal: controller.signal },
-        )
+        const response = await productApi.getCategories({ signal: controller.signal })
+        if (!controller.signal.aborted) {
+          setCategories(response.data.data)
+        }
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setCategoryError(error.response?.data?.message ?? 'Không tải được danh mục.')
+        }
+      }
+    }
+
+    loadCategories()
+
+    return () => controller.abort()
+  }, [])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    const timeoutId = window.setTimeout(async () => {
+      setIsLoading(true)
+      setErrorMessage('')
+
+      const params = { per_page: 24, sort }
+      if (search.trim()) {
+        params.search = search.trim()
+      }
+      if (categoryId) {
+        params.category_id = categoryId
+      }
+
+      try {
+        const response = await productApi.getProducts(params, {
+          signal: controller.signal,
+        })
         setProducts(response.data.data)
       } catch (error) {
         if (!controller.signal.aborted) {
-          setToast({
-            message:
-              error.response?.data?.message ??
+          setErrorMessage(
+            error.response?.data?.message ??
               'Không tải được danh sách sản phẩm. Vui lòng thử lại.',
-            type: 'error',
-          })
+          )
         }
       } finally {
         if (!controller.signal.aborted) {
           setIsLoading(false)
         }
       }
+    }, search ? 250 : 0)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+      controller.abort()
     }
+  }, [categoryId, search, sort])
 
-    loadProducts()
-
-    return () => controller.abort()
-  }, [])
+  function updateFilter(key, value) {
+    const params = new URLSearchParams(searchParams)
+    if (value) {
+      params.set(key, value)
+    } else {
+      params.delete(key)
+    }
+    setSearchParams(params, { replace: true })
+  }
 
   return (
     <section>
-      {toast && (
-        <ToastNotification
-          message={toast.message}
-          type={toast.type}
-          onClose={dismissToast}
-        />
-      )}
       <div className="mb-8">
         <p className="text-sm font-semibold uppercase tracking-wide text-green-700">
           Nông sản sạch theo mùa
@@ -68,13 +104,60 @@ function ProductList() {
         </p>
       </div>
 
+      <div className="mb-7 grid gap-3 rounded-2xl bg-white p-4 shadow-sm sm:grid-cols-[minmax(0,1fr)_15rem_12rem] sm:p-5">
+        <label className="text-sm font-semibold text-slate-700">
+          Tìm sản phẩm
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => updateFilter('search', event.target.value)}
+            placeholder="Nhập tên sản phẩm..."
+            className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 px-3 font-normal outline-none transition focus:border-green-700 focus:ring-2 focus:ring-green-100"
+          />
+        </label>
+        <label className="text-sm font-semibold text-slate-700">
+          Danh mục
+          <select
+            value={categoryId}
+            onChange={(event) => updateFilter('category_id', event.target.value)}
+            className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 font-normal outline-none transition focus:border-green-700 focus:ring-2 focus:ring-green-100"
+          >
+            <option value="">Tất cả danh mục</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.ten_danh_muc}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-sm font-semibold text-slate-700">
+          Sắp xếp
+          <select
+            value={sort}
+            onChange={(event) => updateFilter('sort', event.target.value)}
+            className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 font-normal outline-none transition focus:border-green-700 focus:ring-2 focus:ring-green-100"
+          >
+            <option value="name">Tên sản phẩm</option>
+            <option value="newest">Mới nhất</option>
+          </select>
+        </label>
+      </div>
+      {categoryError && (
+        <p className="mb-4 text-sm text-red-700" role="alert">{categoryError}</p>
+      )}
+      {errorMessage && (
+        <p className="mb-4 rounded-xl bg-red-50 p-4 text-sm text-red-800" role="alert">
+          {errorMessage}
+        </p>
+      )}
+
       {isLoading ? (
         <div className="flex min-h-48 items-center justify-center">
           <LoadingSpinner label="Đang tải sản phẩm" className="text-green-700" />
         </div>
       ) : products.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-600">
-          Hiện chưa có sản phẩm nào đang mở bán.
+          Không tìm thấy sản phẩm phù hợp với bộ lọc.
         </div>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

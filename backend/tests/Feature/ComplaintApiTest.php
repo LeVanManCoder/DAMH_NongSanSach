@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Complaint;
+use App\Models\ComplaintMedia;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\JwtTokenService;
@@ -145,6 +147,104 @@ class ComplaintApiTest extends TestCase
         Storage::disk('public')->assertDirectoryEmpty('complaints');
     }
 
+    public function test_sales_and_admin_can_list_complaints_with_order_customer_and_public_evidence_url(): void
+    {
+        $customer = $this->customer();
+        $order = $this->deliveredOrder($customer);
+        $complaint = Complaint::query()->create([
+            'order_id' => $order->getKey(),
+            'user_id' => $customer->getKey(),
+            'ly_do' => 'hu_hong',
+            'trang_thai' => 'cho_xu_ly',
+        ]);
+        Storage::disk('public')->put('complaints/evidence.png', 'image');
+        ComplaintMedia::query()->create([
+            'complaint_id' => $complaint->getKey(),
+            'media_url' => 'complaints/evidence.png',
+            'loai' => 'anh',
+            'mime_type' => 'image/png',
+            'kich_thuoc_byte' => 5,
+        ]);
+
+        $sales = $this->userByRole('sales');
+        $this->withToken($this->tokenFor($sales))
+            ->getJson('/api/complaints')
+            ->assertOk()
+            ->assertJsonPath('data.0.order.ma_don', $order->ma_don)
+            ->assertJsonPath('data.0.user.ho_ten', $customer->ho_ten)
+            ->assertJsonPath('data.0.media.0.public_url', 'http://localhost/storage/complaints/evidence.png');
+
+        $this->withToken($this->tokenFor($customer))
+            ->getJson('/api/complaints')
+            ->assertForbidden();
+    }
+
+    public function test_sales_can_accept_or_reject_a_complaint_with_customer_feedback(): void
+    {
+        $sales = $this->userByRole('sales');
+        $customer = $this->customer();
+        $accepted = $this->createComplaint($customer);
+        $rejected = $this->createComplaint($customer);
+        $token = $this->tokenFor($sales);
+
+        $this->withToken($token)
+            ->putJson('/api/complaints/'.$accepted->getKey(), [
+                'trang_thai' => 'chap_nhan',
+                'phan_hoi' => 'Đã xác nhận và sẽ liên hệ để đổi sản phẩm.',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.trang_thai', 'chap_nhan')
+            ->assertJsonPath('data.phan_hoi', 'Đã xác nhận và sẽ liên hệ để đổi sản phẩm.')
+            ->assertJsonPath('data.handler.id', $sales->getKey());
+
+        $this->withToken($token)
+            ->putJson('/api/complaints/'.$rejected->getKey(), [
+                'trang_thai' => 'tu_choi',
+                'phan_hoi' => 'Ảnh minh chứng không cho thấy lỗi sản phẩm.',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.trang_thai', 'tu_choi')
+            ->assertJsonPath('data.phan_hoi', 'Ảnh minh chứng không cho thấy lỗi sản phẩm.');
+
+        $this->assertDatabaseHas('complaints', [
+            'id' => $rejected->getKey(),
+            'ly_do_tu_choi' => 'Ảnh minh chứng không cho thấy lỗi sản phẩm.',
+            'nguoi_xu_ly_id' => $sales->getKey(),
+        ]);
+    }
+
+    public function test_only_sales_can_resolve_a_complaint_and_feedback_is_required(): void
+    {
+        $customer = $this->customer();
+        $complaint = $this->createComplaint($customer);
+
+        $this->withToken($this->tokenFor($customer))
+            ->putJson('/api/complaints/'.$complaint->getKey(), [
+                'trang_thai' => 'chap_nhan',
+                'phan_hoi' => 'Đã tiếp nhận.',
+            ])
+            ->assertForbidden();
+
+        $this->withToken($this->tokenFor($this->userByRole('sales')))
+            ->putJson('/api/complaints/'.$complaint->getKey(), [
+                'trang_thai' => 'chap_nhan',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonStructure(['errors' => ['phan_hoi']]);
+    }
+
+    private function createComplaint(User $customer, string $status = 'cho_xu_ly'): Complaint
+    {
+        $order = $this->deliveredOrder($customer);
+
+        return Complaint::query()->create([
+            'order_id' => $order->getKey(),
+            'user_id' => $customer->getKey(),
+            'ly_do' => 'khac',
+            'trang_thai' => $status,
+        ]);
+    }
+
     private function customer(): User
     {
         return User::query()->create([
@@ -157,6 +257,13 @@ class ComplaintApiTest extends TestCase
     private function tokenFor(User $customer): string
     {
         return app(JwtTokenService::class)->issue($customer);
+    }
+
+    private function userByRole(string $role): User
+    {
+        return User::query()
+            ->whereHas('role', fn ($query) => $query->where('ten_vai_tro', $role))
+            ->firstOrFail();
     }
 
     private function pngFile(string $name, int $sizeInKilobytes = 1): UploadedFile

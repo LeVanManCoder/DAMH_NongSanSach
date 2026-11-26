@@ -19,6 +19,9 @@ function ProductDetail() {
   const [quantity, setQuantity] = useState('1')
   const [isLoading, setIsLoading] = useState(true)
   const [isAdding, setIsAdding] = useState(false)
+  const [reviews, setReviews] = useState([])
+  const [reviewMeta, setReviewMeta] = useState(null)
+  const [reviewsError, setReviewsError] = useState('')
   const [toast, setToast] = useState(null)
   const dismissToast = useCallback(() => setToast(null), [])
 
@@ -54,6 +57,33 @@ function ProductDetail() {
 
     return () => controller.abort()
   }, [slug])
+
+  useEffect(() => {
+    if (!product?.id) return undefined
+
+    const controller = new AbortController()
+    async function loadReviews() {
+      setReviewsError('')
+      try {
+        const response = await productApi.getReviews(
+          product.id,
+          { page: 1 },
+          { signal: controller.signal },
+        )
+        setReviews(response.data.data)
+        setReviewMeta(response.data.meta)
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setReviewsError(
+            error.response?.data?.message ?? 'Không tải được đánh giá sản phẩm.',
+          )
+        }
+      }
+    }
+
+    loadReviews()
+    return () => controller.abort()
+  }, [product?.id])
 
   const availableQuantity = useMemo(
     () =>
@@ -343,6 +373,44 @@ function ProductDetail() {
                 </article>
               ))}
             </div>
+          </section>
+
+          <section className="mt-10 rounded-2xl bg-white p-5 shadow-sm sm:p-7">
+            <header className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900">Đánh giá sản phẩm</h2>
+                <p className="mt-1 text-sm text-slate-600">
+                  {reviewMeta?.total
+                    ? `${Number(reviewMeta.average_rating).toFixed(1)} / 5 sao · ${reviewMeta.total} đánh giá`
+                    : 'Chưa có đánh giá'}
+                </p>
+              </div>
+            </header>
+            {reviewsError ? (
+              <p className="mt-4 text-sm text-red-700" role="alert">{reviewsError}</p>
+            ) : reviews.length === 0 ? (
+              <p className="mt-4 text-sm text-slate-500">Hãy là người đầu tiên đánh giá sản phẩm này.</p>
+            ) : (
+              <ul className="mt-5 divide-y divide-slate-100">
+                {reviews.map((review) => (
+                  <li key={review.id} className="py-4 first:pt-0 last:pb-0">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="font-semibold text-slate-900">
+                        {review.user?.ho_ten ?? 'Khách hàng'}
+                      </p>
+                      <p className="text-sm font-semibold text-amber-600" aria-label={`${review.so_sao} trên 5 sao`}>
+                        {'★'.repeat(review.so_sao)}{'☆'.repeat(5 - review.so_sao)}
+                        <span className="ml-2 text-slate-600">{review.so_sao}/5</span>
+                      </p>
+                    </div>
+                    {review.noi_dung && <p className="mt-2 text-sm leading-6 text-slate-700">{review.noi_dung}</p>}
+                    <time className="mt-2 block text-xs text-slate-500">
+                      {review.created_at ? new Date(review.created_at).toLocaleDateString('vi-VN') : ''}
+                    </time>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
         </>
       )}
