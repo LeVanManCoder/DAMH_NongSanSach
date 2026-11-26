@@ -109,6 +109,30 @@ Sau khi chạy lệnh `php artisan migrate --seed`, hệ thống tự động kh
 | 3 | **Farm Staff (Nông trại)** | `farm@nonganhlanh.local` | `Password@123` | `/farm` (Mùa vụ, Lô hàng, Nhật ký canh tác, QR, Xuất hủy) |
 | 4 | **Customer (Khách hàng)** | `khachhang@nonganhlanh.local` | `Password@123` | `/`, `/cart`, `/checkout`, `/orders`, `/subscriptions` |
 
+### A.6. Chạy hàng đợi và Scheduler cho gói định kỳ
+
+Backend dùng `QUEUE_CONNECTION=database` mặc định. Sau khi chạy migration, mở terminal tại `backend/` và khởi động worker để xử lý các đơn định kỳ đã được đưa vào queue:
+
+```bash
+php artisan queue:work --tries=3
+```
+
+Có thể kiểm tra thủ công việc quét lịch giao đến hạn bằng lệnh:
+
+```bash
+php artisan subscriptions:dispatch-due
+```
+
+Lệnh này chỉ dispatch lịch `cho_sinh_don` có ngày giao đến hạn và gói đang hoạt động, chưa tự tạo lịch giao tương lai. Job tạo order con và cập nhật lịch trong cùng transaction; chạy lại Job không tạo đơn trùng.
+
+Trên máy chủ, cấu hình cron gọi Laravel Scheduler mỗi phút để lịch chạy hằng ngày được thực thi:
+
+```cron
+* * * * * cd /path/to/DAMH_NongSanSach/backend && php artisan schedule:run >> /dev/null 2>&1
+```
+
+Queue worker phải luôn chạy riêng với web server. Khi triển khai phiên bản mới, restart worker để nạp code mới bằng `php artisan queue:restart`.
+
 ---
 
 ## PHỤ LỤC B: HƯỚNG DẪN SỬ DỤNG PHẦN MỀM THEO VAI TRÒ
