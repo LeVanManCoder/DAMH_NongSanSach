@@ -8,6 +8,8 @@ const orderApi = {
   create: (data) => axiosClient.post('/orders', data),
   updateStatus: (orderId, status) =>
     axiosClient.put(`/orders/${orderId}/status`, { trang_thai: status }),
+  confirmVietQrPayment: (orderId) =>
+    axiosClient.patch(`/orders/${orderId}/confirm-payment`),
   submitComplaint: (orderId, formData) =>
     axiosClient.post(`/orders/${orderId}/complaints`, formData, {
       headers: { 'Content-Type': undefined },

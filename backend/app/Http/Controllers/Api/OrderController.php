@@ -7,7 +7,9 @@ use App\Http\Requests\StoreOrderRequest;
 use App\Http\Requests\UpdateOrderStatusRequest;
 use App\Models\CartItem;
 use App\Models\Order;
+use App\Services\AuditLogService;
 use App\Services\FefoService;
+use App\Services\Payments\PaymentGatewayService;
 use App\Services\ShippingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -40,7 +42,10 @@ class OrderController extends Controller
             $query->where('user_id', $request->user()->getKey())
                 ->with(['complaint.media', 'reviews']);
         } else {
-            $query->with('user:id,ho_ten');
+            $query->with('user:id,ho_ten')
+                ->with(['payments' => fn ($payments) => $payments
+                    ->select(['id', 'order_id', 'phuong_thuc', 'so_tien', 'trang_thai', 'created_at'])
+                    ->latest('id')]);
         }
 
         return response()->json($query->latest('ngay_tao')->paginate(20));
@@ -175,9 +180,30 @@ class OrderController extends Controller
      *     )
      * )
      */
-    public function approve(Request $request, int $id, FefoService $fefo): JsonResponse
-    {
-        $order = $fefo->approveAndAllocateOrder($id, (int) $request->user()->getKey());
+    public function approve(
+        Request $request,
+        int $id,
+        FefoService $fefo,
+        AuditLogService $auditLogs,
+    ): JsonResponse {
+        $order = DB::transaction(function () use ($request, $id, $fefo, $auditLogs): Order {
+            $pendingOrder = Order::query()->lockForUpdate()->findOrFail($id);
+            $order = $fefo->approveAndAllocateOrder($id, (int) $request->user()->getKey());
+            $auditLogs->record(
+                $request->user(),
+                'duyet_don_hang',
+                'orders',
+                $id,
+                ['trang_thai' => $pendingOrder->trang_thai],
+                [
+                    'trang_thai' => $order->trang_thai,
+                    'nguoi_duyet_id' => $order->nguoi_duyet_id,
+                ],
+                $request->ip(),
+            );
+
+            return $order;
+        });
 
         return response()->json(['data' => $order]);
     }
@@ -233,12 +259,19 @@ class OrderController extends Controller
      *     @OA\Response(response=422, description="Trạng thái không hợp lệ.")
      * )
      */
-    public function updateStatus(UpdateOrderStatusRequest $request, int $id): JsonResponse
-    {
-        $order = DB::transaction(function () use ($request, $id): Order {
+    public function updateStatus(
+        UpdateOrderStatusRequest $request,
+        int $id,
+        AuditLogService $auditLogs,
+    ): JsonResponse {
+        $order = DB::transaction(function () use ($request, $id, $auditLogs): Order {
             $order = Order::query()->lockForUpdate()->findOrFail($id);
             $role = $request->user()->role->ten_vai_tro;
             $newStatus = $request->validated('trang_thai');
+            $oldData = [
+                'trang_thai' => $order->trang_thai,
+                'ngay_giao_thuc_te' => $order->ngay_giao_thuc_te?->toISOString(),
+            ];
 
             if ($role === 'customer') {
                 if ((int) $order->user_id !== (int) $request->user()->getKey()) {
@@ -267,8 +300,57 @@ class OrderController extends Controller
             }
             $order->save();
 
+            if ($role !== 'customer') {
+                $auditLogs->record(
+                    $request->user(),
+                    'cap_nhat_trang_thai_don_hang',
+                    'orders',
+                    (int) $order->getKey(),
+                    $oldData,
+                    [
+                        'trang_thai' => $order->trang_thai,
+                        'ngay_giao_thuc_te' => $order->ngay_giao_thuc_te?->toISOString(),
+                    ],
+                    $request->ip(),
+                );
+            }
+
             return $order;
         });
+
+        return response()->json(['data' => $order]);
+    }
+
+    /**
+     * @OA\Patch(
+     *     path="/api/orders/{id}/confirm-payment",
+     *     tags={"Đơn hàng"},
+     *     summary="Sales/Admin xác nhận đã nhận tiền VietQR",
+     *     description="Xác nhận giao dịch VietQR đang chờ, phân bổ tồn kho theo FEFO và ghi audit log theo cách idempotent.",
+     *     security={{"bearerAuth":{}}},
+     *
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *
+     *     @OA\Response(response=200, description="Thanh toán đã được xác nhận."),
+     *     @OA\Response(response=403, description="Chỉ Sales/Admin được xác nhận."),
+     *     @OA\Response(response=404, description="Không tìm thấy đơn hàng."),
+     *     @OA\Response(response=409, description="Không có giao dịch VietQR chờ xử lý hoặc đơn không còn chờ thanh toán.")
+     * )
+     */
+    public function confirmPayment(
+        Request $request,
+        int $id,
+        PaymentGatewayService $payments,
+        FefoService $fefo,
+        AuditLogService $auditLogs,
+    ): JsonResponse {
+        $order = $payments->confirmVietQrPayment(
+            $id,
+            (int) $request->user()->getKey(),
+            $request->ip(),
+            $fefo,
+            $auditLogs,
+        );
 
         return response()->json(['data' => $order]);
     }

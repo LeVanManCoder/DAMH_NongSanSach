@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import AdminLayout from './layouts/AdminLayout.jsx'
 import AdminDashboardPage from './pages/admin/AdminDashboardPage.jsx'
+import AdminProductsPage from './pages/admin/AdminProductsPage.jsx'
 import AdminUsersPage from './pages/admin/AdminUsersPage.jsx'
 import AdminAuditLogsPage from './pages/admin/AdminAuditLogsPage.jsx'
 import { AuthProvider } from './contexts/AuthProvider.jsx'
@@ -49,6 +50,7 @@ function App() {
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboardPage />} />
+            <Route path="products" element={<AdminProductsPage />} />
             <Route path="users" element={<AdminUsersPage />} />
             <Route path="audit-logs" element={<AdminAuditLogsPage />} />
           </Route>

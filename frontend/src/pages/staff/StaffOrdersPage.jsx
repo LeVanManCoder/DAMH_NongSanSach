@@ -28,6 +28,13 @@ function nextAction(order) {
   return null
 }
 
+function hasPendingVietQrPayment(order) {
+  return order.trang_thai === 'cho_duyet'
+    && order.payments?.some(
+      (payment) => payment.phuong_thuc === 'vietqr' && payment.trang_thai === 'cho_xu_ly',
+    )
+}
+
 function StaffOrdersPage() {
   const { user } = useAuth()
   const [orders, setOrders] = useState([])
@@ -133,6 +140,33 @@ function StaffOrdersPage() {
     }
   }
 
+  async function confirmVietQrPayment(order) {
+    setUpdatingOrderId(order.id)
+    setErrorMessage('')
+
+    try {
+      const response = await orderApi.confirmVietQrPayment(order.id)
+      setOrders((current) =>
+        current.map((item) =>
+          item.id === order.id ? { ...item, ...response.data.data } : item,
+        ),
+      )
+      setToast({
+        message: 'Đã xác nhận nhận tiền VietQR và phân bổ tồn kho theo FEFO.',
+        type: 'success',
+      })
+    } catch (error) {
+      setToast({
+        message:
+          error.response?.data?.message ??
+          'Không xác nhận được giao dịch VietQR. Vui lòng kiểm tra lại.',
+        type: 'error',
+      })
+    } finally {
+      setUpdatingOrderId(null)
+    }
+  }
+
   if (!['sales', 'admin'].includes(user?.role)) {
     return (
       <section className="rounded-2xl bg-white p-8 text-center shadow-sm">
@@ -195,6 +229,7 @@ function StaffOrdersPage() {
         <div className="space-y-4">
           {orders.map((order) => {
             const action = nextAction(order)
+            const awaitingVietQr = hasPendingVietQrPayment(order)
             const isUpdating = updatingOrderId === order.id
 
             return (
@@ -206,7 +241,7 @@ function StaffOrdersPage() {
                   <div className="flex flex-wrap items-center gap-3">
                     <h2 className="font-bold text-slate-900">{order.ma_don}</h2>
                     <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                      {ORDER_STATUSES[order.trang_thai] ?? order.trang_thai}
+                      {awaitingVietQr ? 'Chờ thanh toán VietQR' : ORDER_STATUSES[order.trang_thai] ?? order.trang_thai}
                     </span>
                   </div>
                   <p className="mt-2 text-sm text-slate-600">
@@ -216,9 +251,25 @@ function StaffOrdersPage() {
                     Tổng tiền: {Number(order.tong_thanh_toan ?? 0).toLocaleString('vi-VN')} đ
                   </p>
                 </div>
-                {action && (
+                {(action || awaitingVietQr) && (
+                  <div className="mt-4 flex flex-col gap-2 sm:mt-0">
+                    {awaitingVietQr && (
+                      <Button
+                        className="w-full sm:w-auto"
+                        onClick={() => confirmVietQrPayment(order)}
+                        disabled={updatingOrderId !== null}
+                      >
+                        {isUpdating ? (
+                          <>
+                            <LoadingSpinner label="Đang xác nhận thanh toán" className="mr-2" />
+                            Đang xác nhận...
+                          </>
+                        ) : 'Xác nhận đã nhận tiền (VietQR)'}
+                      </Button>
+                    )}
+                    {action && (
                   <Button
-                    className="mt-4 w-full sm:mt-0 sm:w-auto"
+                    className="w-full sm:w-auto"
                     onClick={() => changeOrderStatus(order, action)}
                     disabled={updatingOrderId !== null}
                   >
@@ -229,6 +280,8 @@ function StaffOrdersPage() {
                       </>
                     ) : action.label}
                   </Button>
+                    )}
+                  </div>
                 )}
               </article>
             )

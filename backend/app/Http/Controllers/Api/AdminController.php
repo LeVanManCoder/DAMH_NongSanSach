@@ -9,6 +9,7 @@ use App\Models\Batch;
 use App\Models\Order;
 use App\Models\User;
 use App\Models\WasteLog;
+use App\Services\AuditLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -154,11 +155,14 @@ class AdminController extends Controller
      *     @OA\Response(response=422, description="Không được tự khóa tài khoản.")
      * )
      */
-    public function updateUserStatus(UpdateUserStatusRequest $request, int $id): JsonResponse
-    {
+    public function updateUserStatus(
+        UpdateUserStatusRequest $request,
+        int $id,
+        AuditLogService $auditLogs,
+    ): JsonResponse {
         $active = (bool) $request->validated('is_active');
 
-        $user = DB::transaction(function () use ($request, $id, $active): User {
+        $user = DB::transaction(function () use ($request, $id, $active, $auditLogs): User {
             $user = User::query()->lockForUpdate()->findOrFail($id);
             if ($user->is_active && ! $active && $user->is($request->user())) {
                 throw ValidationException::withMessages([
@@ -170,15 +174,15 @@ class AdminController extends Controller
             if ($previousStatus !== $active) {
                 $user->is_active = $active;
                 $user->save();
-                AuditLog::query()->create([
-                    'user_id' => $request->user()->getKey(),
-                    'hanh_dong' => $active ? 'mo_khoa_tai_khoan' : 'khoa_tai_khoan',
-                    'doi_tuong' => 'users',
-                    'doi_tuong_id' => $user->getKey(),
-                    'du_lieu_cu' => ['is_active' => $previousStatus],
-                    'du_lieu_moi' => ['is_active' => $active],
-                    'dia_chi_ip' => $request->ip(),
-                ]);
+                $auditLogs->record(
+                    $request->user(),
+                    $active ? 'mo_khoa_tai_khoan' : 'khoa_tai_khoan',
+                    'users',
+                    (int) $user->getKey(),
+                    ['is_active' => $previousStatus],
+                    ['is_active' => $active],
+                    $request->ip(),
+                );
             }
 
             return $user->load('role:id,ten_vai_tro');

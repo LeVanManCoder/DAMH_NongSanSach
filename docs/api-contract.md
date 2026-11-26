@@ -69,11 +69,12 @@ QR chỉ được tạo sau khi lô chuyển sang `da_thu_hoach` và đã có í
 | DELETE | `/cart/{itemId}` | Customer | **Đã triển khai.** Bỏ sản phẩm khỏi giỏ. |
 | POST | `/shipping/calculate` | Customer | **Đã triển khai.** Tính phí `5.000đ/km` từ địa chỉ, khoảng cách hoặc Haversine khi có tọa độ; không có Google Maps key thì dùng khoảng cách dự phòng cấu hình (mặc định 5 km). |
 | POST | `/orders` | Customer | Tạo đơn lẻ từ giỏ; backend tự tính lại khoảng cách/phí theo địa chỉ và không nhận phí ship do client gửi. |
-| GET | `/orders` | Customer; Sales/Admin | Customer chỉ xem đơn của mình; Sales/Admin xem toàn bộ đơn (kèm tên khách hàng). |
+| GET | `/orders` | Customer; Sales/Admin | Customer chỉ xem đơn của mình; Sales/Admin xem toàn bộ đơn (kèm tên khách hàng và danh sách payment gồm phương thức, số tiền, trạng thái để đối soát). |
 | GET | `/orders/{order}` | Customer sở hữu đơn | Xem chi tiết đơn và trạng thái. |
 | POST | `/orders/{order}/cancel` | Customer sở hữu đơn, khi còn được phép hủy | Gửi yêu cầu hủy đơn. |
 | POST | `/orders/{id}/complaints` | Customer sở hữu đơn đã giao trong 24 giờ | **Đã triển khai.** Gửi một khiếu nại cho đơn bằng `multipart/form-data`, bắt buộc có ảnh JPG/JPEG/PNG tối đa 5 MB. |
 | PUT/PATCH | `/orders/{id}/status` | Customer; Sales/Admin | Cập nhật trạng thái theo state machine; Sales/Admin dùng PUT để cập nhật tiến trình giao hàng. |
+| PATCH | `/orders/{id}/confirm-payment` | Sales, Admin | Xác nhận đã nhận tiền cho payment VietQR `cho_xu_ly` của đơn `cho_duyet`; đối chiếu số tiền, khóa đơn/payment, phân bổ FEFO và ghi audit trong transaction. Gọi lặp lại trên giao dịch thành công trả kết quả hiện tại, không trừ kho lần nữa. |
 | GET | `/complaints` | Sales, Admin | **Đã triển khai.** Danh sách phân trang kèm đơn hàng, khách hàng, người xử lý và URL ảnh minh chứng công khai. |
 | PUT | `/complaints/{id}` | Sales | **Đã triển khai.** Xử lý khiếu nại đang chờ với `trang_thai` là `chap_nhan` hoặc `tu_choi`, bắt buộc ghi `phan_hoi`; lưu Sales xử lý và thời điểm xử lý. |
 
@@ -156,8 +157,8 @@ Farm Staff không được gọi API đơn hàng hoặc xem thông tin khách; c
 |---|---|---|---|
 | GET | `/sales/orders` | Sales, Admin | Danh sách đơn; hỗ trợ lọc trạng thái/ngày. |
 | GET | `/sales/orders/{order}` | Sales, Admin | Xem đơn và thông tin cần thiết để xử lý. |
-| POST | `/sales/orders/{order}/approve` | Sales | Duyệt đơn và trừ kho FEFO trong transaction `FOR UPDATE`; lưu từng `batch_id` vào `order_details`. |
-| PATCH | `/sales/orders/{order}/status` | Sales | Cập nhật tiến trình giao hàng theo state machine. |
+| PATCH | `/orders/{id}/approve` | Sales | Duyệt đơn và trừ kho FEFO trong transaction `FOR UPDATE`; lưu từng `batch_id` vào `order_details` và ghi audit. |
+| PUT/PATCH | `/orders/{id}/status` | Sales, Admin | Cập nhật tiến trình giao hàng theo state machine và ghi audit. |
 | GET | `/sales/batches/expiring` | Sales, Admin | Lô còn hàng sắp hết hạn theo ngưỡng cấu hình (mặc định 2 ngày). |
 | GET | `/sales/notifications` | Sales | Danh sách cảnh báo lô cận hạn/thiếu hàng. |
 | PATCH | `/sales/notifications/{notification}/read` | Sales | Đánh dấu đã đọc. |
@@ -170,10 +171,10 @@ Sales không được gọi API tạo lô, cập nhật tồn thủ công, sửa
 
 | Method | Endpoint | Quyền | Mục đích |
 |---|---|---|---|
-| GET/POST | `/admin/categories` | Admin | Danh sách/tạo danh mục. |
-| GET/PUT/PATCH/DELETE | `/admin/categories/{category}` | Admin | Đọc/cập nhật/ngừng sử dụng danh mục. |
-| GET/POST | `/admin/products` | Admin | Danh sách/tạo sản phẩm. |
-| GET/PUT/PATCH/DELETE | `/admin/products/{product}` | Admin | Đọc/cập nhật/ngừng bán sản phẩm. |
+| GET/POST | `/admin/categories` | Admin | **Đã triển khai.** Danh sách phân trang (tối đa 100) và tạo danh mục bằng `ten_danh_muc`, `mo_ta`, `trang_thai`. |
+| PUT/DELETE | `/admin/categories/{id}` | Admin | **Đã triển khai.** Cập nhật trường danh mục; xóa bị chặn khi còn sản phẩm (kể cả sản phẩm đã xóa mềm) hoặc danh mục con. |
+| GET/POST | `/admin/products` | Admin | **Đã triển khai.** Danh sách phân trang kèm danh mục và tạo sản phẩm với `ten_san_pham`, `category_id`, `gia_ban`, `don_vi_tinh`, `mo_ta`, `trang_thai`; ảnh tùy chọn `hinh_anh_dai_dien` (JPG/JPEG/PNG/WEBP, tối đa 5 MB). |
+| PUT/DELETE | `/admin/products/{id}` | Admin | **Đã triển khai.** Cập nhật thông tin/ảnh; xóa bị chặn nếu có lô hoặc chi tiết đơn hàng, nếu đủ điều kiện thì xóa mềm và ngừng bán. Với upload qua multipart, gửi `_method=PUT` trong FormData. |
 | GET | `/admin/dashboard` | Admin | **Đã triển khai.** Tổng doanh thu đơn đã thanh toán/đã giao, đơn theo trạng thái, khách hàng, lô cận hạn và hao hụt. |
 | GET | `/admin/users` | Admin | Danh sách tài khoản, lọc role/trạng thái. |
 | GET | `/admin/users/{user}` | Admin | Chi tiết tài khoản. |
@@ -186,7 +187,23 @@ Sales không được gọi API tạo lô, cập nhật tồn thủ công, sửa
 | GET | `/admin/audit-logs` | Admin | **Đã triển khai.** Tra cứu có phân trang, lọc theo hành động/bảng và thông tin người thao tác. |
 | GET | `/admin/batches` | Admin | Chỉ đọc thông tin lô; không sửa lịch sử canh tác đã thu hoạch. |
 
-Thay đổi trạng thái tài khoản qua Admin hiện ghi `audit_logs` với người thực hiện, thời gian, đối tượng, IP và dữ liệu trước/sau. Audit log cho duyệt đơn, xuất hủy, hoàn tiền và thay đổi cấu hình nhạy cảm vẫn cần được triển khai; lưu trữ audit log tối thiểu 90 ngày.
+Các thao tác quản trị danh mục/sản phẩm, khóa tài khoản, Sales duyệt/cập nhật trạng thái đơn và xử lý khiếu nại, Farm Staff ghi nhận xuất hủy, cùng Sales/Admin xác nhận thanh toán VietQR đều ghi `audit_logs` trong cùng transaction với người thực hiện, hành động, đối tượng, ID bản ghi, IP và dữ liệu trước/sau. Schema hiện hành đặt tên cột tương ứng là `doi_tuong`, `doi_tuong_id`, `dia_chi_ip` (không phải `bang_tac_dong`, `ban_ghi_id`, `ip_address`). Lưu trữ audit log tối thiểu 90 ngày vẫn cần chính sách dọn dẹp riêng.
+
+### Payload Admin Catalog và VietQR thủ công
+
+Tạo/cập nhật danh mục dùng JSON:
+
+```json
+{
+  "ten_danh_muc": "Rau củ hữu cơ",
+  "mo_ta": "Nông sản được canh tác theo quy trình an toàn",
+  "trang_thai": "dang_ban"
+}
+```
+
+Tạo/cập nhật sản phẩm dùng JSON hoặc `multipart/form-data` với `ten_san_pham`, `category_id`, `gia_ban` (VND, số nguyên), `don_vi_tinh`, `mo_ta`, `trang_thai` (`dang_ban|ngung_ban`) và ảnh tùy chọn `hinh_anh_dai_dien`. Với upload khi cập nhật, gửi `POST /admin/products/{id}` kèm `_method=PUT` để PHP/Laravel nhận được file multipart. POST trả `201`, PUT trả `200`, DELETE trả `204`; dữ liệu liên kết không cho xóa sẽ trả `409`.
+
+`PATCH /orders/{id}/confirm-payment` không yêu cầu body. Sales/Admin chỉ gọi sau khi tự đối soát giao dịch ngân hàng; endpoint khóa payment/order, so khớp số tiền, đánh dấu thành công, phân bổ FEFO và ghi audit. VietQR QR tự thân không gửi xác nhận ngân hàng về hệ thống.
 
 ## Quy tắc nghiệp vụ áp dụng xuyên API
 

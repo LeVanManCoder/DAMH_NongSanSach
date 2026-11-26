@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\Api\AddressController;
+use App\Http\Controllers\Api\AdminCategoryController;
 use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\AdminProductController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BatchController;
 use App\Http\Controllers\Api\CartController;
@@ -54,6 +56,14 @@ Route::middleware('auth.jwt')->group(function (): void {
         Route::get('/users', [AdminController::class, 'users']);
         Route::patch('/users/{id}/status', [AdminController::class, 'updateUserStatus']);
         Route::get('/audit-logs', [AdminController::class, 'auditLogs']);
+        Route::get('/categories', [AdminCategoryController::class, 'index']);
+        Route::post('/categories', [AdminCategoryController::class, 'store']);
+        Route::put('/categories/{id}', [AdminCategoryController::class, 'update']);
+        Route::delete('/categories/{id}', [AdminCategoryController::class, 'destroy']);
+        Route::get('/products', [AdminProductController::class, 'index']);
+        Route::post('/products', [AdminProductController::class, 'store']);
+        Route::put('/products/{id}', [AdminProductController::class, 'update']);
+        Route::delete('/products/{id}', [AdminProductController::class, 'destroy']);
     });
 
     Route::middleware('role:farm_staff,sales,admin')->group(function (): void {
@@ -104,4 +114,5 @@ Route::middleware('auth.jwt')->group(function (): void {
     });
 
     Route::middleware('role:sales')->patch('/orders/{id}/approve', [OrderController::class, 'approve']);
+    Route::middleware('role:sales,admin')->patch('/orders/{id}/confirm-payment', [OrderController::class, 'confirmPayment']);
 });
