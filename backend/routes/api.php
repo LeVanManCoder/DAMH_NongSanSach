@@ -33,6 +33,8 @@ Route::get('/subscription-plans', [SubscriptionController::class, 'plans']);
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/payments/ipn', [PaymentController::class, 'ipn']);
+Route::post('/payments/payos/webhook', [PaymentController::class, 'payOsWebhook']);
+Route::match(['get', 'post'], '/payments/vnpay/ipn', [PaymentController::class, 'vnpayIpn']);
 Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('auth.jwt');
 Route::get('/auth/me', [AuthController::class, 'me'])->middleware('auth.jwt');
 Route::get('/user', [AuthController::class, 'me'])->middleware('auth.jwt');

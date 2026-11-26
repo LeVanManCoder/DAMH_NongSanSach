@@ -15,7 +15,7 @@ class CreatePaymentRequest extends FormRequest
     {
         return [
             'order_id' => ['required', 'integer', 'min:1'],
-            'phuong_thuc' => ['required', 'in:momo,vnpay'],
+            'phuong_thuc' => ['required', 'in:momo,vnpay,vietqr,payos'],
         ];
     }
 }

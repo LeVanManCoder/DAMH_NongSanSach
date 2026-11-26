@@ -6,12 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreFarmingLogRequest;
 use App\Models\Batch;
 use App\Models\FarmingLog;
+use App\Services\ImageStorageService;
 use App\Services\QrCodeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use OpenApi\Annotations as OA;
-use RuntimeException;
 use Throwable;
 
 class FarmingLogController extends Controller
@@ -45,22 +44,20 @@ class FarmingLogController extends Controller
         StoreFarmingLogRequest $request,
         int $id,
         QrCodeService $qrCodes,
+        ImageStorageService $images,
     ): JsonResponse {
         $validated = $request->validated();
         $file = $request->file('hinh_anh_minh_chung');
         $storedPath = null;
 
         try {
-            $log = DB::transaction(function () use ($request, $validated, $file, $id, &$storedPath): FarmingLog {
+            $log = DB::transaction(function () use ($request, $validated, $file, $id, $images, &$storedPath): FarmingLog {
                 $batch = Batch::query()->lockForUpdate()->findOrFail($id);
                 $imageUrl = null;
 
                 if ($file !== null) {
-                    $storedPath = $file->store('farming-logs', 'public');
-                    if ($storedPath === false) {
-                        throw new RuntimeException('Không thể lưu ảnh minh chứng nhật ký.');
-                    }
-                    $imageUrl = Storage::disk('public')->url($storedPath);
+                    $storedPath = $images->store($file, 'nong-lanh/farming-logs');
+                    $imageUrl = $images->publicUrl($storedPath);
                 }
 
                 return FarmingLog::query()->create([
@@ -74,7 +71,7 @@ class FarmingLogController extends Controller
             });
         } catch (Throwable $exception) {
             if (is_string($storedPath)) {
-                Storage::disk('public')->delete($storedPath);
+                $images->delete($storedPath);
             }
 
             throw $exception;

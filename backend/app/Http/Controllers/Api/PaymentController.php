@@ -8,7 +8,9 @@ use App\Http\Requests\PaymentIpnRequest;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Services\FefoService;
+use App\Services\Payments\PaymentGatewayService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -21,8 +23,8 @@ class PaymentController extends Controller
      * @OA\Post(
      *     path="/api/payments/create",
      *     tags={"Thanh toán"},
-     *     summary="Tạo giao dịch thanh toán mô phỏng",
-     *     description="Tạo giao dịch MoMo/VNPay giả lập và QR payload cho đơn hàng hiện tại.",
+     *     summary="Tạo giao dịch thanh toán",
+     *     description="Tạo giao dịch MoMo mô phỏng, VietQR, PayOS hoặc VNPay Sandbox cho đơn hàng hiện tại.",
      *     security={{"bearerAuth":{}}},
      *
      *     @OA\RequestBody(
@@ -32,7 +34,7 @@ class PaymentController extends Controller
      *             required={"order_id","phuong_thuc"},
      *
      *             @OA\Property(property="order_id", type="integer", example=1),
-     *             @OA\Property(property="phuong_thuc", type="string", enum={"momo","vnpay"}, example="momo")
+     *             @OA\Property(property="phuong_thuc", type="string", enum={"momo","vnpay","vietqr","payos"}, example="vietqr")
      *         )
      *     ),
      *
@@ -43,8 +45,10 @@ class PaymentController extends Controller
      *     @OA\Response(response=422, description="Dữ liệu thanh toán không hợp lệ.")
      * )
      */
-    public function create(CreatePaymentRequest $request): JsonResponse
-    {
+    public function create(
+        CreatePaymentRequest $request,
+        PaymentGatewayService $gateways,
+    ): JsonResponse {
         [$payment, $created] = DB::transaction(function () use ($request): array {
             $order = Order::query()
                 ->where('user_id', $request->user()->getKey())
@@ -90,6 +94,8 @@ class PaymentController extends Controller
             return [$payment, true];
         });
 
+        $gatewayData = $gateways->create($payment, (string) $request->ip());
+
         return response()->json([
             'data' => [
                 'payment' => [
@@ -100,12 +106,11 @@ class PaymentController extends Controller
                     'trang_thai' => $payment->trang_thai,
                     'ma_giao_dich' => $payment->ma_giao_dich,
                 ],
-                'qr_payload' => implode('|', [
-                    'NONG-LANH-PAY',
-                    $payment->phuong_thuc,
-                    $payment->ma_giao_dich,
-                    (string) $payment->so_tien,
-                ]),
+                'qr_payload' => $gatewayData['qr_payload'] ?? null,
+                'payment_url' => $gatewayData['payment_url'] ?? null,
+                'qr_image_url' => $gatewayData['qr_image_url'] ?? null,
+                'transfer' => $gatewayData['transfer'] ?? null,
+                'can_simulate' => $gateways->canSimulate($payment),
             ],
         ], $created ? 201 : 200);
     }
@@ -135,14 +140,21 @@ class PaymentController extends Controller
      *     @OA\Response(response=422, description="Số tiền callback không khớp hoặc dữ liệu không hợp lệ.")
      * )
      */
-    public function ipn(PaymentIpnRequest $request, FefoService $fefo): JsonResponse
-    {
-        $result = DB::transaction(function () use ($request, $fefo): array {
+    public function ipn(
+        PaymentIpnRequest $request,
+        FefoService $fefo,
+        PaymentGatewayService $gateways,
+    ): JsonResponse {
+        $result = DB::transaction(function () use ($request, $fefo, $gateways): array {
             $data = $request->validated();
             $payment = Payment::query()
                 ->where('ma_giao_dich', $data['ma_giao_dich'])
                 ->lockForUpdate()
                 ->firstOrFail();
+
+            if (! $gateways->canSimulate($payment)) {
+                throw new HttpException(403, 'Giao dịch này chỉ được xác nhận bởi callback đã ký của cổng thanh toán.');
+            }
 
             if ((int) $payment->so_tien !== (int) $data['so_tien']) {
                 throw ValidationException::withMessages([
@@ -219,5 +231,153 @@ class PaymentController extends Controller
                 'order' => $result['order'],
             ],
         ]);
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/api/payments/payos/webhook",
+     *     tags={"Thanh toán"},
+     *     summary="PayOS webhook đã xác thực chữ ký",
+     *
+     *     @OA\Response(response=200, description="Webhook hợp lệ đã được xử lý idempotent."),
+     *     @OA\Response(response=401, description="Chữ ký không hợp lệ.")
+     * )
+     */
+    public function payOsWebhook(
+        Request $request,
+        PaymentGatewayService $gateways,
+        FefoService $fefo,
+    ): JsonResponse {
+        $data = $request->input('data');
+        if (! is_array($data)
+            || ! $gateways->verifyPayOsSignature($data, $request->input('signature'))) {
+            return response()->json(['code' => '97', 'desc' => 'Invalid signature'], 401);
+        }
+
+        $orderCode = filter_var($data['orderCode'] ?? null, FILTER_VALIDATE_INT);
+        $amount = filter_var($data['amount'] ?? null, FILTER_VALIDATE_INT);
+        if ($orderCode === false || $amount === false || $orderCode <= 0 || $amount <= 0) {
+            return response()->json(['code' => '04', 'desc' => 'Invalid payment data'], 422);
+        }
+
+        $payment = Payment::query()->find($orderCode);
+        if ($payment === null || $payment->phuong_thuc !== 'payos') {
+            return response()->json(['code' => '01', 'desc' => 'Order not found'], 404);
+        }
+
+        $success = ($request->input('success') === true || $request->input('success') === 'true')
+            && (string) ($data['code'] ?? '') === '00';
+
+        try {
+            $this->settleProviderPayment((int) $payment->getKey(), $amount, $success, $fefo);
+        } catch (ValidationException) {
+            return response()->json(['code' => '04', 'desc' => 'Amount mismatch'], 422);
+        } catch (HttpException $exception) {
+            return response()->json(['code' => '99', 'desc' => $exception->getMessage()], $exception->getStatusCode());
+        }
+
+        return response()->json(['code' => '00', 'desc' => 'success']);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/payments/vnpay/ipn",
+     *     tags={"Thanh toán"},
+     *     summary="VNPay Sandbox IPN",
+     *
+     *     @OA\Response(response=200, description="Phản hồi theo định dạng chuẩn VNPay.")
+     * )
+     *
+     * @OA\Post(
+     *     path="/api/payments/vnpay/ipn",
+     *     tags={"Thanh toán"},
+     *     summary="VNPay Sandbox IPN",
+     *
+     *     @OA\Response(response=200, description="Phản hồi theo định dạng chuẩn VNPay.")
+     * )
+     */
+    public function vnpayIpn(
+        Request $request,
+        PaymentGatewayService $gateways,
+        FefoService $fefo,
+    ): JsonResponse {
+        $params = $request->all();
+        if (! $gateways->verifyVnpaySignature($params)) {
+            return response()->json(['RspCode' => '97', 'Message' => 'Invalid signature']);
+        }
+
+        if ((string) ($params['vnp_TmnCode'] ?? '') !== (string) config('services.vnpay.tmn_code')) {
+            return response()->json(['RspCode' => '97', 'Message' => 'Invalid merchant']);
+        }
+
+        $paymentId = filter_var($params['vnp_TxnRef'] ?? null, FILTER_VALIDATE_INT);
+        $amountMinor = filter_var($params['vnp_Amount'] ?? null, FILTER_VALIDATE_INT);
+        if ($paymentId === false || $amountMinor === false || $paymentId <= 0 || $amountMinor <= 0 || $amountMinor % 100 !== 0) {
+            return response()->json(['RspCode' => '04', 'Message' => 'Invalid amount']);
+        }
+
+        $payment = Payment::query()->find($paymentId);
+        if ($payment === null || $payment->phuong_thuc !== 'vnpay') {
+            return response()->json(['RspCode' => '01', 'Message' => 'Order not found']);
+        }
+
+        $successful = (string) ($params['vnp_ResponseCode'] ?? '') === '00'
+            && (! array_key_exists('vnp_TransactionStatus', $params)
+                || (string) $params['vnp_TransactionStatus'] === '00');
+
+        try {
+            $this->settleProviderPayment((int) $payment->getKey(), intdiv($amountMinor, 100), $successful, $fefo);
+        } catch (ValidationException) {
+            return response()->json(['RspCode' => '04', 'Message' => 'Invalid amount']);
+        } catch (HttpException) {
+            return response()->json(['RspCode' => '99', 'Message' => 'Payment processing failed']);
+        }
+
+        return response()->json(['RspCode' => '00', 'Message' => 'Confirm Success']);
+    }
+
+    private function settleProviderPayment(
+        int $paymentId,
+        int $amount,
+        bool $successful,
+        FefoService $fefo,
+    ): void {
+        DB::transaction(function () use ($paymentId, $amount, $successful, $fefo): void {
+            $payment = Payment::query()->lockForUpdate()->findOrFail($paymentId);
+            if ((int) $payment->so_tien !== $amount) {
+                throw ValidationException::withMessages([
+                    'so_tien' => ['Số tiền callback không khớp với giao dịch.'],
+                ]);
+            }
+
+            if ($payment->trang_thai === 'thanh_cong') {
+                return;
+            }
+
+            if ($payment->trang_thai === 'that_bai') {
+                return;
+            }
+
+            if (! $successful) {
+                $payment->trang_thai = 'that_bai';
+                $payment->save();
+
+                return;
+            }
+
+            if ($payment->order_id === null) {
+                throw new HttpException(409, 'Giao dịch này không gắn với đơn hàng.');
+            }
+
+            $order = $payment->order;
+            if ($order === null || $order->trang_thai !== 'cho_duyet') {
+                throw new HttpException(409, 'Đơn hàng không còn chờ thanh toán.');
+            }
+
+            $fefo->approveAndAllocateOrder((int) $order->getKey(), null, 'da_thanh_toan');
+            $payment->trang_thai = 'thanh_cong';
+            $payment->thoi_gian_thanh_toan = now();
+            $payment->save();
+        });
     }
 }

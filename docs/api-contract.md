@@ -83,15 +83,31 @@ Khi tạo đơn, kiểm tra giá/trạng thái sản phẩm và tồn khả dụ
 
 | Method | Endpoint | Quyền | Mục đích |
 |---|---|---|---|
-| POST | `/payments/create` | Customer sở hữu đơn | **Đã triển khai dạng mô phỏng.** Tạo giao dịch MoMo/VNPay và QR payload cho đơn đang chờ thanh toán. |
-| POST | `/payments/ipn` | Callback mô phỏng | **Đã triển khai dạng mô phỏng.** Kiểm tra mã giao dịch/số tiền, cập nhật `da_thanh_toan` và trừ kho FEFO trong transaction; callback lặp không trừ kho lần nữa. |
+| POST | `/payments/create` | Customer sở hữu đơn | Tạo giao dịch `momo`, `vietqr`, `payos` hoặc `vnpay`. VietQR trả `qr_image_url`, `payment_url` và `transfer`; PayOS trả `checkoutUrl` dưới dạng `payment_url` cùng QR payload; VNPay Sandbox trả URL ký HMAC-SHA512. PayOS thiếu key sẽ fallback sang VietQR; VNPay thiếu key giữ mô phỏng cũ. |
+| POST | `/payments/ipn` | Callback mô phỏng (chỉ local/testing) | Giữ nguyên payload cũ (`ma_giao_dich`, `so_tien`, `trang_thai`) cho demo/tests; production không cho dùng IPN mô phỏng để tự xác nhận thanh toán. |
+| POST | `/payments/payos/webhook` | PayOS, chữ ký HMAC-SHA256 | Xác minh chữ ký, `orderCode` và số tiền; callback thành công cập nhật `da_thanh_toan`, phân bổ FEFO trong transaction và có tính idempotent. |
+| GET/POST | `/payments/vnpay/ipn` | VNPay, chữ ký HMAC-SHA512 | Xác minh chữ ký, merchant, `vnp_TxnRef`, số tiền (đơn vị callback chia 100) và mã kết quả; trả payload `RspCode`/`Message` theo chuẩn VNPay. |
 | POST | `/orders/{order}/payments` | Customer sở hữu đơn | Endpoint mục tiêu nếu tích hợp cổng thanh toán thật. |
 | GET | `/orders/{order}/payments` | Customer sở hữu đơn, Sales, Admin | Lịch sử giao dịch được phép xem. |
 | POST | `/subscriptions/{subscription}/payments` | Customer sở hữu gói | Thanh toán trước gói định kỳ. |
 | POST | `/payments/webhooks/{provider}` | Provider, xác thực chữ ký | Nhận callback MoMo/VNPay; không dùng JWT người dùng. |
 | POST | `/sales/orders/{order}/refunds` | Sales | Hoàn tiền qua payment service; ghi audit log. |
 
-Các dịch vụ thanh toán phải được gọi qua interface/service, có mock service cho local/test. Mỗi payment gắn chính xác một `order_id` hoặc `subscription_id`.
+VietQR cần `VIETQR_BANK_ID` và `VIETQR_ACCOUNT_NO`; callback ngân hàng không tự có từ URL QR nên không tự xác nhận giao dịch nếu chưa nối dịch vụ đối soát. PayOS cần đủ `PAYOS_CLIENT_ID`, `PAYOS_API_KEY`, `PAYOS_CHECKSUM_KEY`; VNPay Sandbox cần `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET`, `VNPAY_RETURN_URL`. Cấu hình callback public `/api/payments/payos/webhook` và `/api/payments/vnpay/ipn` ở cổng tương ứng. Không đưa API secret/checksum key vào frontend. IPN cũ chỉ bật ở local/testing. Mỗi payment gắn chính xác một `order_id` hoặc `subscription_id`.
+
+Ảnh khiếu nại và nhật ký canh tác đi qua `ImageStorageService`. Cấu hình đủ `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` để lưu ảnh lên Cloudinary theo thư mục `nong-lanh/complaints`, `nong-lanh/farming-logs` hoặc `nong-lanh/products`; nếu chưa cấu hình, ảnh được lưu vào disk `public` và phục vụ qua `/storage/...`. Môi trường testing luôn dùng disk local.
+
+### Payload thanh toán ngoài
+
+Tạo giao dịch vẫn dùng body tương thích cũ:
+
+```json
+{"order_id": 123, "phuong_thuc": "vietqr"}
+```
+
+`phuong_thuc` hỗ trợ `momo`, `vnpay`, `vietqr`, `payos`. Response tiếp tục trả `data.payment` và `data.qr_payload`; trường bổ sung tùy provider gồm `payment_url`, `qr_image_url`, `transfer` (`bank_id`, `account_no`, `account_name`, `amount`, `transfer_content`) và cờ `can_simulate`.
+
+PayOS gửi callback tại `/api/payments/payos/webhook` dạng `{"success":true,"data":{"orderCode":123,"amount":70000,"code":"00",...},"signature":"<HMAC-SHA256>"}`. VNPay gửi các trường `vnp_TxnRef` (payment ID), `vnp_Amount` (số tiền nhân 100), `vnp_ResponseCode`, `vnp_TmnCode` và `vnp_SecureHash`; cả hai phương thức GET/POST đều nhận được tại `/api/payments/vnpay/ipn`.
 
 ## Gói định kỳ (Subscription)
 

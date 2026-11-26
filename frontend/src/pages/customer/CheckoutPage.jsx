@@ -334,34 +334,69 @@ function CheckoutPage() {
             ) : payment ? (
               <div className="mt-6 flex flex-col items-center rounded-2xl border border-slate-100 p-5">
                 <p className="font-semibold text-slate-900">
-                  Quét QR thanh toán {payment.payment.phuong_thuc.toUpperCase()}
+                  {payment.qr_image_url || payment.qr_payload
+                    ? `Quét QR thanh toán ${payment.payment.phuong_thuc.toUpperCase()}`
+                    : `Thanh toán qua ${payment.payment.phuong_thuc.toUpperCase()}`}
                 </p>
-                <div className="mt-4 rounded-xl bg-white p-3">
+                {payment.qr_image_url ? (
+                  <img
+                    src={payment.qr_image_url}
+                    alt="Mã QR chuyển khoản VietQR"
+                    className="mt-4 h-56 w-56 rounded-xl border border-slate-100 object-contain p-2"
+                  />
+                ) : payment.qr_payload ? (
+                  <div className="mt-4 rounded-xl bg-white p-3">
                   <QRCodeSVG
                     value={payment.qr_payload}
                     size={220}
                     level="H"
                     includeMargin
-                    title="Mã QR thanh toán mô phỏng"
+                    title="Mã QR thanh toán"
                   />
-                </div>
+                  </div>
+                ) : null}
+                {payment.transfer && (
+                  <dl className="mt-4 grid w-full gap-2 rounded-xl bg-slate-50 p-4 text-sm sm:grid-cols-2">
+                    <div><dt className="text-slate-500">Ngân hàng</dt><dd className="font-semibold">{payment.transfer.bank_id}</dd></div>
+                    <div><dt className="text-slate-500">Số tài khoản</dt><dd className="font-semibold">{payment.transfer.account_no}</dd></div>
+                    {payment.transfer.account_name && <div><dt className="text-slate-500">Chủ tài khoản</dt><dd className="font-semibold">{payment.transfer.account_name}</dd></div>}
+                    <div><dt className="text-slate-500">Số tiền</dt><dd className="font-semibold">{currencyFormatter.format(Number(payment.transfer.amount))}</dd></div>
+                    <div className="sm:col-span-2"><dt className="text-slate-500">Nội dung chuyển khoản</dt><dd className="break-all font-semibold">{payment.transfer.transfer_content}</dd></div>
+                  </dl>
+                )}
                 <p className="mt-3 break-all text-center text-xs text-slate-500">
                   Mã giao dịch: {payment.payment.ma_giao_dich}
                 </p>
-                <Button
-                  className="mt-5 w-full sm:w-auto"
-                  onClick={confirmPayment}
-                  disabled={isConfirmingPayment}
-                >
-                  {isConfirmingPayment ? (
-                    <>
-                      <LoadingSpinner label="Đang xác nhận" className="mr-2" />
-                      Đang xác nhận...
-                    </>
-                  ) : (
-                    'Xác nhận đã thanh toán'
-                  )}
-                </Button>
+                {payment.payment_url && payment.payment.phuong_thuc !== 'vietqr' && (
+                  <a
+                    href={payment.payment_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-4 inline-flex min-h-11 items-center rounded-lg border border-green-700 px-4 py-2 text-sm font-semibold text-green-800 hover:bg-green-50"
+                  >
+                    Mở trang thanh toán
+                  </a>
+                )}
+                {payment.can_simulate ? (
+                  <Button
+                    className="mt-5 w-full sm:w-auto"
+                    onClick={confirmPayment}
+                    disabled={isConfirmingPayment}
+                  >
+                    {isConfirmingPayment ? (
+                      <>
+                        <LoadingSpinner label="Đang xác nhận" className="mr-2" />
+                        Đang xác nhận...
+                      </>
+                    ) : (
+                      'Xác nhận đã thanh toán (Mô phỏng IPN)'
+                    )}
+                  </Button>
+                ) : (
+                  <p className="mt-4 text-center text-xs text-slate-500">
+                    Đơn hàng chỉ được xác nhận sau khi cổng thanh toán gửi callback hợp lệ.
+                  </p>
+                )}
               </div>
             ) : (
               <Button
@@ -513,8 +548,10 @@ function CheckoutPage() {
               <h2 className="text-lg font-bold text-slate-900">Phương thức thanh toán</h2>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {[
+                  ['vietqr', 'Chuyển khoản VietQR (QR ngân hàng)'],
+                  ['payos', 'PayOS'],
+                  ['vnpay', 'VNPay Sandbox'],
                   ['momo', 'MoMo (mô phỏng)'],
-                  ['vnpay', 'VNPay (mô phỏng)'],
                 ].map(([value, label]) => (
                   <label
                     key={value}

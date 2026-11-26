@@ -1832,8 +1832,8 @@
                 "tags": [
                     "Thanh toán"
                 ],
-                "summary": "Tạo giao dịch thanh toán mô phỏng",
-                "description": "Tạo giao dịch MoMo/VNPay giả lập và QR payload cho đơn hàng hiện tại.",
+                "summary": "Tạo giao dịch thanh toán",
+                "description": "Tạo giao dịch MoMo mô phỏng, VietQR, PayOS hoặc VNPay Sandbox cho đơn hàng hiện tại.",
                 "operationId": "26dedad4479cbe8f6d6a694bd352a654",
                 "requestBody": {
                     "required": true,
@@ -1851,10 +1851,12 @@
                                     },
                                     "phuong_thuc": {
                                         "type": "string",
-                                        "example": "momo",
+                                        "example": "vietqr",
                                         "enum": [
                                             "momo",
-                                            "vnpay"
+                                            "vnpay",
+                                            "vietqr",
+                                            "payos"
                                         ]
                                     }
                                 },
@@ -1940,6 +1942,49 @@
                     },
                     "422": {
                         "description": "Số tiền callback không khớp hoặc dữ liệu không hợp lệ."
+                    }
+                }
+            }
+        },
+        "/api/payments/payos/webhook": {
+            "post": {
+                "tags": [
+                    "Thanh toán"
+                ],
+                "summary": "PayOS webhook đã xác thực chữ ký",
+                "operationId": "8b355a91a336ee18a9ed85c2901801d7",
+                "responses": {
+                    "200": {
+                        "description": "Webhook hợp lệ đã được xử lý idempotent."
+                    },
+                    "401": {
+                        "description": "Chữ ký không hợp lệ."
+                    }
+                }
+            }
+        },
+        "/api/payments/vnpay/ipn": {
+            "get": {
+                "tags": [
+                    "Thanh toán"
+                ],
+                "summary": "VNPay Sandbox IPN",
+                "operationId": "55b6d02731f182abbb43220e3bdf1550",
+                "responses": {
+                    "200": {
+                        "description": "Phản hồi theo định dạng chuẩn VNPay."
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Thanh toán"
+                ],
+                "summary": "VNPay Sandbox IPN",
+                "operationId": "2486d692e0f4a1dd4796983fc05d68c9",
+                "responses": {
+                    "200": {
+                        "description": "Phản hồi theo định dạng chuẩn VNPay."
                     }
                 }
             }
