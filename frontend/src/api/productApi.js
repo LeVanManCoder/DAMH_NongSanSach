@@ -6,6 +6,8 @@ const productApi = {
   getFarmProducts: (config) => axiosClient.get('/farm/products', config),
   getProduct: (slug, config) =>
     axiosClient.get(`/products/${encodeURIComponent(slug)}`, config),
+  getReviews: (productId, params, config) =>
+    axiosClient.get(`/products/${productId}/reviews`, { ...config, params }),
 }
 
 export default productApi

@@ -38,7 +38,7 @@ class OrderController extends Controller
 
         if ($request->user()->role->ten_vai_tro === 'customer') {
             $query->where('user_id', $request->user()->getKey())
-                ->with('complaint.media');
+                ->with(['complaint.media', 'reviews']);
         } else {
             $query->with('user:id,ho_ten');
         }

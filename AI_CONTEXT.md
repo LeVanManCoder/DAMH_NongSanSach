@@ -127,3 +127,12 @@ Những mục dưới đây là trạng thái mới hơn snapshot lịch sử �
 - Khu vực `/staff/batches` có form tạo lô, gắn sản phẩm/mùa vụ, ngày thu hoạch/hạn dùng/số lượng và form ghi nhật ký theo từng lô. `POST /api/batches/{id}/farming-logs` nhận hành động, ghi chú, thời gian và ảnh tùy chọn; API `/batches` tải kèm nhật ký để cập nhật giao diện.
 - Giữ quy tắc truy xuất: không sinh QR khi lô chưa có ngày thu hoạch hoặc nhật ký. Sau khi lô có ngày thu hoạch, nhật ký đầu tiên tự kích hoạt sinh QR; nhật ký hiển thị qua trang `/trace/:qrCode`.
 - Feature tests bao phủ tìm kiếm/lọc, danh mục, quyền mùa vụ và luồng Farm Staff tạo mùa vụ → lô → nhật ký → QR/truy xuất. Toàn bộ backend đạt 33 tests / 284 assertions; frontend lint/build đạt. Chưa commit/push.
+
+## Cập nhật Giai đoạn hoàn thiện — Sales xử lý khiếu nại & Customer đánh giá
+
+- Thêm migration mở rộng trạng thái khiếu nại với `chap_nhan` và trường `phan_hoi`; phiên bản SQLite dùng cột string để tương thích test, MySQL/MariaDB nâng enum bằng migration tăng tiến. Sales có thể quyết định một lần trên khiếu nại đang chờ; ghi người xử lý, thời điểm và phản hồi. Từ chối cũng lưu phản hồi vào `ly_do_tu_choi` để giữ tương thích ràng buộc hiện hành.
+- `GET /api/complaints` chỉ Sales/Admin, trả dữ liệu phân trang kèm đơn, khách hàng, người xử lý và public URL ảnh. `PUT /api/complaints/{id}` chỉ Sales, nhận `chap_nhan|tu_choi` và ghi chú bắt buộc.
+- Ảnh được lưu trên disk `public`; liên kết tĩnh theo chuẩn Laravel `/storage/complaints/...` được tạo bằng `php artisan storage:link`. `public/storage` bị ignore để không đưa symlink máy cá nhân vào Git; cần chạy lệnh này sau deploy nếu chưa có liên kết.
+- Thêm `GET /api/products/{id}/reviews` công khai, phân trang và trả điểm trung bình; `POST` chỉ Customer có đơn `da_giao` chứa sản phẩm đó, rating 1–5, bình luận tối đa 500 ký tự và duy nhất mỗi đơn/sản phẩm.
+- Frontend có `/staff/complaints` cho Sales/Admin xem/phóng to ảnh, phản hồi và chấp nhận/từ chối. `/orders` hiển thị trạng thái/phản hồi khiếu nại và form đánh giá theo sản phẩm trên đơn đã giao; Product Detail hiển thị điểm trung bình và bình luận.
+- Feature tests mới cho quyền, ảnh công khai, chấp nhận/từ chối, feedback bắt buộc, điều kiện đơn đánh giá, rating và chống đánh giá trùng. Toàn bộ backend đạt 39 tests / 319 assertions; frontend lint, build, PHP syntax/Pint và sinh Swagger đều đạt. Đã tạo `backend/public/storage` junction tới `storage/app/public` bằng `php artisan storage:link`. Chưa commit/push; không thêm chữ ký AI vào commit.

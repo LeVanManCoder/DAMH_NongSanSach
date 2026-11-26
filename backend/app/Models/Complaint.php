@@ -18,6 +18,7 @@ class Complaint extends Model
         'ly_do',
         'mo_ta',
         'trang_thai',
+        'phan_hoi',
         'ly_do_tu_choi',
         'nguoi_xu_ly_id',
         'xu_ly_luc',

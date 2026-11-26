@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthProvider.jsx'
 import BatchWasteDashboard from './pages/staff/BatchWasteDashboard.jsx'
 import StaffOrdersPage from './pages/staff/StaffOrdersPage.jsx'
+import StaffComplaintsPage from './pages/staff/StaffComplaintsPage.jsx'
 import CartPage from './pages/customer/CartPage.jsx'
 import CheckoutPage from './pages/customer/CheckoutPage.jsx'
 import HomePage from './pages/customer/HomePage.jsx'
@@ -34,6 +35,7 @@ function App() {
             <Route index element={<BatchWasteDashboard />} />
             <Route path="batches" element={<BatchWasteDashboard />} />
             <Route path="orders" element={<StaffOrdersPage />} />
+            <Route path="complaints" element={<StaffComplaintsPage />} />
             <Route path="batches/waste" element={<BatchWasteDashboard />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

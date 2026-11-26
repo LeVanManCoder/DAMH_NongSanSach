@@ -49,7 +49,8 @@ Tên bảng trong cơ sở dữ liệu giữ tiếng Anh theo thiết kế; tên
 | GET | `/products/{product}/reviews` | Công khai | Đánh giá đã công bố. |
 | GET | `/trace/{qr_code}` | Công khai | Truy xuất nguồn gốc lô: sản phẩm, mùa vụ, ngày thu hoạch, chứng nhận nếu có và timeline canh tác. |
 | GET | `/batches/{batch}/trace` | Customer, Sales, Admin; Farm Staff chỉ lô thuộc nghiệp vụ được cấp | Tra cứu timeline nội bộ theo mã lô. |
-| POST | `/products/{product}/reviews` | Customer | Đánh giá sản phẩm đã mua; chỉ đơn đã giao mới đủ điều kiện. |
+| GET | `/products/{id}/reviews` | Công khai | **Đã triển khai.** Danh sách đánh giá phân trang, tên người đánh giá, điểm trung bình và tổng số đánh giá. |
+| POST | `/products/{id}/reviews` | Customer | **Đã triển khai.** Đánh giá 1–5 sao, bình luận tùy chọn; yêu cầu đơn của chính khách ở trạng thái `da_giao` và có sản phẩm, mỗi cặp đơn/sản phẩm chỉ đánh giá một lần. |
 
 QR chỉ được tạo sau khi lô chuyển sang `da_thu_hoach` và đã có ít nhất một nhật ký canh tác. Sau thu hoạch, không cho sửa/xóa các mốc canh tác trước đó.
 
@@ -73,8 +74,8 @@ QR chỉ được tạo sau khi lô chuyển sang `da_thu_hoach` và đã có í
 | POST | `/orders/{order}/cancel` | Customer sở hữu đơn, khi còn được phép hủy | Gửi yêu cầu hủy đơn. |
 | POST | `/orders/{id}/complaints` | Customer sở hữu đơn đã giao trong 24 giờ | **Đã triển khai.** Gửi một khiếu nại cho đơn bằng `multipart/form-data`, bắt buộc có ảnh JPG/JPEG/PNG tối đa 5 MB. |
 | PUT/PATCH | `/orders/{id}/status` | Customer; Sales/Admin | Cập nhật trạng thái theo state machine; Sales/Admin dùng PUT để cập nhật tiến trình giao hàng. |
-| GET | `/complaints` | Customer | Chỉ xem khiếu nại của chính mình. |
-| GET | `/complaints/{complaint}` | Customer sở hữu khiếu nại | Xem trạng thái xử lý và media minh chứng. |
+| GET | `/complaints` | Sales, Admin | **Đã triển khai.** Danh sách phân trang kèm đơn hàng, khách hàng, người xử lý và URL ảnh minh chứng công khai. |
+| PUT | `/complaints/{id}` | Sales | **Đã triển khai.** Xử lý khiếu nại đang chờ với `trang_thai` là `chap_nhan` hoặc `tu_choi`, bắt buộc ghi `phan_hoi`; lưu Sales xử lý và thời điểm xử lý. |
 
 Khi tạo đơn, kiểm tra giá/trạng thái sản phẩm và tồn khả dụng; không ghi tồn kho vào `products`. Sales duyệt đơn mới kích hoạt trừ tồn FEFO trong transaction có khóa dòng.
 
@@ -144,9 +145,8 @@ Farm Staff không được gọi API đơn hàng hoặc xem thông tin khách; c
 | GET | `/sales/batches/expiring` | Sales, Admin | Lô còn hàng sắp hết hạn theo ngưỡng cấu hình (mặc định 2 ngày). |
 | GET | `/sales/notifications` | Sales | Danh sách cảnh báo lô cận hạn/thiếu hàng. |
 | PATCH | `/sales/notifications/{notification}/read` | Sales | Đánh dấu đã đọc. |
-| GET | `/sales/complaints` | Sales | Danh sách khiếu nại cần xử lý. |
-| GET | `/sales/complaints/{complaint}` | Sales | Chi tiết khiếu nại và media minh chứng. |
-| POST | `/sales/complaints/{complaint}/resolve` | Sales | Xử lý theo hướng `refund` hoặc `replacement`; ghi audit log. |
+| GET | `/complaints` | Sales, Admin | **Đã triển khai.** Danh sách khiếu nại cùng thông tin đơn, khách hàng và ảnh minh chứng. |
+| PUT | `/complaints/{id}` | Sales | **Đã triển khai.** Chấp nhận/từ chối khiếu nại đang chờ, kèm phản hồi gửi khách hàng. |
 
 Sales không được gọi API tạo lô, cập nhật tồn thủ công, sửa nhật ký canh tác hoặc ghi nhận xuất hủy; các yêu cầu này trả `403`.
 

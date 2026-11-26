@@ -923,6 +923,93 @@
                 }
             }
         },
+        "/api/complaints": {
+            "get": {
+                "tags": [
+                    "Khiếu nại"
+                ],
+                "summary": "Danh sách khiếu nại cho Sales và Admin",
+                "operationId": "c896b092927624ef9ad25851388b1a78",
+                "responses": {
+                    "200": {
+                        "description": "Danh sách phân trang kèm đơn hàng, khách hàng và ảnh minh chứng."
+                    },
+                    "403": {
+                        "description": "Không đủ quyền xem khiếu nại."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/complaints/{id}": {
+            "put": {
+                "tags": [
+                    "Khiếu nại"
+                ],
+                "summary": "Sales chấp nhận hoặc từ chối khiếu nại",
+                "operationId": "6c87981b9860d45daee4b3c6d4b20e4a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "trang_thai",
+                                    "phan_hoi"
+                                ],
+                                "properties": {
+                                    "trang_thai": {
+                                        "type": "string",
+                                        "enum": [
+                                            "chap_nhan",
+                                            "tu_choi"
+                                        ]
+                                    },
+                                    "phan_hoi": {
+                                        "type": "string",
+                                        "maxLength": 2000
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Khiếu nại đã được xử lý."
+                    },
+                    "403": {
+                        "description": "Chỉ Sales được xử lý khiếu nại."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy khiếu nại."
+                    },
+                    "422": {
+                        "description": "Dữ liệu không hợp lệ hoặc khiếu nại đã được xử lý."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/orders/{id}/complaints": {
             "post": {
                 "tags": [
@@ -1598,6 +1685,98 @@
                 }
             }
         },
+        "/api/products/{id}/reviews": {
+            "get": {
+                "tags": [
+                    "Đánh giá"
+                ],
+                "summary": "Danh sách đánh giá và điểm trung bình sản phẩm",
+                "operationId": "b1db3c16536f19231153510e28632164",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Danh sách đánh giá công khai kèm điểm trung bình."
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Đánh giá"
+                ],
+                "summary": "Customer đánh giá sản phẩm đã mua trong đơn đã giao",
+                "operationId": "d6404cfe493e45f971af7bb8e3775044",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "order_id",
+                                    "so_sao"
+                                ],
+                                "properties": {
+                                    "order_id": {
+                                        "type": "integer"
+                                    },
+                                    "so_sao": {
+                                        "type": "integer",
+                                        "maximum": 5,
+                                        "minimum": 1
+                                    },
+                                    "noi_dung": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "maxLength": 500
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Đánh giá đã được ghi nhận."
+                    },
+                    "403": {
+                        "description": "Chỉ Customer được đánh giá."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy sản phẩm hoặc đơn hàng thuộc tài khoản."
+                    },
+                    "409": {
+                        "description": "Sản phẩm trong đơn này đã được đánh giá."
+                    },
+                    "422": {
+                        "description": "Đơn chưa giao hoặc không chứa sản phẩm."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/seasons": {
             "get": {
                 "tags": [
@@ -1854,6 +2033,10 @@
         {
             "name": "Sản phẩm",
             "description": "Sản phẩm"
+        },
+        {
+            "name": "Đánh giá",
+            "description": "Đánh giá"
         },
         {
             "name": "Mùa vụ",

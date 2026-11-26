@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\FarmingLogController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\SeasonController;
 use App\Http\Controllers\Api\ShippingController;
 use App\Http\Controllers\Api\TraceController;
@@ -25,6 +26,7 @@ Route::get('/ping', function () {
 Route::get('/trace/{qrCode}', [TraceController::class, 'show']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/products', [ProductController::class, 'index']);
+Route::get('/products/{id}/reviews', [ReviewController::class, 'index'])->whereNumber('id');
 Route::get('/products/{slug}', [ProductController::class, 'show']);
 
 Route::post('/auth/register', [AuthController::class, 'register']);
@@ -73,8 +75,15 @@ Route::middleware('auth.jwt')->group(function (): void {
         Route::delete('/cart/{itemId}', [CartController::class, 'destroy']);
         Route::post('/orders', [OrderController::class, 'store']);
         Route::post('/orders/{id}/complaints', [ComplaintController::class, 'store']);
+        Route::post('/products/{id}/reviews', [ReviewController::class, 'store'])->whereNumber('id');
         Route::post('/payments/create', [PaymentController::class, 'create']);
     });
+
+    Route::middleware('role:sales,admin')->group(function (): void {
+        Route::get('/complaints', [ComplaintController::class, 'index']);
+    });
+
+    Route::middleware('role:sales')->put('/complaints/{id}', [ComplaintController::class, 'update']);
 
     Route::middleware('role:customer,sales,admin')->group(function (): void {
         Route::get('/orders', [OrderController::class, 'index']);

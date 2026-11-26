@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import orderApi from '../../api/orderApi.js'
+import reviewApi from '../../api/reviewApi.js'
 import Button from '../../components/Button.jsx'
 import LoadingSpinner from '../../components/LoadingSpinner.jsx'
 import ToastNotification from '../../components/ToastNotification.jsx'
@@ -26,6 +27,7 @@ const ORDER_STATUSES = {
 }
 const COMPLAINT_STATUSES = {
   cho_xu_ly: 'Chờ xử lý',
+  chap_nhan: 'Đã chấp nhận',
   hoan_tien: 'Hoàn tiền',
   giao_bu: 'Giao bù',
   tu_choi: 'Từ chối',
@@ -73,6 +75,8 @@ function OrdersPage() {
   const [evidence, setEvidence] = useState(null)
   const [evidenceError, setEvidenceError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [reviewDrafts, setReviewDrafts] = useState({})
+  const [submittingReviewKey, setSubmittingReviewKey] = useState(null)
   const [toast, setToast] = useState(null)
   const dismissToast = useCallback(() => setToast(null), [])
 
@@ -172,6 +176,43 @@ function OrdersPage() {
     }
   }
 
+  function reviewKey(orderId, productId) {
+    return `${orderId}:${productId}`
+  }
+
+  async function submitReview(event, order, product) {
+    event.preventDefault()
+    const key = reviewKey(order.id, product.id)
+    const draft = reviewDrafts[key] ?? { so_sao: '5', noi_dung: '' }
+    setSubmittingReviewKey(key)
+
+    try {
+      const response = await reviewApi.create(product.id, {
+        order_id: order.id,
+        so_sao: Number(draft.so_sao),
+        noi_dung: draft.noi_dung.trim() || null,
+      })
+      setOrders((current) =>
+        current.map((item) =>
+          item.id === order.id
+            ? { ...item, reviews: [...(item.reviews ?? []), response.data.data] }
+            : item,
+        ),
+      )
+      setToast({ message: `Đã gửi đánh giá cho ${product.ten_san_pham}.`, type: 'success' })
+    } catch (error) {
+      setToast({
+        message:
+          error.response?.data?.errors?.order_id?.[0] ??
+          error.response?.data?.message ??
+          'Không gửi được đánh giá. Vui lòng thử lại.',
+        type: 'error',
+      })
+    } finally {
+      setSubmittingReviewKey(null)
+    }
+  }
+
   if (user?.role !== 'customer') {
     return (
       <section className="rounded-2xl bg-white p-8 text-center shadow-sm">
@@ -221,6 +262,13 @@ function OrdersPage() {
           {orders.map((order) => {
             const complaintWindowOpen = isWithinComplaintWindow(order)
             const complaint = order.complaint
+            const products = Array.from(
+              new Map(
+                (order.details ?? [])
+                  .filter((detail) => detail.product)
+                  .map((detail) => [detail.product_id, detail.product]),
+              ).values(),
+            )
 
             return (
               <article key={order.id} className="rounded-2xl bg-white p-5 shadow-sm sm:p-6">
@@ -268,6 +316,11 @@ function OrdersPage() {
                         complaint.ly_do}
                     </p>
                     {complaint.mo_ta && <p className="mt-1 text-amber-900">{complaint.mo_ta}</p>}
+                    {complaint.phan_hoi && (
+                      <p className="mt-2 border-t border-amber-200 pt-2 font-medium text-amber-950">
+                        Phản hồi từ nhân viên: {complaint.phan_hoi}
+                      </p>
+                    )}
                     <p className="mt-1 text-amber-800">Đã gửi yêu cầu kèm ảnh minh chứng.</p>
                   </div>
                 ) : complaintWindowOpen ? (
@@ -356,6 +409,83 @@ function OrdersPage() {
                     Đã hết thời hạn gửi khiếu nại 24 giờ kể từ lúc giao.
                   </p>
                 ) : null}
+
+                {order.trang_thai === 'da_giao' && products.length > 0 && (
+                  <section className="mt-5 border-t border-slate-100 pt-4">
+                    <h3 className="font-bold text-slate-900">Đánh giá sản phẩm</h3>
+                    <div className="mt-3 space-y-4">
+                      {products.map((product) => {
+                        const existingReview = (order.reviews ?? []).find(
+                          (review) => review.product_id === product.id,
+                        )
+                        const key = reviewKey(order.id, product.id)
+                        const draft = reviewDrafts[key] ?? { so_sao: '5', noi_dung: '' }
+
+                        return (
+                          <div key={product.id} className="rounded-xl bg-slate-50 p-4">
+                            <p className="font-medium text-slate-800">{product.ten_san_pham}</p>
+                            {existingReview ? (
+                              <p className="mt-2 text-sm text-green-800">
+                                Bạn đã đánh giá {existingReview.so_sao}/5 sao
+                                {existingReview.noi_dung ? ` — ${existingReview.noi_dung}` : ''}.
+                              </p>
+                            ) : (
+                              <form
+                                className="mt-3 grid gap-3 sm:grid-cols-[10rem_1fr_auto]"
+                                onSubmit={(event) => submitReview(event, order, product)}
+                              >
+                                <label className="text-sm font-medium text-slate-700">
+                                  Số sao
+                                  <select
+                                    value={draft.so_sao}
+                                    onChange={(event) =>
+                                      setReviewDrafts((current) => ({
+                                        ...current,
+                                        [key]: { ...draft, so_sao: event.target.value },
+                                      }))
+                                    }
+                                    className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3"
+                                  >
+                                    {[5, 4, 3, 2, 1].map((rating) => (
+                                      <option key={rating} value={rating}>{rating} sao</option>
+                                    ))}
+                                  </select>
+                                </label>
+                                <label className="text-sm font-medium text-slate-700">
+                                  Bình luận (không bắt buộc)
+                                  <input
+                                    value={draft.noi_dung}
+                                    maxLength={500}
+                                    onChange={(event) =>
+                                      setReviewDrafts((current) => ({
+                                        ...current,
+                                        [key]: { ...draft, noi_dung: event.target.value },
+                                      }))
+                                    }
+                                    className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3"
+                                  />
+                                </label>
+                                <div className="flex items-end">
+                                  <Button
+                                    type="submit"
+                                    disabled={submittingReviewKey !== null}
+                                  >
+                                    {submittingReviewKey === key ? (
+                                      <>
+                                        <LoadingSpinner label="Đang gửi đánh giá" className="mr-2" />
+                                        Đang gửi...
+                                      </>
+                                    ) : 'Gửi đánh giá'}
+                                  </Button>
+                                </div>
+                              </form>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </section>
+                )}
               </article>
             )
           })}
