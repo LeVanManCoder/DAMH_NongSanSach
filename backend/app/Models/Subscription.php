@@ -17,6 +17,7 @@ class Subscription extends Model
         'address_id',
         'ngay_bat_dau',
         'ngay_ket_thuc',
+        'chu_ky_giao_ngay',
         'tong_tien',
         'trang_thai',
     ];
@@ -27,6 +28,7 @@ class Subscription extends Model
             'ngay_bat_dau' => 'date',
             'ngay_ket_thuc' => 'date',
             'tong_tien' => 'decimal:0',
+            'chu_ky_giao_ngay' => 'integer',
         ];
     }
 

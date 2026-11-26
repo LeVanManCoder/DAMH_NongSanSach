@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import cartApi from '../../api/cartApi.js'
+import addressApi from '../../api/addressApi.js'
 import orderApi from '../../api/orderApi.js'
 import paymentApi from '../../api/paymentApi.js'
 import shippingApi from '../../api/shippingApi.js'
@@ -20,6 +21,9 @@ function CheckoutPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [items, setItems] = useState([])
+  const [addresses, setAddresses] = useState([])
+  const [savedAddressId, setSavedAddressId] = useState('')
+  const addressEdited = useRef(false)
   const [recipientName, setRecipientName] = useState(user?.ho_ten ?? '')
   const [phone, setPhone] = useState(user?.so_dien_thoai ?? '')
   const [address, setAddress] = useState('')
@@ -73,6 +77,39 @@ function CheckoutPage() {
   }, [navigate])
 
   useEffect(() => {
+    const controller = new AbortController()
+    async function loadAddresses() {
+      try {
+        const response = await addressApi.getAddresses({ signal: controller.signal })
+        if (controller.signal.aborted) return
+        const savedAddresses = response.data.data
+        setAddresses(savedAddresses)
+        const defaultAddress = savedAddresses.find((savedAddress) => savedAddress.la_mac_dinh)
+        if (defaultAddress && !addressEdited.current) {
+          setSavedAddressId(String(defaultAddress.id))
+          setRecipientName(defaultAddress.ten_nguoi_nhan)
+          setPhone(defaultAddress.so_dien_thoai)
+          setAddress(defaultAddress.dia_chi)
+        }
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setErrorMessage(
+            error.response?.data?.message ?? 'Không tải được sổ địa chỉ đã lưu.',
+          )
+        }
+      }
+    }
+
+    loadAddresses()
+    return () => controller.abort()
+  }, [])
+
+  const selectedAddress = useMemo(
+    () => addresses.find((savedAddress) => String(savedAddress.id) === savedAddressId),
+    [addresses, savedAddressId],
+  )
+
+  useEffect(() => {
     const normalizedAddress = address.trim()
     if (normalizedAddress.length < 5 || order) {
       return undefined
@@ -85,7 +122,15 @@ function CheckoutPage() {
 
       try {
         const response = await shippingApi.calculate(
-          { dia_chi_giao: normalizedAddress },
+          {
+            dia_chi_giao: normalizedAddress,
+            ...(selectedAddress?.vi_do != null && selectedAddress?.kinh_do != null
+              ? {
+                  vi_do: Number(selectedAddress.vi_do),
+                  kinh_do: Number(selectedAddress.kinh_do),
+                }
+              : {}),
+          },
           { signal: controller.signal },
         )
         setShippingQuote(response.data.data)
@@ -108,7 +153,7 @@ function CheckoutPage() {
       window.clearTimeout(timeoutId)
       controller.abort()
     }
-  }, [address, order])
+  }, [address, order, selectedAddress?.vi_do, selectedAddress?.kinh_do])
 
   const subtotal = useMemo(
     () =>
@@ -123,6 +168,8 @@ function CheckoutPage() {
   const total = subtotal + shippingFee
 
   function updateAddress(value) {
+    addressEdited.current = true
+    setSavedAddressId('')
     setAddress(value)
     setShippingQuote(null)
     setIsQuoteLoading(false)
@@ -163,6 +210,12 @@ function CheckoutPage() {
         ten_nguoi_nhan: recipientName,
         sdt_nguoi_nhan: phone,
         dia_chi_giao: address.trim(),
+        ...(selectedAddress?.vi_do != null && selectedAddress?.kinh_do != null
+          ? {
+              vi_do: Number(selectedAddress.vi_do),
+              kinh_do: Number(selectedAddress.kinh_do),
+            }
+          : {}),
         ghi_chu: note || null,
       })
       const createdOrder = response.data.data
@@ -350,6 +403,44 @@ function CheckoutPage() {
             <section className="rounded-2xl bg-white p-5 shadow-sm sm:p-7">
               <h2 className="text-lg font-bold text-slate-900">Địa chỉ nhận hàng</h2>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <label className="text-sm font-medium text-slate-700 sm:col-span-2">
+                  Chọn từ sổ địa chỉ
+                  <select
+                    value={savedAddressId}
+                    disabled={Boolean(order) || addresses.length === 0}
+                    onChange={(event) => {
+                      const nextId = event.target.value
+                      const savedAddress = addresses.find(
+                        (candidate) => String(candidate.id) === nextId,
+                      )
+                      setSavedAddressId(nextId)
+                      addressEdited.current = false
+                      if (savedAddress) {
+                        setRecipientName(savedAddress.ten_nguoi_nhan)
+                        setPhone(savedAddress.so_dien_thoai)
+                        setAddress(savedAddress.dia_chi)
+                        setShippingQuote(null)
+                      } else {
+                        setAddress('')
+                        setShippingQuote(null)
+                      }
+                    }}
+                    className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3"
+                  >
+                    <option value="">Nhập địa chỉ mới</option>
+                    {addresses.map((savedAddress) => (
+                      <option key={savedAddress.id} value={savedAddress.id}>
+                        {savedAddress.ten_nguoi_nhan} · {savedAddress.dia_chi}
+                        {savedAddress.la_mac_dinh ? ' (mặc định)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                  {addresses.length === 0 && (
+                    <Link to="/profile" className="mt-1 inline-block text-xs font-semibold text-green-800 hover:underline">
+                      Thêm địa chỉ vào sổ địa chỉ
+                    </Link>
+                  )}
+                </label>
                 <label className="text-sm font-medium text-slate-700">
                   Người nhận
                   <input

@@ -17,6 +17,8 @@ class StoreOrderRequest extends FormRequest
             'ten_nguoi_nhan' => ['required', 'string', 'max:100'],
             'sdt_nguoi_nhan' => ['required', 'string', 'max:15'],
             'dia_chi_giao' => ['required', 'string', 'max:255'],
+            'vi_do' => ['nullable', 'required_with:kinh_do', 'numeric', 'between:-90,90'],
+            'kinh_do' => ['nullable', 'required_with:vi_do', 'numeric', 'between:-180,180'],
             'phi_van_chuyen' => ['prohibited'],
             'khoang_cach_km' => ['prohibited'],
             'ngay_giao_du_kien' => ['sometimes', 'nullable', 'date', 'after_or_equal:today'],

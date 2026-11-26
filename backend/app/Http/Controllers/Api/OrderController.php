@@ -77,7 +77,12 @@ class OrderController extends Controller
     public function store(StoreOrderRequest $request, ShippingService $shipping): JsonResponse
     {
         $validated = $request->validated();
-        $shippingQuote = $shipping->calculate($validated['dia_chi_giao']);
+        $shippingQuote = $shipping->calculate(
+            $validated['dia_chi_giao'],
+            null,
+            isset($validated['vi_do']) ? (float) $validated['vi_do'] : null,
+            isset($validated['kinh_do']) ? (float) $validated['kinh_do'] : null,
+        );
 
         $order = DB::transaction(function () use ($request, $shippingQuote): Order {
             $userId = $request->user()->getKey();

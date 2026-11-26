@@ -12,6 +12,207 @@
         }
     ],
     "paths": {
+        "/api/addresses": {
+            "get": {
+                "tags": [
+                    "Địa chỉ"
+                ],
+                "summary": "Danh sách địa chỉ giao hàng của khách hàng",
+                "operationId": "dc6b190d3f07db7ed032fa181dc45150",
+                "responses": {
+                    "200": {
+                        "description": "Danh sách địa chỉ, địa chỉ mặc định đứng đầu."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Địa chỉ"
+                ],
+                "summary": "Thêm địa chỉ giao hàng",
+                "operationId": "6344fc023028e43a5490f1c6372bd391",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "ten_nguoi_nhan",
+                                    "so_dien_thoai",
+                                    "dia_chi"
+                                ],
+                                "properties": {
+                                    "ten_nguoi_nhan": {
+                                        "type": "string"
+                                    },
+                                    "so_dien_thoai": {
+                                        "type": "string"
+                                    },
+                                    "dia_chi": {
+                                        "type": "string"
+                                    },
+                                    "vi_do": {
+                                        "type": "number",
+                                        "nullable": true
+                                    },
+                                    "kinh_do": {
+                                        "type": "number",
+                                        "nullable": true
+                                    },
+                                    "la_mac_dinh": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Địa chỉ đã được lưu."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/addresses/{id}": {
+            "put": {
+                "tags": [
+                    "Địa chỉ"
+                ],
+                "summary": "Cập nhật địa chỉ thuộc tài khoản",
+                "operationId": "b4967e4140f305290dbde0982a3fc7d0",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "ten_nguoi_nhan",
+                                    "so_dien_thoai",
+                                    "dia_chi"
+                                ],
+                                "properties": {
+                                    "ten_nguoi_nhan": {
+                                        "type": "string"
+                                    },
+                                    "so_dien_thoai": {
+                                        "type": "string"
+                                    },
+                                    "dia_chi": {
+                                        "type": "string"
+                                    },
+                                    "vi_do": {
+                                        "type": "number",
+                                        "nullable": true
+                                    },
+                                    "kinh_do": {
+                                        "type": "number",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Địa chỉ đã cập nhật."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy địa chỉ thuộc tài khoản."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Địa chỉ"
+                ],
+                "summary": "Xóa địa chỉ thuộc tài khoản",
+                "operationId": "eedadf79fef97e5ee1af0b11c8856d8b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Địa chỉ đã xóa."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy địa chỉ thuộc tài khoản."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/addresses/{id}/default": {
+            "patch": {
+                "tags": [
+                    "Địa chỉ"
+                ],
+                "summary": "Đặt địa chỉ mặc định",
+                "operationId": "0341db0238290f4d8ef9c22a3a542e87",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Địa chỉ mặc định đã được cập nhật."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy địa chỉ thuộc tài khoản."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/auth/register": {
             "post": {
                 "tags": [
@@ -1916,6 +2117,162 @@
                 ]
             }
         },
+        "/api/subscription-plans": {
+            "get": {
+                "tags": [
+                    "Gói định kỳ"
+                ],
+                "summary": "Danh sách gói định kỳ đang mở",
+                "operationId": "e6d2a83b3e5de82bf0c09f856e72d7db",
+                "responses": {
+                    "200": {
+                        "description": "Các gói khách hàng có thể đăng ký."
+                    }
+                }
+            }
+        },
+        "/api/subscriptions": {
+            "get": {
+                "tags": [
+                    "Gói định kỳ"
+                ],
+                "summary": "Danh sách gói định kỳ của khách hàng hiện tại",
+                "operationId": "351423904a0a5ffde2680533b3076476",
+                "responses": {
+                    "200": {
+                        "description": "Các gói kèm sản phẩm, địa chỉ và lịch giao."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Gói định kỳ"
+                ],
+                "summary": "Đăng ký gói nhận nông sản định kỳ",
+                "operationId": "e95a22144803689290e2415240feac54",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "plan_id",
+                                    "address_id",
+                                    "ngay_bat_dau",
+                                    "chu_ky_giao_ngay",
+                                    "items"
+                                ],
+                                "properties": {
+                                    "plan_id": {
+                                        "type": "integer"
+                                    },
+                                    "address_id": {
+                                        "type": "integer"
+                                    },
+                                    "ngay_bat_dau": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "chu_ky_giao_ngay": {
+                                        "type": "integer",
+                                        "enum": [
+                                            7,
+                                            14
+                                        ]
+                                    },
+                                    "items": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Gói định kỳ đã được đăng ký."
+                    },
+                    "404": {
+                        "description": "Địa chỉ không thuộc tài khoản."
+                    },
+                    "422": {
+                        "description": "Dữ liệu đăng ký không hợp lệ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/subscriptions/{id}/status": {
+            "patch": {
+                "tags": [
+                    "Gói định kỳ"
+                ],
+                "summary": "Tạm dừng, tiếp tục hoặc hủy gói định kỳ",
+                "operationId": "667bc2441d3e8ea67614c33797211cb7",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "trang_thai"
+                                ],
+                                "properties": {
+                                    "trang_thai": {
+                                        "type": "string",
+                                        "enum": [
+                                            "tam_dung",
+                                            "dang_hoat_dong",
+                                            "da_huy"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Trạng thái gói đã được cập nhật."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy gói thuộc tài khoản."
+                    },
+                    "422": {
+                        "description": "Chuyển trạng thái không hợp lệ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/trace/{qrCode}": {
             "get": {
                 "tags": [
@@ -1999,6 +2356,10 @@
     },
     "tags": [
         {
+            "name": "Địa chỉ",
+            "description": "Địa chỉ"
+        },
+        {
             "name": "Xác thực",
             "description": "Xác thực"
         },
@@ -2045,6 +2406,10 @@
         {
             "name": "Giao hàng",
             "description": "Giao hàng"
+        },
+        {
+            "name": "Gói định kỳ",
+            "description": "Gói định kỳ"
         },
         {
             "name": "Truy xuất nguồn gốc",

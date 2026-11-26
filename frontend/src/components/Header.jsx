@@ -61,9 +61,17 @@ function Header() {
           {user ? (
             <div className="flex flex-wrap items-center gap-3">
               {user.role === 'customer' && (
-                <Link className="hover:text-green-800" to="/orders">
-                  Đơn hàng của tôi
-                </Link>
+                <>
+                  <Link className="hover:text-green-800" to="/orders">
+                    Đơn hàng của tôi
+                  </Link>
+                  <Link className="hover:text-green-800" to="/profile">
+                    Sổ địa chỉ
+                  </Link>
+                  <Link className="hover:text-green-800" to="/subscriptions">
+                    Gói định kỳ
+                  </Link>
+                </>
               )}
               <span className="text-slate-600">
                 {user.ho_ten} · {roleLabels[user.role] ?? user.role}

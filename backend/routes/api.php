@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AddressController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BatchController;
 use App\Http\Controllers\Api\CartController;
@@ -12,11 +13,10 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\SeasonController;
 use App\Http\Controllers\Api\ShippingController;
+use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\TraceController;
-use App\Models\Address;
 use App\Models\AuditLog;
 use App\Models\Order;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/ping', function () {
@@ -28,6 +28,7 @@ Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{id}/reviews', [ReviewController::class, 'index'])->whereNumber('id');
 Route::get('/products/{slug}', [ProductController::class, 'show']);
+Route::get('/subscription-plans', [SubscriptionController::class, 'plans']);
 
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
@@ -37,10 +38,6 @@ Route::get('/auth/me', [AuthController::class, 'me'])->middleware('auth.jwt');
 Route::get('/user', [AuthController::class, 'me'])->middleware('auth.jwt');
 
 Route::middleware('auth.jwt')->group(function (): void {
-    Route::middleware('role:customer')->get('/addresses', function (Request $request) {
-        return Address::query()->where('user_id', $request->user()->getKey())->get();
-    });
-
     Route::middleware('role:farm_staff')->group(function (): void {
         Route::get('/farm/products', [ProductController::class, 'farmIndex']);
         Route::get('/seasons', [SeasonController::class, 'index']);
@@ -67,6 +64,11 @@ Route::middleware('auth.jwt')->group(function (): void {
     });
 
     Route::middleware('role:customer')->group(function (): void {
+        Route::get('/addresses', [AddressController::class, 'index']);
+        Route::post('/addresses', [AddressController::class, 'store']);
+        Route::put('/addresses/{id}', [AddressController::class, 'update']);
+        Route::delete('/addresses/{id}', [AddressController::class, 'destroy']);
+        Route::patch('/addresses/{id}/default', [AddressController::class, 'setDefault']);
         Route::post('/shipping/calculate', [ShippingController::class, 'calculate']);
         Route::get('/cart', [CartController::class, 'index']);
         Route::post('/cart', [CartController::class, 'store']);
@@ -74,6 +76,9 @@ Route::middleware('auth.jwt')->group(function (): void {
         Route::patch('/cart/{itemId}', [CartController::class, 'update']);
         Route::delete('/cart/{itemId}', [CartController::class, 'destroy']);
         Route::post('/orders', [OrderController::class, 'store']);
+        Route::get('/subscriptions', [SubscriptionController::class, 'index']);
+        Route::post('/subscriptions', [SubscriptionController::class, 'store']);
+        Route::patch('/subscriptions/{id}/status', [SubscriptionController::class, 'updateStatus']);
         Route::post('/orders/{id}/complaints', [ComplaintController::class, 'store']);
         Route::post('/products/{id}/reviews', [ReviewController::class, 'store'])->whereNumber('id');
         Route::post('/payments/create', [PaymentController::class, 'create']);

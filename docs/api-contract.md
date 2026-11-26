@@ -58,11 +58,11 @@ QR chỉ được tạo sau khi lô chuyển sang `da_thu_hoach` và đã có í
 
 | Method | Endpoint | Quyền | Mục đích |
 |---|---|---|---|
-| GET | `/addresses` | Customer | Danh sách địa chỉ của chính khách hàng. |
-| POST | `/addresses` | Customer | Thêm địa chỉ giao hàng, có thể lưu tọa độ. |
-| GET | `/addresses/{address}` | Chủ địa chỉ | Xem địa chỉ của chính mình. |
-| PUT/PATCH | `/addresses/{address}` | Chủ địa chỉ | Cập nhật địa chỉ của chính mình. |
-| DELETE | `/addresses/{address}` | Chủ địa chỉ | Xóa địa chỉ nếu không bị ràng buộc bởi lịch sử giao dịch. |
+| GET | `/addresses` | Customer | **Đã triển khai.** Danh sách địa chỉ của chính khách hàng, mặc định đứng đầu. |
+| POST | `/addresses` | Customer | **Đã triển khai.** Thêm địa chỉ giao hàng, tùy chọn cặp tọa độ; địa chỉ đầu tiên tự thành mặc định. |
+| PUT | `/addresses/{id}` | Customer sở hữu địa chỉ | **Đã triển khai.** Cập nhật tên người nhận, điện thoại, địa chỉ và tọa độ. |
+| PATCH | `/addresses/{id}/default` | Customer sở hữu địa chỉ | **Đã triển khai.** Chọn một địa chỉ mặc định trong sổ địa chỉ của chính khách hàng. |
+| DELETE | `/addresses/{id}` | Customer sở hữu địa chỉ | **Đã triển khai.** Xóa địa chỉ; nếu xóa địa chỉ mặc định thì chọn địa chỉ gần nhất còn lại. Không xóa địa chỉ đang được gắn với subscription. |
 | GET | `/cart` | Customer | **Đã triển khai.** Xem giỏ hàng hiện tại. |
 | POST | `/cart` | Customer | **Đã triển khai.** Thêm sản phẩm vào giỏ (`product_id`, `so_luong`); cộng số lượng nếu sản phẩm đã có trong giỏ và trả `422` nếu vượt tồn khả dụng. |
 | PUT/PATCH | `/cart/{itemId}` | Customer | **Đã triển khai.** Cập nhật số lượng dương; từ chối nếu vượt tồn khả dụng. |
@@ -97,12 +97,12 @@ Các dịch vụ thanh toán phải được gọi qua interface/service, có mo
 
 | Method | Endpoint | Quyền | Mục đích |
 |---|---|---|---|
-| GET | `/subscription-plans` | Công khai | Danh sách gói đang mở bán. |
+| GET | `/subscription-plans` | Công khai | **Đã triển khai.** Danh sách gói đang hoạt động. |
 | GET | `/subscription-plans/{plan}` | Công khai | Chi tiết gói. |
-| POST | `/subscriptions` | Customer | Đăng ký gói, gồm `plan_id`, sản phẩm/số lượng, địa chỉ và các ngày giao trong tuần. |
-| GET | `/subscriptions` | Customer | Danh sách gói của chính mình. |
+| POST | `/subscriptions` | Customer | **Đã triển khai.** Đăng ký gói với `plan_id`, địa chỉ, ngày bắt đầu, sản phẩm/số lượng mỗi lần giao, `chu_ky_giao_ngay` 7 hoặc 14 và ngày giao trong tuần (mặc định là thứ trong ngày bắt đầu). |
+| GET | `/subscriptions` | Customer | **Đã triển khai.** Danh sách gói của chính mình, kèm sản phẩm, địa chỉ, chu kỳ giao và ngày giao. |
 | GET | `/subscriptions/{subscription}` | Customer sở hữu gói | Chi tiết gói, sản phẩm và lịch giao. |
-| PATCH | `/subscriptions/{subscription}` | Customer sở hữu gói, theo trạng thái cho phép | Cập nhật tùy chọn giao/sản phẩm. |
+| PATCH | `/subscriptions/{id}/status` | Customer sở hữu gói | **Đã triển khai.** Tạm dừng, tiếp tục hoặc hủy theo chuyển trạng thái hợp lệ. |
 | POST | `/subscriptions/{subscription}/cancel` | Customer sở hữu gói | Hủy gói theo chính sách. |
 | GET | `/subscriptions/{subscription}/schedules` | Customer sở hữu gói, Sales | Lịch giao và đơn con đã sinh. |
 | POST | `/sales/delivery-schedules/{schedule}/substitutions` | Sales | Đề xuất sản phẩm thay thế khi thiếu hàng, lưu quyết định vào lịch/đơn. |
