@@ -7,12 +7,11 @@ use App\Http\Requests\StoreComplaintRequest;
 use App\Http\Requests\UpdateComplaintRequest;
 use App\Models\Complaint;
 use App\Models\Order;
+use App\Services\ImageStorageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use OpenApi\Annotations as OA;
-use RuntimeException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Throwable;
 
@@ -29,7 +28,7 @@ class ComplaintController extends Controller
      *     @OA\Response(response=403, description="Không đủ quyền xem khiếu nại.")
      * )
      */
-    public function index(): JsonResponse
+    public function index(ImageStorageService $images): JsonResponse
     {
         $complaints = Complaint::query()
             ->with([
@@ -41,12 +40,9 @@ class ComplaintController extends Controller
             ->latest('created_at')
             ->paginate(20);
 
-        $complaints->getCollection()->each(function (Complaint $complaint): void {
-            $complaint->media->each(function ($media): void {
-                $media->setAttribute(
-                    'public_url',
-                    url(Storage::disk('public')->url($media->media_url)),
-                );
+        $complaints->getCollection()->each(function (Complaint $complaint) use ($images): void {
+            $complaint->media->each(function ($media) use ($images): void {
+                $media->setAttribute('public_url', $images->publicUrl($media->media_url));
             });
         });
 
@@ -75,8 +71,11 @@ class ComplaintController extends Controller
      *     @OA\Response(response=422, description="Dữ liệu không hợp lệ hoặc khiếu nại đã được xử lý.")
      * )
      */
-    public function update(UpdateComplaintRequest $request, int $id): JsonResponse
-    {
+    public function update(
+        UpdateComplaintRequest $request,
+        int $id,
+        ImageStorageService $images,
+    ): JsonResponse {
         $validated = $request->validated();
 
         $complaint = DB::transaction(function () use ($request, $validated, $id): Complaint {
@@ -105,8 +104,8 @@ class ComplaintController extends Controller
             ]);
         });
 
-        $complaint->media->each(function ($media): void {
-            $media->setAttribute('public_url', url(Storage::disk('public')->url($media->media_url)));
+        $complaint->media->each(function ($media) use ($images): void {
+            $media->setAttribute('public_url', $images->publicUrl($media->media_url));
         });
 
         return response()->json(['data' => $complaint]);
@@ -146,14 +145,17 @@ class ComplaintController extends Controller
      *     @OA\Response(response=422, description="Đơn chưa giao, quá 24 giờ hoặc tệp minh chứng không hợp lệ.")
      * )
      */
-    public function store(StoreComplaintRequest $request, int $id): JsonResponse
-    {
+    public function store(
+        StoreComplaintRequest $request,
+        int $id,
+        ImageStorageService $images,
+    ): JsonResponse {
         $validated = $request->validated();
         $file = $request->file('anh_minh_chung');
         $path = null;
 
         try {
-            $complaint = DB::transaction(function () use ($request, $validated, $file, $id, &$path): Complaint {
+            $complaint = DB::transaction(function () use ($request, $validated, $file, $id, $images, &$path): Complaint {
                 $order = Order::query()
                     ->where('user_id', $request->user()->getKey())
                     ->lockForUpdate()
@@ -175,10 +177,8 @@ class ComplaintController extends Controller
                     throw new HttpException(409, 'Đơn hàng này đã có khiếu nại.');
                 }
 
-                $path = $file->store('complaints', 'public');
-                if ($path === false) {
-                    throw new RuntimeException('Không thể lưu ảnh minh chứng.');
-                }
+                $storedLocation = $images->store($file, 'nong-lanh/complaints');
+                $path = $images->storagePath($storedLocation) ?? $storedLocation;
 
                 $complaint = Complaint::query()->create([
                     'order_id' => $order->getKey(),
@@ -199,7 +199,7 @@ class ComplaintController extends Controller
             });
         } catch (Throwable $exception) {
             if (is_string($path)) {
-                Storage::disk('public')->delete($path);
+                $images->delete($path);
             }
 
             throw $exception;
