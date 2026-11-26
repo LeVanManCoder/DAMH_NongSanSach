@@ -2,13 +2,87 @@
 
 namespace App\Services\Payments;
 
+use App\Models\Order;
 use App\Models\Payment;
+use App\Services\AuditLogService;
+use App\Services\FefoService;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class PaymentGatewayService
 {
+    public function confirmVietQrPayment(
+        int $orderId,
+        int $actorId,
+        ?string $ipAddress,
+        FefoService $fefo,
+        AuditLogService $auditLogs,
+    ): Order {
+        return DB::transaction(function () use ($orderId, $actorId, $ipAddress, $fefo, $auditLogs): Order {
+            $order = Order::query()->lockForUpdate()->findOrFail($orderId);
+            if ($order->trang_thai === 'da_thanh_toan') {
+                $confirmedPayment = Payment::query()
+                    ->where('order_id', $order->getKey())
+                    ->where('phuong_thuc', 'vietqr')
+                    ->where('trang_thai', 'thanh_cong')
+                    ->lockForUpdate()
+                    ->first();
+                if ($confirmedPayment !== null) {
+                    return $order->load('details.product', 'details.batch', 'payments');
+                }
+            }
+
+            if ($order->trang_thai !== 'cho_duyet') {
+                throw new HttpException(409, 'Đơn hàng không còn ở trạng thái chờ xác nhận thanh toán VietQR.');
+            }
+
+            $payment = Payment::query()
+                ->where('order_id', $order->getKey())
+                ->where('phuong_thuc', 'vietqr')
+                ->where('trang_thai', 'cho_xu_ly')
+                ->latest('id')
+                ->lockForUpdate()
+                ->first();
+            if ($payment === null) {
+                throw new HttpException(409, 'Đơn hàng không có giao dịch VietQR chờ xác nhận.');
+            }
+
+            if ((int) $payment->so_tien !== (int) $order->tong_thanh_toan) {
+                throw new HttpException(409, 'Số tiền giao dịch VietQR không khớp tổng thanh toán của đơn hàng.');
+            }
+
+            $oldData = [
+                'trang_thai' => $order->trang_thai,
+                'payment_id' => (int) $payment->getKey(),
+                'payment_trang_thai' => $payment->trang_thai,
+                'payment_so_tien' => (int) $payment->so_tien,
+            ];
+            $order = $fefo->approveAndAllocateOrder($orderId, $actorId, 'da_thanh_toan');
+            $payment->trang_thai = 'thanh_cong';
+            $payment->thoi_gian_thanh_toan = now();
+            $payment->save();
+
+            $auditLogs->record(
+                $actorId,
+                'xac_nhan_thanh_toan_vietqr',
+                'orders',
+                $orderId,
+                $oldData,
+                [
+                    'trang_thai' => $order->trang_thai,
+                    'payment_id' => (int) $payment->getKey(),
+                    'payment_trang_thai' => $payment->trang_thai,
+                    'payment_so_tien' => (int) $payment->so_tien,
+                ],
+                $ipAddress,
+            );
+
+            return $order->load('details.product', 'details.batch', 'payments');
+        });
+    }
+
     /**
      * @return array<string, mixed>
      */

@@ -3,6 +3,7 @@ import useAuth from '../contexts/useAuth.js'
 
 const links = [
   ['/admin/dashboard', 'Tổng quan'],
+  ['/admin/products', 'Sản phẩm & danh mục'],
   ['/admin/users', 'Tài khoản'],
   ['/admin/audit-logs', 'Nhật ký hệ thống'],
 ]

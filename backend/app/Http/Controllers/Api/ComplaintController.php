@@ -7,6 +7,7 @@ use App\Http\Requests\StoreComplaintRequest;
 use App\Http\Requests\UpdateComplaintRequest;
 use App\Models\Complaint;
 use App\Models\Order;
+use App\Services\AuditLogService;
 use App\Services\ImageStorageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -75,10 +76,11 @@ class ComplaintController extends Controller
         UpdateComplaintRequest $request,
         int $id,
         ImageStorageService $images,
+        AuditLogService $auditLogs,
     ): JsonResponse {
         $validated = $request->validated();
 
-        $complaint = DB::transaction(function () use ($request, $validated, $id): Complaint {
+        $complaint = DB::transaction(function () use ($request, $validated, $id, $auditLogs): Complaint {
             $complaint = Complaint::query()->lockForUpdate()->findOrFail($id);
             if ($complaint->trang_thai !== 'cho_xu_ly') {
                 throw ValidationException::withMessages([
@@ -86,6 +88,11 @@ class ComplaintController extends Controller
                 ]);
             }
 
+            $oldData = [
+                'trang_thai' => $complaint->trang_thai,
+                'phan_hoi' => $complaint->phan_hoi,
+                'ly_do_tu_choi' => $complaint->ly_do_tu_choi,
+            ];
             $complaint->forceFill([
                 'trang_thai' => $validated['trang_thai'],
                 'phan_hoi' => $validated['phan_hoi'],
@@ -95,6 +102,19 @@ class ComplaintController extends Controller
                 'nguoi_xu_ly_id' => $request->user()->getKey(),
                 'xu_ly_luc' => now(),
             ])->save();
+            $auditLogs->record(
+                $request->user(),
+                'xu_ly_khieu_nai',
+                'complaints',
+                (int) $complaint->getKey(),
+                $oldData,
+                [
+                    'trang_thai' => $complaint->trang_thai,
+                    'phan_hoi' => $complaint->phan_hoi,
+                    'ly_do_tu_choi' => $complaint->ly_do_tu_choi,
+                ],
+                $request->ip(),
+            );
 
             return $complaint->load([
                 'order:id,ma_don,user_id,trang_thai,tong_thanh_toan,ngay_giao_thuc_te',

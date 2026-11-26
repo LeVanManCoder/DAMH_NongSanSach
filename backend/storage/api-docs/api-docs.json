@@ -213,6 +213,101 @@
                 ]
             }
         },
+        "/api/admin/categories": {
+            "get": {
+                "tags": [
+                    "Quản trị"
+                ],
+                "summary": "Danh sách danh mục cho Admin",
+                "operationId": "65c63a6d35e189039a3f53d203350dbf",
+                "responses": {
+                    "200": {
+                        "description": "Danh sách danh mục có số sản phẩm."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Quản trị"
+                ],
+                "summary": "Tạo danh mục",
+                "operationId": "7bdb27a361d8e1df02b5ee7d01700a63",
+                "responses": {
+                    "201": {
+                        "description": "Danh mục đã được tạo."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/categories/{id}": {
+            "put": {
+                "tags": [
+                    "Quản trị"
+                ],
+                "summary": "Cập nhật danh mục",
+                "operationId": "d15302427ce0eeb2044e5bcb88160a86",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Danh mục đã được cập nhật."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Quản trị"
+                ],
+                "summary": "Xóa danh mục không có dữ liệu liên kết",
+                "operationId": "0e54d59f434c8d51c2b544f44af48ba1",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Danh mục đã được xóa."
+                    },
+                    "409": {
+                        "description": "Danh mục còn sản phẩm hoặc danh mục con."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/admin/dashboard": {
             "get": {
                 "tags": [
@@ -364,6 +459,101 @@
                 "responses": {
                     "200": {
                         "description": "Nhật ký mới nhất, phân trang và có thông tin người thao tác."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/products": {
+            "get": {
+                "tags": [
+                    "Quản trị"
+                ],
+                "summary": "Danh sách sản phẩm cho Admin",
+                "operationId": "9bb005e7e461e715b03cd64168905062",
+                "responses": {
+                    "200": {
+                        "description": "Danh sách sản phẩm có danh mục."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Quản trị"
+                ],
+                "summary": "Tạo sản phẩm kèm ảnh tùy chọn",
+                "operationId": "f18b2a7391d1e59fee2598d9936b00d2",
+                "responses": {
+                    "201": {
+                        "description": "Sản phẩm đã được tạo."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/products/{id}": {
+            "put": {
+                "tags": [
+                    "Quản trị"
+                ],
+                "summary": "Cập nhật sản phẩm kèm ảnh tùy chọn",
+                "operationId": "c00ca07e9d3e1360627366437336babe",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sản phẩm đã được cập nhật."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Quản trị"
+                ],
+                "summary": "Ngừng và xóa mềm sản phẩm chưa phát sinh lô hoặc đơn",
+                "operationId": "e70da76819b8205a26f8bb2155aec413",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Sản phẩm đã được xóa mềm."
+                    },
+                    "409": {
+                        "description": "Sản phẩm đã có lô hàng hoặc đơn hàng."
                     }
                 },
                 "security": [
@@ -1818,6 +2008,45 @@
                     },
                     "422": {
                         "description": "Trạng thái không hợp lệ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/orders/{id}/confirm-payment": {
+            "patch": {
+                "tags": [
+                    "Đơn hàng"
+                ],
+                "summary": "Sales/Admin xác nhận đã nhận tiền VietQR",
+                "description": "Xác nhận giao dịch VietQR đang chờ, phân bổ tồn kho theo FEFO và ghi audit log theo cách idempotent.",
+                "operationId": "cfaf1b8bf145efeb6ff93a994fa0fb3a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thanh toán đã được xác nhận."
+                    },
+                    "403": {
+                        "description": "Chỉ Sales/Admin được xác nhận."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy đơn hàng."
+                    },
+                    "409": {
+                        "description": "Không có giao dịch VietQR chờ xử lý hoặc đơn không còn chờ thanh toán."
                     }
                 },
                 "security": [

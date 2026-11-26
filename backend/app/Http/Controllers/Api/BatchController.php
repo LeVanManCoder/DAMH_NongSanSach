@@ -8,6 +8,7 @@ use App\Http\Requests\StoreBatchRequest;
 use App\Http\Requests\UpdateBatchRequest;
 use App\Models\Batch;
 use App\Models\WasteLog;
+use App\Services\AuditLogService;
 use App\Services\QrCodeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -288,10 +289,18 @@ class BatchController extends Controller
      *     @OA\Response(response=422, description="Số lượng xuất hủy không hợp lệ hoặc vượt tồn kho.")
      * )
      */
-    public function waste(RecordBatchWasteRequest $request, int $id): JsonResponse
-    {
-        $wasteLog = DB::transaction(function () use ($request, $id): WasteLog {
+    public function waste(
+        RecordBatchWasteRequest $request,
+        int $id,
+        AuditLogService $auditLogs,
+    ): JsonResponse {
+        $wasteLog = DB::transaction(function () use ($request, $id, $auditLogs): WasteLog {
             $batch = Batch::query()->lockForUpdate()->findOrFail($id);
+            $oldData = [
+                'so_luong_ton' => $batch->so_luong_ton,
+                'so_luong_hao_hut' => $batch->so_luong_hao_hut,
+                'trang_thai' => $batch->trang_thai,
+            ];
             $requestedUnits = (int) round((float) $request->validated('so_luong') * 100);
             $stockUnits = (int) round((float) $batch->so_luong_ton * 100);
 
@@ -318,12 +327,30 @@ class BatchController extends Controller
 
             $batch->save();
 
-            return WasteLog::query()->create([
+            $wasteLog = WasteLog::query()->create([
                 'batch_id' => $batch->getKey(),
                 'farm_staff_id' => $request->user()->getKey(),
                 'so_luong' => $request->validated('so_luong'),
                 'ly_do' => $request->validated('ly_do'),
             ]);
+            $auditLogs->record(
+                $request->user(),
+                'ghi_nhan_xuat_huy',
+                'batches',
+                (int) $batch->getKey(),
+                $oldData,
+                [
+                    'so_luong_ton' => $batch->so_luong_ton,
+                    'so_luong_hao_hut' => $batch->so_luong_hao_hut,
+                    'trang_thai' => $batch->trang_thai,
+                    'waste_log_id' => (int) $wasteLog->getKey(),
+                    'so_luong_xuat_huy' => $wasteLog->so_luong,
+                    'ly_do' => $wasteLog->ly_do,
+                ],
+                $request->ip(),
+            );
+
+            return $wasteLog;
         });
 
         return response()->json(['data' => $wasteLog], 201);
