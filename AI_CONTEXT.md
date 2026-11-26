@@ -146,3 +146,12 @@ Những mục dưới đây là trạng thái mới hơn snapshot lịch sử �
 - Frontend có `/profile` để thêm/xóa/đặt mặc định địa chỉ và `/subscriptions` để đăng ký, xem, tạm dừng/tiếp tục/hủy gói. Header Customer có liên kết tới hai trang.
 - Giai đoạn này chưa triển khai thu tiền subscription và Scheduler sinh delivery schedules/đơn định kỳ; đăng ký hiện hoạt động trực tiếp để quản lý/demo luồng.
 - Migration `2026_11_26_000002_add_delivery_interval_to_subscriptions` đã được áp dụng thành công bằng `php artisan migrate --force` sau khi xác nhận đây là migration duy nhất đang chờ. Toàn bộ backend đạt 43 tests / 359 assertions; frontend lint/build, PHP syntax/Pint và Swagger đạt. Không dùng `migrate:fresh`; không tự commit/push.
+
+## Cập nhật Giai đoạn hoàn thiện — Khu vực Admin (chưa commit)
+
+- Bổ sung `GET /api/admin/dashboard` với doanh thu đơn đã thanh toán/đã giao, tổng đơn và phân bố trạng thái, số Customer, số lượng/tỷ lệ lô cận hạn theo `inventory.expiry_warning_days`, và thống kê xuất hủy/hao hụt.
+- Bổ sung `GET /api/admin/users` có lọc tên/email, vai trò, trạng thái và phân trang; `PATCH /api/admin/users/{id}/status` khóa/mở tài khoản. Admin không thể tự khóa; thay đổi trạng thái được ghi cùng transaction vào `audit_logs` với dữ liệu trước/sau và IP.
+- Bổ sung `GET /api/admin/audit-logs` phân trang, lọc `hanh_dong`/`doi_tuong`, kèm người thao tác. Việc khóa tài khoản làm JWT đã cấp mất hiệu lực ngay; đăng nhập và gọi API bằng tài khoản bị khóa đều bị từ chối.
+- Frontend có `/admin/dashboard`, `/admin/users`, `/admin/audit-logs` trong `AdminLayout`; trang tổng quan có KPI/biểu đồ trạng thái, quản lý tài khoản có tìm kiếm/lọc/khóa-mở, nhật ký có lọc và xem thay đổi. Header chỉ hiện liên kết quản trị cho Admin; layout chặn vai trò khác.
+- Đã bổ sung Feature Tests cho số liệu, phân quyền, khóa/mở khóa, tự khóa, vô hiệu hóa token và lọc nhật ký. Toàn bộ backend đạt 47 tests / 398 assertions; `npm run lint`, `npm run build`, PHP syntax, Pint và `l5-swagger:generate` đều đạt. Đã xác nhận bốn Admin routes xuất hiện trong route list; chưa có migration mới.
+- Cập nhật `docs/api-contract.md` cho các endpoint Admin vừa triển khai. Chưa tự commit/push; không chạy `migrate:fresh`.

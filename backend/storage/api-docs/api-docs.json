@@ -213,6 +213,166 @@
                 ]
             }
         },
+        "/api/admin/dashboard": {
+            "get": {
+                "tags": [
+                    "Quản trị"
+                ],
+                "summary": "Thống kê tổng quan hệ thống",
+                "operationId": "a4e953abeda97cdeaa1c2af786aea1f3",
+                "responses": {
+                    "200": {
+                        "description": "Doanh thu, đơn hàng, khách hàng, hàng cận hạn và hao hụt."
+                    },
+                    "403": {
+                        "description": "Chỉ Admin được truy cập."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/users": {
+            "get": {
+                "tags": [
+                    "Quản trị"
+                ],
+                "summary": "Danh sách tài khoản và vai trò",
+                "operationId": "8734f0eb21eaec99b614d902ba09f030",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "role",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "is_active",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Danh sách tài khoản phân trang."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/users/{id}/status": {
+            "patch": {
+                "tags": [
+                    "Quản trị"
+                ],
+                "summary": "Khóa hoặc mở khóa tài khoản",
+                "operationId": "f46158426946893f0ec4297831f47670",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "is_active"
+                                ],
+                                "properties": {
+                                    "is_active": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Trạng thái tài khoản đã cập nhật."
+                    },
+                    "403": {
+                        "description": "Chỉ Admin được thực hiện."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy tài khoản."
+                    },
+                    "422": {
+                        "description": "Không được tự khóa tài khoản."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/audit-logs": {
+            "get": {
+                "tags": [
+                    "Quản trị"
+                ],
+                "summary": "Tra cứu nhật ký hoạt động",
+                "operationId": "f8abfa8ddd859e2b8d37a89a732215cf",
+                "parameters": [
+                    {
+                        "name": "hanh_dong",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "doi_tuong",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Nhật ký mới nhất, phân trang và có thông tin người thao tác."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/auth/register": {
             "post": {
                 "tags": [
@@ -2358,6 +2518,10 @@
         {
             "name": "Địa chỉ",
             "description": "Địa chỉ"
+        },
+        {
+            "name": "Quản trị",
+            "description": "Quản trị"
         },
         {
             "name": "Xác thực",

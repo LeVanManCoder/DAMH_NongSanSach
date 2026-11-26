@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AddressController;
+use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BatchController;
 use App\Http\Controllers\Api\CartController;
@@ -15,7 +16,6 @@ use App\Http\Controllers\Api\SeasonController;
 use App\Http\Controllers\Api\ShippingController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\TraceController;
-use App\Models\AuditLog;
 use App\Models\Order;
 use Illuminate\Support\Facades\Route;
 
@@ -47,7 +47,12 @@ Route::middleware('auth.jwt')->group(function (): void {
 
     Route::middleware('role:sales,admin')->get('/sales/orders', fn () => Order::query()->latest('ngay_tao')->paginate(20));
 
-    Route::middleware('role:admin')->get('/admin/audit-logs', fn () => AuditLog::query()->latest('created_at')->paginate(20));
+    Route::prefix('admin')->middleware('role:admin')->group(function (): void {
+        Route::get('/dashboard', [AdminController::class, 'dashboard']);
+        Route::get('/users', [AdminController::class, 'users']);
+        Route::patch('/users/{id}/status', [AdminController::class, 'updateUserStatus']);
+        Route::get('/audit-logs', [AdminController::class, 'auditLogs']);
+    });
 
     Route::middleware('role:farm_staff,sales,admin')->group(function (): void {
         Route::get('/batches', [BatchController::class, 'index']);

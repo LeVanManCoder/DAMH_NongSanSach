@@ -158,18 +158,19 @@ Sales không được gọi API tạo lô, cập nhật tồn thủ công, sửa
 | GET/PUT/PATCH/DELETE | `/admin/categories/{category}` | Admin | Đọc/cập nhật/ngừng sử dụng danh mục. |
 | GET/POST | `/admin/products` | Admin | Danh sách/tạo sản phẩm. |
 | GET/PUT/PATCH/DELETE | `/admin/products/{product}` | Admin | Đọc/cập nhật/ngừng bán sản phẩm. |
+| GET | `/admin/dashboard` | Admin | **Đã triển khai.** Tổng doanh thu đơn đã thanh toán/đã giao, đơn theo trạng thái, khách hàng, lô cận hạn và hao hụt. |
 | GET | `/admin/users` | Admin | Danh sách tài khoản, lọc role/trạng thái. |
 | GET | `/admin/users/{user}` | Admin | Chi tiết tài khoản. |
 | PATCH | `/admin/users/{user}/role` | Admin | Gán role hợp lệ. |
-| PATCH | `/admin/users/{user}/status` | Admin | Khóa/mở tài khoản. |
+| PATCH | `/admin/users/{id}/status` | Admin | **Đã triển khai.** Khóa/mở tài khoản; không cho tự khóa, ghi audit log và vô hiệu hóa JWT đang hoạt động của tài khoản bị khóa. |
 | GET | `/admin/reports/overview` | Admin | Báo cáo tổng quan bán hàng/kho. |
 | GET | `/admin/reports/waste` | Admin | Báo cáo hao hụt theo lô/mùa vụ/thời gian. |
 | GET | `/admin/system-settings` | Admin | Xem cấu hình hệ thống. |
 | PUT | `/admin/system-settings/{key}` | Admin | Cấu hình, gồm ngưỡng cảnh báo xả hàng. |
-| GET | `/admin/audit-logs` | Admin | Tra cứu thao tác nhạy cảm, có phân trang và lọc. |
+| GET | `/admin/audit-logs` | Admin | **Đã triển khai.** Tra cứu có phân trang, lọc theo hành động/bảng và thông tin người thao tác. |
 | GET | `/admin/batches` | Admin | Chỉ đọc thông tin lô; không sửa lịch sử canh tác đã thu hoạch. |
 
-Các thao tác duyệt đơn, xuất hủy, hoàn tiền và thay đổi cấu hình nhạy cảm phải ghi `audit_logs` với người thực hiện, thời gian, đối tượng và chi tiết. Lưu trữ audit log tối thiểu 90 ngày.
+Thay đổi trạng thái tài khoản qua Admin hiện ghi `audit_logs` với người thực hiện, thời gian, đối tượng, IP và dữ liệu trước/sau. Audit log cho duyệt đơn, xuất hủy, hoàn tiền và thay đổi cấu hình nhạy cảm vẫn cần được triển khai; lưu trữ audit log tối thiểu 90 ngày.
 
 ## Quy tắc nghiệp vụ áp dụng xuyên API
 

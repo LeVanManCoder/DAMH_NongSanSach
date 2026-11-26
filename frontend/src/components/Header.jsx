@@ -55,6 +55,11 @@ function Header() {
           <Link className="hover:text-green-800" to="/staff">
             Khu vực nhân viên
           </Link>
+          {user?.role === 'admin' && (
+            <Link className="font-semibold text-green-800 hover:underline" to="/admin/dashboard">
+              Quản trị hệ thống
+            </Link>
+          )}
           <Link className="hover:text-green-800" to="/cart">
             Giỏ hàng
           </Link>

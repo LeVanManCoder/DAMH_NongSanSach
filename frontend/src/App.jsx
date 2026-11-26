@@ -1,4 +1,8 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import AdminLayout from './layouts/AdminLayout.jsx'
+import AdminDashboardPage from './pages/admin/AdminDashboardPage.jsx'
+import AdminUsersPage from './pages/admin/AdminUsersPage.jsx'
+import AdminAuditLogsPage from './pages/admin/AdminAuditLogsPage.jsx'
 import { AuthProvider } from './contexts/AuthProvider.jsx'
 import BatchWasteDashboard from './pages/staff/BatchWasteDashboard.jsx'
 import StaffOrdersPage from './pages/staff/StaffOrdersPage.jsx'
@@ -41,6 +45,12 @@ function App() {
             <Route path="orders" element={<StaffOrdersPage />} />
             <Route path="complaints" element={<StaffComplaintsPage />} />
             <Route path="batches/waste" element={<BatchWasteDashboard />} />
+          </Route>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<AdminDashboardPage />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="audit-logs" element={<AdminAuditLogsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
