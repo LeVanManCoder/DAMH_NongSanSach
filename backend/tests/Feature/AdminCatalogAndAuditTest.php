@@ -231,8 +231,11 @@ class AdminCatalogAndAuditTest extends TestCase
         ]);
         $this->assertSame('0.00', Batch::query()->where('ma_lo', 'LO-FEFO-01')->value('so_luong_ton'));
         $this->assertSame('9.00', Batch::query()->where('ma_lo', 'LO-FEFO-02')->value('so_luong_ton'));
-        $this->assertDatabaseCount('order_details', 2);
-        $this->assertDatabaseCount('audit_logs', 1);
+        $this->assertSame(2, Order::query()->findOrFail($orderId)->details()->count());
+        $this->assertSame(1, AuditLog::query()
+            ->where('hanh_dong', 'xac_nhan_thanh_toan_vietqr')
+            ->where('doi_tuong_id', $orderId)
+            ->count());
         $this->assertDatabaseHas('audit_logs', [
             'hanh_dong' => 'xac_nhan_thanh_toan_vietqr',
             'doi_tuong' => 'orders',

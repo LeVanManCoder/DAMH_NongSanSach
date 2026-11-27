@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Sprout } from 'lucide-react'
+import { SearchX, Sprout } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
-import LoadingSpinner from '../../components/LoadingSpinner.jsx'
+import EmptyState from '../../components/EmptyState.jsx'
+import { ProductGridSkeleton } from '../../components/Skeletons.jsx'
 import productApi from '../../api/productApi.js'
 
 const currencyFormatter = new Intl.NumberFormat('vi-VN', {
@@ -153,13 +154,15 @@ function ProductList() {
       )}
 
       {isLoading ? (
-        <div className="flex min-h-48 items-center justify-center">
-          <LoadingSpinner label="Đang tải sản phẩm" className="text-green-700" />
-        </div>
+        <ProductGridSkeleton />
       ) : products.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-600">
-          Không tìm thấy sản phẩm phù hợp với bộ lọc.
-        </div>
+        <EmptyState
+          icon={SearchX}
+          title="Chưa tìm thấy sản phẩm phù hợp"
+          description="Hãy thử đổi từ khóa hoặc chọn một danh mục khác."
+          actionLabel="Xóa bộ lọc"
+          onAction={() => setSearchParams({})}
+        />
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {products.map((product) => {

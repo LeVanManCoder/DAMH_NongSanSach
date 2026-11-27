@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Copy, CopyCheck, ShoppingBasket } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import cartApi from '../../api/cartApi.js'
@@ -7,6 +8,8 @@ import orderApi from '../../api/orderApi.js'
 import paymentApi from '../../api/paymentApi.js'
 import shippingApi from '../../api/shippingApi.js'
 import Button from '../../components/Button.jsx'
+import Breadcrumbs from '../../components/Breadcrumbs.jsx'
+import EmptyState from '../../components/EmptyState.jsx'
 import LoadingSpinner from '../../components/LoadingSpinner.jsx'
 import ToastNotification from '../../components/ToastNotification.jsx'
 import useAuth from '../../contexts/useAuth.js'
@@ -39,7 +42,11 @@ function CheckoutPage() {
   const [payment, setPayment] = useState(null)
   const [errorMessage, setErrorMessage] = useState('')
   const [toast, setToast] = useState(null)
+  const [copiedField, setCopiedField] = useState('')
+  const copyResetTimeout = useRef(null)
   const dismissToast = useCallback(() => setToast(null), [])
+
+  useEffect(() => () => window.clearTimeout(copyResetTimeout.current), [])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -167,6 +174,23 @@ function CheckoutPage() {
   const shippingFee = Number(shippingQuote?.phi_van_chuyen ?? 0)
   const total = subtotal + shippingFee
 
+  async function copyPaymentValue(field, value) {
+    if (!value || !navigator.clipboard?.writeText) {
+      setToast({ message: 'Trình duyệt không hỗ trợ sao chép. Vui lòng nhập thông tin thủ công.', type: 'warning' })
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(String(value))
+      setCopiedField(field)
+      setToast({ message: `Đã sao chép ${field.toLowerCase()}.`, type: 'success' })
+      window.clearTimeout(copyResetTimeout.current)
+      copyResetTimeout.current = window.setTimeout(() => setCopiedField(''), 1800)
+    } catch {
+      setToast({ message: 'Không thể sao chép. Vui lòng chọn và sao chép thủ công.', type: 'error' })
+    }
+  }
+
   function updateAddress(value) {
     addressEdited.current = true
     setSavedAddressId('')
@@ -267,9 +291,14 @@ function CheckoutPage() {
 
   if (isLoadingCart) {
     return (
-      <div className="flex min-h-64 items-center justify-center">
-        <LoadingSpinner label="Đang tải thông tin thanh toán" className="text-green-700" />
-      </div>
+      <>
+        <Breadcrumbs items={[{ label: 'Giỏ hàng', to: '/cart' }, { label: 'Thanh toán' }]} />
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]" role="status" aria-label="Đang tải thông tin thanh toán">
+          <div className="skeleton-card h-80 p-6"><span className="skeleton-block h-6 w-1/3" /></div>
+          <div className="skeleton-card h-64 p-6"><span className="skeleton-block h-6 w-1/2" /></div>
+          <span className="sr-only">Đang tải thông tin thanh toán…</span>
+        </div>
+      </>
     )
   }
 
@@ -292,6 +321,7 @@ function CheckoutPage() {
 
   return (
     <section className="mx-auto max-w-5xl">
+      <Breadcrumbs items={[{ label: 'Giỏ hàng', to: '/cart' }, { label: 'Thanh toán' }]} />
       {toast && (
         <ToastNotification
           message={toast.message}
@@ -358,24 +388,62 @@ function CheckoutPage() {
                 {payment.transfer && (
                   <dl className="mt-4 grid w-full gap-2 rounded-xl bg-slate-50 p-4 text-sm sm:grid-cols-2">
                     <div><dt className="text-slate-500">Ngân hàng</dt><dd className="font-semibold">{payment.transfer.bank_id}</dd></div>
-                    <div><dt className="text-slate-500">Số tài khoản</dt><dd className="font-semibold">{payment.transfer.account_no}</dd></div>
+                    <div className="copyable-payment-field">
+                      <dt className="text-slate-500">Số tài khoản</dt>
+                      <dd className="font-semibold">{payment.transfer.account_no}</dd>
+                      <button type="button" className="copy-action" onClick={() => copyPaymentValue('Số tài khoản', payment.transfer.account_no)}>
+                        {copiedField === 'Số tài khoản' ? <CopyCheck size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}
+                        {copiedField === 'Số tài khoản' ? 'Đã sao chép' : 'Sao chép'}
+                      </button>
+                    </div>
                     {payment.transfer.account_name && <div><dt className="text-slate-500">Chủ tài khoản</dt><dd className="font-semibold">{payment.transfer.account_name}</dd></div>}
-                    <div><dt className="text-slate-500">Số tiền</dt><dd className="font-semibold">{currencyFormatter.format(Number(payment.transfer.amount))}</dd></div>
-                    <div className="sm:col-span-2"><dt className="text-slate-500">Nội dung chuyển khoản</dt><dd className="break-all font-semibold">{payment.transfer.transfer_content}</dd></div>
+                    <div className="copyable-payment-field">
+                      <dt className="text-slate-500">Số tiền</dt>
+                      <dd className="font-semibold">{currencyFormatter.format(Number(payment.transfer.amount))}</dd>
+                      <button type="button" className="copy-action" onClick={() => copyPaymentValue('Số tiền', payment.transfer.amount)}>
+                        {copiedField === 'Số tiền' ? <CopyCheck size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}
+                        {copiedField === 'Số tiền' ? 'Đã sao chép' : 'Sao chép'}
+                      </button>
+                    </div>
+                    <div className="copyable-payment-field sm:col-span-2">
+                      <dt className="text-slate-500">Nội dung chuyển khoản</dt>
+                      <dd className="break-all font-semibold">{payment.transfer.transfer_content}</dd>
+                      <button type="button" className="copy-action" onClick={() => copyPaymentValue('Nội dung chuyển khoản', payment.transfer.transfer_content)}>
+                        {copiedField === 'Nội dung chuyển khoản' ? <CopyCheck size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}
+                        {copiedField === 'Nội dung chuyển khoản' ? 'Đã sao chép' : 'Sao chép'}
+                      </button>
+                    </div>
                   </dl>
+                )}
+                {payment.transfer && (
+                  <ol className="payment-steps">
+                    <li>Mở ứng dụng ngân hàng và quét mã QR, hoặc sao chép thông tin chuyển khoản.</li>
+                    <li>Kiểm tra đúng số tiền và nội dung chuyển khoản trước khi xác nhận.</li>
+                    <li>Giữ lại biên nhận; đơn chỉ được xác nhận sau khi hệ thống nhận callback hoặc nhân viên đối soát.</li>
+                  </ol>
                 )}
                 <p className="mt-3 break-all text-center text-xs text-slate-500">
                   Mã giao dịch: {payment.payment.ma_giao_dich}
                 </p>
                 {payment.payment_url && payment.payment.phuong_thuc !== 'vietqr' && (
-                  <a
-                    href={payment.payment_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-4 inline-flex min-h-11 items-center rounded-lg border border-green-700 px-4 py-2 text-sm font-semibold text-green-800 hover:bg-green-50"
-                  >
-                    Mở trang thanh toán
-                  </a>
+                  <div className="mt-4 flex flex-wrap justify-center gap-2">
+                    <a
+                      href={payment.payment_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex min-h-11 items-center rounded-lg border border-green-700 px-4 py-2 text-sm font-semibold text-green-800 hover:bg-green-50"
+                    >
+                      Mở trang thanh toán
+                    </a>
+                    <button
+                      type="button"
+                      className="copy-action"
+                      onClick={() => copyPaymentValue('Liên kết thanh toán', payment.payment_url)}
+                    >
+                      {copiedField === 'Liên kết thanh toán' ? <CopyCheck size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}
+                      {copiedField === 'Liên kết thanh toán' ? 'Đã sao chép' : 'Sao chép liên kết'}
+                    </button>
+                  </div>
                 )}
                 {payment.can_simulate ? (
                   <Button
@@ -423,15 +491,13 @@ function CheckoutPage() {
           </aside>
         </div>
       ) : items.length === 0 ? (
-        <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
-          <p className="text-slate-600">Giỏ hàng đang trống.</p>
-          <Link
-            to="/cart"
-            className="mt-5 inline-flex min-h-11 items-center rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white hover:bg-green-800"
-          >
-            Quay lại giỏ hàng
-          </Link>
-        </div>
+        <EmptyState
+          icon={ShoppingBasket}
+          title="Chưa có sản phẩm để thanh toán"
+          description="Thêm sản phẩm vào giỏ hàng trước khi tiếp tục."
+          actionLabel="Quay lại giỏ hàng"
+          actionTo="/cart"
+        />
       ) : (
         <form onSubmit={placeOrder} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <div className="space-y-6">

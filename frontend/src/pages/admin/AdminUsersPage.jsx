@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
+import { CircleCheck, LockKeyhole } from 'lucide-react'
 import adminApi from '../../api/adminApi.js'
 import Button from '../../components/Button.jsx'
 import LoadingSpinner from '../../components/LoadingSpinner.jsx'
+import { TableSkeleton } from '../../components/Skeletons.jsx'
 import ToastNotification from '../../components/ToastNotification.jsx'
+import useConfirm from '../../components/useConfirm.js'
 import useAuth from '../../contexts/useAuth.js'
 
 const roleLabels = {
@@ -14,6 +17,7 @@ const roleLabels = {
 
 function AdminUsersPage() {
   const { user } = useAuth()
+  const confirm = useConfirm()
   const [users, setUsers] = useState([])
   const [page, setPage] = useState(1)
   const [lastPage, setLastPage] = useState(1)
@@ -88,7 +92,16 @@ function AdminUsersPage() {
 
   async function toggleUser(userRecord) {
     const nextStatus = !userRecord.is_active
+    const confirmed = await confirm({
+      title: nextStatus ? 'Mở khóa tài khoản?' : 'Khóa tài khoản?',
+      description: nextStatus
+        ? `Tài khoản ${userRecord.email} sẽ có thể đăng nhập trở lại.`
+        : `Tài khoản ${userRecord.email} sẽ không thể đăng nhập cho đến khi được mở khóa.`,
+      confirmLabel: nextStatus ? 'Mở khóa' : 'Khóa tài khoản',
+    })
+    if (!confirmed) return
     setBusyUserId(userRecord.id)
+
     try {
       const response = await adminApi.updateUserStatus(userRecord.id, nextStatus)
       setUsers((current) =>
@@ -267,11 +280,11 @@ function AdminUsersPage() {
 
       {errorMessage && <p className="mb-4 rounded-xl bg-red-50 p-4 text-sm text-red-800" role="alert">{errorMessage}</p>}
       {isLoading ? (
-        <div className="flex min-h-48 items-center justify-center"><LoadingSpinner label="Đang tải tài khoản" className="text-green-700" /></div>
+        <TableSkeleton columns={4} rows={6} label="Đang tải tài khoản" />
       ) : (
         <>
           <div className="dashboard-panel overflow-x-auto rounded-2xl bg-white">
-            <table className="min-w-full divide-y divide-slate-100 text-left text-sm">
+            <table className="mobile-card-table min-w-full divide-y divide-slate-100 text-left text-sm">
               <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                 <tr>
                   <th className="px-4 py-3">Tài khoản</th>
@@ -283,18 +296,21 @@ function AdminUsersPage() {
               <tbody className="divide-y divide-slate-100">
                 {users.map((record) => (
                   <tr key={record.id}>
-                    <td className="px-4 py-4">
+                    <td data-label="Tài khoản" className="px-4 py-4">
                       <p className="font-semibold text-slate-900">{record.ho_ten}</p>
                       <p className="mt-1 text-slate-500">{record.email}</p>
                       {record.so_dien_thoai && <p className="mt-1 text-xs text-slate-500">{record.so_dien_thoai}</p>}
                     </td>
-                    <td className="px-4 py-4 text-slate-700">{roleLabels[record.role?.ten_vai_tro] ?? record.role?.ten_vai_tro}</td>
-                    <td className="px-4 py-4">
-                      <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${record.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    <td data-label="Vai trò" className="px-4 py-4 text-slate-700">{roleLabels[record.role?.ten_vai_tro] ?? record.role?.ten_vai_tro}</td>
+                    <td data-label="Trạng thái" className="px-4 py-4">
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${record.is_active ? 'bg-green-100 text-green-900' : 'bg-red-100 text-red-900'}`}>
+                        {record.is_active
+                          ? <CircleCheck size={14} aria-hidden="true" />
+                          : <LockKeyhole size={14} aria-hidden="true" />}
                         {record.is_active ? 'Đang hoạt động' : 'Đã khóa'}
                       </span>
                     </td>
-                    <td className="px-4 py-4">
+                    <td data-label="Thao tác" className="px-4 py-4">
                       <Button
                         variant={record.is_active ? 'secondary' : 'primary'}
                         disabled={busyUserId !== null || (record.id === user?.id && record.is_active)}
@@ -308,7 +324,7 @@ function AdminUsersPage() {
                     </td>
                   </tr>
                 ))}
-                {users.length === 0 && <tr><td colSpan="4" className="px-4 py-8 text-center text-slate-500">Không tìm thấy tài khoản phù hợp.</td></tr>}
+                {users.length === 0 && <tr className="mobile-table-empty"><td colSpan="4" className="px-4 py-8 text-center text-slate-500">Không tìm thấy tài khoản phù hợp.</td></tr>}
               </tbody>
             </table>
           </div>

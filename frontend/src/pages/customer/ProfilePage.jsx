@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import addressApi from '../../api/addressApi.js'
 import Button from '../../components/Button.jsx'
+import EmptyState from '../../components/EmptyState.jsx'
 import LoadingSpinner from '../../components/LoadingSpinner.jsx'
+import SkeletonBlock from '../../components/Skeletons.jsx'
 import ToastNotification from '../../components/ToastNotification.jsx'
+import useConfirm from '../../components/useConfirm.js'
 import useAuth from '../../contexts/useAuth.js'
 
 const INITIAL_FORM = {
@@ -17,6 +20,7 @@ const INITIAL_FORM = {
 
 function ProfilePage() {
   const { user } = useAuth()
+  const confirm = useConfirm()
   const [addresses, setAddresses] = useState([])
   const [form, setForm] = useState(INITIAL_FORM)
   const [editingAddressId, setEditingAddressId] = useState(null)
@@ -130,7 +134,12 @@ function ProfilePage() {
   }
 
   async function deleteAddress(addressId) {
-    if (!window.confirm('Bạn có chắc muốn xóa địa chỉ giao hàng này?')) return
+    const confirmed = await confirm({
+      title: 'Xóa địa chỉ giao hàng?',
+      description: 'Địa chỉ đã xóa sẽ không còn dùng để điền nhanh khi thanh toán.',
+      confirmLabel: 'Xóa địa chỉ',
+    })
+    if (!confirmed) return
     setBusyAddressId(addressId)
     try {
       await addressApi.remove(addressId)
@@ -278,11 +287,22 @@ function ProfilePage() {
       <section className="space-y-3">
         <h2 className="text-lg font-bold text-slate-900">Địa chỉ đã lưu</h2>
         {isLoading ? (
-          <div className="flex min-h-32 items-center justify-center">
-            <LoadingSpinner label="Đang tải địa chỉ" className="text-green-700" />
+          <div className="grid gap-3" role="status" aria-label="Đang tải địa chỉ">
+            {[0, 1].map((item) => (
+              <article className="skeleton-card space-y-3 p-5" key={item}>
+                <SkeletonBlock className="h-5 w-1/3" />
+                <SkeletonBlock className="h-4 w-2/3" />
+              </article>
+            ))}
+            <span className="sr-only">Đang tải sổ địa chỉ…</span>
           </div>
         ) : addresses.length === 0 ? (
-          <p className="rounded-xl bg-white p-5 text-sm text-slate-600">Bạn chưa lưu địa chỉ nào.</p>
+          <EmptyState
+            title="Chưa có địa chỉ giao hàng"
+            description="Thêm địa chỉ để thanh toán nhanh hơn ở những lần mua sau."
+            actionLabel="Nhập địa chỉ đầu tiên"
+            onAction={() => document.querySelector('[name="ten_nguoi_nhan"]')?.focus()}
+          />
         ) : addresses.map((address) => (
           <article key={address.id} className="rounded-2xl bg-white p-5 shadow-sm sm:flex sm:items-center sm:justify-between sm:gap-4">
             <div>

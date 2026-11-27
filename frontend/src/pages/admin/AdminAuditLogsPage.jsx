@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import adminApi from '../../api/adminApi.js'
 import Button from '../../components/Button.jsx'
-import LoadingSpinner from '../../components/LoadingSpinner.jsx'
+import { TableSkeleton } from '../../components/Skeletons.jsx'
 
 function AdminAuditLogsPage() {
   const [logs, setLogs] = useState([])
@@ -130,11 +130,11 @@ function AdminAuditLogsPage() {
 
       {errorMessage && <p className="mb-4 rounded-xl bg-red-50 p-4 text-sm text-red-800" role="alert">{errorMessage}</p>}
       {isLoading ? (
-        <div className="flex min-h-48 items-center justify-center"><LoadingSpinner label="Đang tải nhật ký" className="text-green-700" /></div>
+        <TableSkeleton columns={6} rows={6} label="Đang tải nhật ký hệ thống" />
       ) : (
         <>
           <div className="dashboard-panel overflow-x-auto rounded-2xl bg-white">
-            <table className="min-w-full divide-y divide-slate-100 text-left text-sm">
+            <table className="mobile-card-table min-w-full divide-y divide-slate-100 text-left text-sm">
               <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                 <tr>
                   <th className="px-4 py-3">Thời gian</th>
@@ -148,24 +148,24 @@ function AdminAuditLogsPage() {
               <tbody className="divide-y divide-slate-100">
                 {logs.map((log) => (
                   <tr key={log.id} className="align-top">
-                    <td className="whitespace-nowrap px-4 py-4 text-slate-600">
+                    <td data-label="Thời gian" className="whitespace-nowrap px-4 py-4 text-slate-600">
                       {log.created_at ? new Date(log.created_at).toLocaleString('vi-VN') : '—'}
                     </td>
-                    <td className="px-4 py-4">
+                    <td data-label="Người thao tác" className="px-4 py-4">
                       <p className="font-medium text-slate-800">{log.user?.ho_ten ?? 'Tài khoản đã xóa'}</p>
                       {log.user?.email && <p className="mt-1 text-xs text-slate-500">{log.user.email}</p>}
                     </td>
-                    <td className="px-4 py-4 font-semibold text-slate-800">{log.hanh_dong}</td>
-                    <td className="px-4 py-4 text-slate-600">{log.doi_tuong} / {log.doi_tuong_id ?? '—'}</td>
-                    <td className="max-w-sm px-4 py-4 text-xs text-slate-600">
+                    <td data-label="Hành động" className="px-4 py-4 font-semibold text-slate-800">{log.hanh_dong}</td>
+                    <td data-label="Bảng / ID" className="px-4 py-4 text-slate-600">{log.doi_tuong} / {log.doi_tuong_id ?? '—'}</td>
+                    <td data-label="Thay đổi" className="max-w-sm px-4 py-4 text-xs text-slate-600">
                       {log.du_lieu_cu || log.du_lieu_moi ? (
                         <pre className="whitespace-pre-wrap break-words">{JSON.stringify({ cu: log.du_lieu_cu, moi: log.du_lieu_moi }, null, 2)}</pre>
                       ) : '—'}
                     </td>
-                    <td className="px-4 py-4 text-slate-500">{log.dia_chi_ip ?? '—'}</td>
+                    <td data-label="IP" className="px-4 py-4 text-slate-500">{log.dia_chi_ip ?? '—'}</td>
                   </tr>
                 ))}
-                {logs.length === 0 && <tr><td colSpan="6" className="px-4 py-8 text-center text-slate-500">Chưa có nhật ký phù hợp với bộ lọc.</td></tr>}
+                {logs.length === 0 && <tr className="mobile-table-empty"><td colSpan="6" className="px-4 py-8 text-center text-slate-500">Chưa có nhật ký phù hợp với bộ lọc.</td></tr>}
               </tbody>
             </table>
           </div>

@@ -80,7 +80,7 @@ function LoginPage() {
                   required
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  placeholder="ban@example.com"
+                  placeholder="khach@nonglanh.vn"
                 />
               </span>
             </label>

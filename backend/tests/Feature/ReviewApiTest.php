@@ -101,7 +101,7 @@ class ReviewApiTest extends TestCase
         return User::query()->create([
             'ho_ten' => 'Khách đánh giá',
             'email' => Str::uuid().'@example.test',
-            'password' => 'Password@123',
+            'password' => '12345678',
         ]);
     }
 

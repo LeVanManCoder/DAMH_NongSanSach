@@ -1,35 +1,55 @@
 import { useEffect } from 'react'
+import { CircleAlert, CircleCheck, Info, TriangleAlert, X } from 'lucide-react'
 
 const variants = {
-  success: 'border-green-200 bg-green-50 text-green-900',
-  error: 'border-red-200 bg-red-50 text-red-900',
+  success: {
+    className: 'toast-success',
+    icon: CircleCheck,
+  },
+  error: {
+    className: 'toast-error',
+    icon: CircleAlert,
+  },
+  warning: {
+    className: 'toast-warning',
+    icon: TriangleAlert,
+  },
+  info: {
+    className: 'toast-info',
+    icon: Info,
+  },
 }
 
 function ToastNotification({ message, type = 'success', onClose, duration = 4500 }) {
   useEffect(() => {
+    if (!message || !duration) return undefined
     const timeoutId = window.setTimeout(onClose, duration)
 
     return () => window.clearTimeout(timeoutId)
-  }, [duration, onClose])
+  }, [duration, message, onClose])
 
   if (!message) {
     return null
   }
 
+  const variant = variants[type] ?? variants.success
+  const Icon = variant.icon
+
   return (
     <div
       role={type === 'error' ? 'alert' : 'status'}
       aria-live={type === 'error' ? 'assertive' : 'polite'}
-      className={`fixed right-4 top-4 z-50 flex max-w-sm items-start gap-4 rounded-xl border px-4 py-3 shadow-lg ${variants[type] ?? variants.success}`}
+      className={`toast-notification ${variant.className}`}
     >
-      <p className="text-sm font-medium">{message}</p>
+      <Icon className="mt-0.5 shrink-0" size={19} aria-hidden="true" />
+      <p className="min-w-0 flex-1 text-sm font-medium">{message}</p>
       <button
         type="button"
+        className="toast-dismiss"
         aria-label="Đóng thông báo"
-        className="rounded px-1 text-lg leading-5 opacity-70 hover:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
         onClick={onClose}
       >
-        ×
+        <X size={17} aria-hidden="true" />
       </button>
     </div>
   )

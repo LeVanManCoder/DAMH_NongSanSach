@@ -85,7 +85,7 @@ class SubscriptionQueueTest extends TestCase
         $job->handle(app(ShippingService::class));
         $job->handle(app(ShippingService::class));
 
-        $this->assertDatabaseCount('orders', 1);
+        $this->assertSame(1, Order::query()->where('subscription_id', $subscription->getKey())->count());
         $this->assertDatabaseHas('orders', [
             'subscription_id' => $subscription->getKey(),
             'user_id' => $customer->getKey(),
@@ -115,6 +115,6 @@ class SubscriptionQueueTest extends TestCase
             ->expectsOutputToContain('Đã đưa 0 lịch giao')
             ->assertExitCode(0);
         Queue::assertPushed(GenerateSubscriptionOrdersJob::class, 1);
-        $this->assertDatabaseCount('orders', 1);
+        $this->assertSame(1, Order::query()->where('subscription_id', $subscription->getKey())->count());
     }
 }

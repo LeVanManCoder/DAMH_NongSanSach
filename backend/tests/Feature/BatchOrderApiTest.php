@@ -79,7 +79,7 @@ class BatchOrderApiTest extends TestCase
         $this->assertSame('2.00', $batch->so_luong_hao_hut);
         $this->assertDatabaseHas('waste_logs', [
             'batch_id' => $batchId,
-            'farm_staff_id' => User::query()->where('email', 'nhanvien@nonganhlanh.local')->value('id'),
+            'farm_staff_id' => User::query()->where('email', 'nongtrai@nonglanh.vn')->value('id'),
             'so_luong' => '2.00',
         ]);
 
@@ -276,7 +276,7 @@ class BatchOrderApiTest extends TestCase
 
     public function test_sales_can_confirm_delivery_with_put_and_see_customer_names_in_order_list(): void
     {
-        $customer = User::query()->where('email', 'khachhang@nonganhlanh.local')->firstOrFail();
+        $customer = User::query()->where('email', 'khach@nonglanh.vn')->firstOrFail();
         $order = Order::query()->create([
             'ma_don' => 'TEST-DELIVERY-PUT',
             'user_id' => $customer->getKey(),
@@ -294,7 +294,7 @@ class BatchOrderApiTest extends TestCase
         $this->withToken($salesToken)
             ->getJson('/api/orders')
             ->assertOk()
-            ->assertJsonPath('data.0.user.ho_ten', 'Khách hàng mẫu');
+            ->assertJsonPath('data.0.user.ho_ten', 'Nguyễn Thị Mai');
 
         $this->withToken($salesToken)
             ->putJson('/api/orders/'.$order->getKey().'/status', ['trang_thai' => 'da_giao'])

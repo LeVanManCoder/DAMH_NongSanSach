@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
+import { AlertCircle, CircleCheck, Clock3 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import complaintApi from '../../api/complaintApi.js'
 import Button from '../../components/Button.jsx'
+import EmptyState from '../../components/EmptyState.jsx'
 import LoadingSpinner from '../../components/LoadingSpinner.jsx'
+import SkeletonBlock from '../../components/Skeletons.jsx'
 import ToastNotification from '../../components/ToastNotification.jsx'
+import useConfirm from '../../components/useConfirm.js'
 import useAuth from '../../contexts/useAuth.js'
 
 const COMPLAINT_STATUSES = {
@@ -21,6 +25,7 @@ const RESOLUTION_OPTIONS = [
 
 function StaffComplaintsPage() {
   const { user } = useAuth()
+  const confirm = useConfirm()
   const [complaints, setComplaints] = useState([])
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(false)
@@ -92,6 +97,14 @@ function StaffComplaintsPage() {
       return
     }
 
+    const confirmed = await confirm({
+      title: 'Lưu phương án xử lý khiếu nại?',
+      description: `Hệ thống sẽ ghi nhận “${COMPLAINT_STATUSES[status]}” và gửi phản hồi đã nhập cho khách hàng. Việc ghi nhận không tự hoàn tiền hoặc tạo đơn đổi hàng.`,
+      confirmLabel: 'Lưu phương án',
+      tone: status === 'tu_choi' ? 'danger' : 'warning',
+    })
+    if (!confirmed) return
+
     setUpdatingId(complaint.id)
     try {
       const response = await complaintApi.updateComplaint(complaint.id, {
@@ -154,13 +167,24 @@ function StaffComplaintsPage() {
       )}
 
       {isLoading ? (
-        <div className="flex min-h-48 items-center justify-center">
-          <LoadingSpinner label="Đang tải khiếu nại" className="text-green-700" />
+        <div className="space-y-5" role="status" aria-label="Đang tải khiếu nại">
+          {[0, 1, 2].map((item) => (
+            <article className="skeleton-card space-y-3 p-5" key={item}>
+              <SkeletonBlock className="h-5 w-2/3" />
+              <SkeletonBlock className="h-4 w-1/2" />
+              <SkeletonBlock className="h-24 w-full rounded-xl" />
+            </article>
+          ))}
+          <span className="sr-only">Đang tải danh sách khiếu nại…</span>
         </div>
       ) : complaints.length === 0 ? (
-        <div className="rounded-2xl bg-white p-8 text-center text-slate-600 shadow-sm">
-          Chưa có khiếu nại nào.
-        </div>
+        <EmptyState
+          icon={CircleCheck}
+          title="Chưa có khiếu nại cần xử lý"
+          description="Khi khách hàng gửi yêu cầu, thông tin sẽ hiển thị tại đây."
+          actionLabel="Tải lại"
+          onAction={() => loadComplaints()}
+        />
       ) : (
         <div className="space-y-5">
           {complaints.map((complaint) => {
@@ -180,7 +204,12 @@ function StaffComplaintsPage() {
                       {complaint.user?.email ? ` (${complaint.user.email})` : ''}
                     </p>
                   </div>
-                  <span className="rounded-full bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-900">
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold ${isPending ? 'bg-amber-100 text-amber-950' : complaint.trang_thai === 'tu_choi' ? 'bg-red-100 text-red-950' : 'bg-green-100 text-green-950'}`}>
+                    {isPending
+                      ? <Clock3 size={15} aria-hidden="true" />
+                      : complaint.trang_thai === 'tu_choi'
+                        ? <AlertCircle size={15} aria-hidden="true" />
+                        : <CircleCheck size={15} aria-hidden="true" />}
                     {COMPLAINT_STATUSES[complaint.trang_thai] ?? complaint.trang_thai}
                   </span>
                 </header>

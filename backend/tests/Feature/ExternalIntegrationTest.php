@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Batch;
+use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\ImageStorageService;
@@ -193,7 +194,7 @@ class ExternalIntegrationTest extends TestCase
 
         $this->assertSame('0.00', Batch::query()->where('ma_lo', 'LO-FEFO-01')->value('so_luong_ton'));
         $this->assertSame('3.00', Batch::query()->where('ma_lo', 'LO-FEFO-02')->value('so_luong_ton'));
-        $this->assertDatabaseCount('order_details', 2);
+        $this->assertSame(2, Order::query()->findOrFail($orderId)->details()->count());
         $this->assertDatabaseHas('orders', ['id' => $orderId, 'trang_thai' => 'da_thanh_toan']);
     }
 

@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { AlertCircle, CircleCheck, Clock3, PackageCheck } from 'lucide-react'
 import batchApi from '../../api/batchApi.js'
 import orderApi from '../../api/orderApi.js'
 import Button from '../../components/Button.jsx'
+import EmptyState from '../../components/EmptyState.jsx'
 import LoadingSpinner from '../../components/LoadingSpinner.jsx'
+import SkeletonBlock from '../../components/Skeletons.jsx'
 import ToastNotification from '../../components/ToastNotification.jsx'
+import useConfirm from '../../components/useConfirm.js'
 import useAuth from '../../contexts/useAuth.js'
 
 const ORDER_STATUSES = {
@@ -48,6 +52,7 @@ function daysUntilExpiry(dateString) {
 
 function StaffOrdersPage() {
   const { user } = useAuth()
+  const confirm = useConfirm()
   const [orders, setOrders] = useState([])
   const [expiringBatches, setExpiringBatches] = useState([])
   const [isLoadingExpiring, setIsLoadingExpiring] = useState(true)
@@ -158,6 +163,14 @@ function StaffOrdersPage() {
   }, [user?.role])
 
   async function approveOrder(order) {
+    const confirmed = await confirm({
+      title: 'Duyệt và phân bổ đơn hàng?',
+      description: `Đơn ${order.ma_don} sẽ được phân bổ tồn theo FEFO và cập nhật số lượng lô.`,
+      confirmLabel: 'Duyệt đơn',
+      tone: 'warning',
+    })
+    if (!confirmed) return
+
     setUpdatingOrderId(order.id)
     setErrorMessage('')
 
@@ -210,6 +223,14 @@ function StaffOrdersPage() {
   }
 
   async function confirmVietQrPayment(order) {
+    const confirmed = await confirm({
+      title: 'Xác nhận đã nhận tiền VietQR?',
+      description: 'Chỉ tiếp tục sau khi đã đối soát giao dịch ngân hàng và xác nhận đúng số tiền/nội dung chuyển khoản.',
+      confirmLabel: 'Đã đối soát',
+      tone: 'warning',
+    })
+    if (!confirmed) return
+
     setUpdatingOrderId(order.id)
     setErrorMessage('')
 
@@ -320,13 +341,24 @@ function StaffOrdersPage() {
       )}
 
       {isLoading ? (
-        <div className="flex min-h-48 items-center justify-center">
-          <LoadingSpinner label="Đang tải đơn hàng" className="text-green-700" />
+        <div className="space-y-4" role="status" aria-label="Đang tải đơn hàng">
+          {[0, 1, 2].map((item) => (
+            <article className="skeleton-card space-y-3 p-5" key={item}>
+              <SkeletonBlock className="h-5 w-1/3" />
+              <SkeletonBlock className="h-4 w-2/3" />
+              <SkeletonBlock className="h-4 w-1/2" />
+            </article>
+          ))}
+          <span className="sr-only">Đang tải danh sách đơn…</span>
         </div>
       ) : orders.length === 0 ? (
-        <div className="rounded-2xl bg-white p-8 text-center text-slate-600 shadow-sm">
-          Chưa có đơn hàng nào.
-        </div>
+        <EmptyState
+          icon={PackageCheck}
+          title="Chưa có đơn hàng cần xử lý"
+          description="Các đơn hàng mới sẽ xuất hiện tại đây."
+          actionLabel="Làm mới danh sách"
+          onAction={() => loadOrders()}
+        />
       ) : (
         <div className="space-y-4">
           {orders.map((order) => {
@@ -346,7 +378,14 @@ function StaffOrdersPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-3">
                     <h2 className="font-bold text-slate-900">{order.ma_don}</h2>
-                    <span className="status-pill rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                    <span className={`status-pill inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${awaitingVietQr ? 'bg-amber-100 text-amber-950' : order.trang_thai === 'da_giao' ? 'bg-green-100 text-green-950' : order.trang_thai === 'da_huy' ? 'bg-slate-200 text-slate-800' : 'bg-blue-100 text-blue-950'}`}>
+                      {awaitingVietQr
+                        ? <Clock3 size={14} aria-hidden="true" />
+                        : order.trang_thai === 'da_giao'
+                          ? <CircleCheck size={14} aria-hidden="true" />
+                          : order.trang_thai === 'da_huy'
+                            ? <AlertCircle size={14} aria-hidden="true" />
+                            : <PackageCheck size={14} aria-hidden="true" />}
                       {awaitingVietQr ? 'Chờ thanh toán VietQR' : ORDER_STATUSES[order.trang_thai] ?? order.trang_thai}
                     </span>
                   </div>

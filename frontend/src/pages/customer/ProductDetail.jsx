@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Sprout } from 'lucide-react'
+import { Minus, Plus, Sprout } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import cartApi from '../../api/cartApi.js'
 import productApi from '../../api/productApi.js'
 import Button from '../../components/Button.jsx'
+import Breadcrumbs from '../../components/Breadcrumbs.jsx'
+import EmptyState from '../../components/EmptyState.jsx'
 import LoadingSpinner from '../../components/LoadingSpinner.jsx'
+import { ProductDetailSkeleton } from '../../components/Skeletons.jsx'
 import ToastNotification from '../../components/ToastNotification.jsx'
 
 const currencyFormatter = new Intl.NumberFormat('vi-VN', {
@@ -140,9 +143,10 @@ function ProductDetail() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-64 items-center justify-center">
-        <LoadingSpinner label="Đang tải chi tiết sản phẩm" className="text-green-700" />
-      </div>
+      <>
+        <Breadcrumbs items={[{ label: 'Sản phẩm', to: '/products' }, { label: 'Chi tiết sản phẩm' }]} />
+        <ProductDetailSkeleton />
+      </>
     )
   }
 
@@ -157,22 +161,18 @@ function ProductDetail() {
       )}
 
       {!product ? (
-        <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
-          <h1 className="text-2xl font-bold text-slate-900">
-            Không tìm thấy sản phẩm
-          </h1>
-          <p className="mt-2 text-slate-600">
-            Sản phẩm có thể đã ngừng bán hoặc không còn lô hàng khả dụng.
-          </p>
-          <Link
-            to="/products"
-            className="mt-5 inline-flex min-h-11 items-center rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white hover:bg-green-800"
-          >
-            Quay lại danh sách
-          </Link>
-        </div>
+        <>
+          <Breadcrumbs items={[{ label: 'Sản phẩm', to: '/products' }, { label: 'Chi tiết sản phẩm' }]} />
+          <EmptyState
+            title="Không tìm thấy sản phẩm"
+            description="Sản phẩm có thể đã ngừng bán hoặc không còn lô hàng khả dụng."
+            actionLabel="Quay lại danh sách"
+            actionTo="/products"
+          />
+        </>
       ) : (
         <>
+          <Breadcrumbs items={[{ label: 'Sản phẩm', to: '/products' }, { label: product.ten_san_pham }]} />
           <Link
             to="/products"
             className="mb-5 inline-flex text-sm font-semibold text-green-800 hover:underline"
@@ -217,8 +217,11 @@ function ProductDetail() {
                   / {product.don_vi_tinh}
                 </span>
               </p>
-              <p className="mt-2 text-sm text-slate-600">
-                Tồn khả dụng: {availableQuantity} {product.don_vi_tinh}
+              <p className={`mt-2 inline-flex items-center gap-2 text-sm font-semibold ${availableQuantity > 0 ? 'text-green-800' : 'text-red-800'}`}>
+                <span aria-hidden="true" className={`h-2.5 w-2.5 rounded-full ${availableQuantity > 0 ? 'bg-green-600' : 'bg-red-600'}`} />
+                {availableQuantity > 0
+                  ? `Còn ${availableQuantity} ${product.don_vi_tinh}`
+                  : 'Tạm hết hàng'}
               </p>
 
               <label
@@ -227,16 +230,41 @@ function ProductDetail() {
               >
                 Số lượng ({product.don_vi_tinh})
               </label>
-              <input
-                id="product-quantity"
-                type="number"
-                min="0.01"
-                max={availableQuantity}
-                step="0.01"
-                value={quantity}
-                onChange={(event) => setQuantity(event.target.value)}
-                className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 px-3 text-slate-900 focus:border-green-700 focus:outline-none focus:ring-2 focus:ring-green-700/20"
-              />
+              <div className="mt-2 grid grid-cols-[44px_minmax(0,1fr)_44px] gap-2">
+                <button
+                  type="button"
+                  className="quantity-stepper"
+                  aria-label="Giảm số lượng"
+                  disabled={Number(quantity) <= 0.01}
+                  onClick={() => setQuantity((current) => String(Math.max(0.01, Number(current) - 1)))}
+                >
+                  <Minus size={17} aria-hidden="true" />
+                </button>
+                <input
+                  id="product-quantity"
+                  type="number"
+                  min="0.01"
+                  max={availableQuantity}
+                  step="0.01"
+                  inputMode="decimal"
+                  value={quantity}
+                  aria-describedby="product-quantity-help"
+                  onChange={(event) => setQuantity(event.target.value)}
+                  className="min-h-11 w-full rounded-lg border border-slate-300 px-3 text-center text-slate-900 focus:border-green-700 focus:outline-none focus:ring-2 focus:ring-green-700/20"
+                />
+                <button
+                  type="button"
+                  className="quantity-stepper"
+                  aria-label="Tăng số lượng"
+                  disabled={Number(quantity) >= availableQuantity}
+                  onClick={() => setQuantity((current) => String(Math.min(availableQuantity, Number(current) + 1)))}
+                >
+                  <Plus size={17} aria-hidden="true" />
+                </button>
+              </div>
+              <p id="product-quantity-help" className="mt-2 text-xs text-slate-600">
+                Nhập từ 0,01 đến {availableQuantity} {product.don_vi_tinh}.
+              </p>
               <Button
                 className="mt-4 w-full disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={
