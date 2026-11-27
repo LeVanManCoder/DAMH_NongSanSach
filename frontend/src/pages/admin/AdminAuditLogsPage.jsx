@@ -9,6 +9,9 @@ function AdminAuditLogsPage() {
   const [lastPage, setLastPage] = useState(1)
   const [action, setAction] = useState('')
   const [tableName, setTableName] = useState('')
+  const [actor, setActor] = useState('')
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
   const [filters, setFilters] = useState({})
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
@@ -60,6 +63,9 @@ function AdminAuditLogsPage() {
     const nextFilters = {
       ...(action.trim() ? { hanh_dong: action.trim() } : {}),
       ...(tableName.trim() ? { doi_tuong: tableName.trim() } : {}),
+      ...(actor.trim() ? { nguoi_thuc_hien: actor.trim() } : {}),
+      ...(fromDate ? { tu_ngay: fromDate } : {}),
+      ...(toDate ? { den_ngay: toDate } : {}),
     }
     setFilters(nextFilters)
     loadLogs(1, nextFilters)
@@ -73,7 +79,7 @@ function AdminAuditLogsPage() {
         <p className="mt-2 text-sm text-slate-600">Tra cứu thao tác, đối tượng dữ liệu và người thực hiện.</p>
       </header>
 
-      <form onSubmit={applyFilters} className="filter-panel mb-5 grid gap-3 rounded-2xl bg-white p-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto]">
+      <form onSubmit={applyFilters} className="filter-panel mb-5 grid gap-3 rounded-2xl bg-white p-4 sm:grid-cols-2 xl:grid-cols-3">
         <input
           value={action}
           onChange={(event) => setAction(event.target.value)}
@@ -90,7 +96,36 @@ function AdminAuditLogsPage() {
           maxLength={50}
           className="min-h-11 rounded-lg border border-slate-300 px-3 text-sm"
         />
-        <Button type="submit">Tìm nhật ký</Button>
+        <input
+          value={actor}
+          onChange={(event) => setActor(event.target.value)}
+          placeholder="Người thao tác (tên hoặc email)"
+          aria-label="Lọc người thao tác"
+          maxLength={150}
+          className="min-h-11 rounded-lg border border-slate-300 px-3 text-sm"
+        />
+        <label className="grid gap-1 text-xs font-semibold text-slate-600">
+          Từ ngày
+          <input
+            type="date"
+            value={fromDate}
+            onChange={(event) => setFromDate(event.target.value)}
+            aria-label="Lọc nhật ký từ ngày"
+            className="min-h-11 rounded-lg border border-slate-300 px-3 text-sm font-normal"
+          />
+        </label>
+        <label className="grid gap-1 text-xs font-semibold text-slate-600">
+          Đến ngày
+          <input
+            type="date"
+            min={fromDate || undefined}
+            value={toDate}
+            onChange={(event) => setToDate(event.target.value)}
+            aria-label="Lọc nhật ký đến ngày"
+            className="min-h-11 rounded-lg border border-slate-300 px-3 text-sm font-normal"
+          />
+        </label>
+        <Button type="submit" className="self-end">Tìm nhật ký</Button>
       </form>
 
       {errorMessage && <p className="mb-4 rounded-xl bg-red-50 p-4 text-sm text-red-800" role="alert">{errorMessage}</p>}

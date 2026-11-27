@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { QRCodeSVG } from 'qrcode.react'
 import batchApi from '../../api/batchApi.js'
 import productApi from '../../api/productApi.js'
 import seasonApi from '../../api/seasonApi.js'
@@ -54,6 +55,14 @@ function BatchWasteDashboard() {
   const [errorMessage, setErrorMessage] = useState('')
   const [toast, setToast] = useState(null)
   const [isCreateBatchOpen, setIsCreateBatchOpen] = useState(false)
+  const [isCreateSeasonOpen, setIsCreateSeasonOpen] = useState(false)
+  const [isCreatingSeason, setIsCreatingSeason] = useState(false)
+  const [seasonForm, setSeasonForm] = useState({
+    ten_mua_vu: '',
+    khu_vuc_canh_tac: '',
+    ngay_bat_dau: '',
+    ngay_ket_thuc_du_kien: '',
+  })
   const [isCreatingBatch, setIsCreatingBatch] = useState(false)
   const [batchForm, setBatchForm] = useState({
     product_id: '',
@@ -63,6 +72,7 @@ function BatchWasteDashboard() {
     so_luong_nhap: '',
   })
   const [openLogBatchId, setOpenLogBatchId] = useState(null)
+  const [openQrBatchId, setOpenQrBatchId] = useState(null)
   const [isCreatingLog, setIsCreatingLog] = useState(false)
   const [logForm, setLogForm] = useState({
     hanh_dong: 'cham_soc',
@@ -225,6 +235,40 @@ function BatchWasteDashboard() {
     }
   }
 
+  async function createSeason(event) {
+    event.preventDefault()
+    setIsCreatingSeason(true)
+    setErrorMessage('')
+
+    try {
+      const response = await seasonApi.createSeason({
+        ...seasonForm,
+        khu_vuc_canh_tac: seasonForm.khu_vuc_canh_tac || null,
+        ngay_ket_thuc_du_kien: seasonForm.ngay_ket_thuc_du_kien || null,
+      })
+      const season = response.data.data
+      setSeasons((current) => [season, ...current])
+      setBatchForm((current) => ({ ...current, season_id: String(season.id) }))
+      setSeasonForm({
+        ten_mua_vu: '',
+        khu_vuc_canh_tac: '',
+        ngay_bat_dau: '',
+        ngay_ket_thuc_du_kien: '',
+      })
+      setIsCreateSeasonOpen(false)
+      setToast({ message: 'Đã tạo mùa vụ mới.', type: 'success' })
+    } catch (error) {
+      const validationMessage = Object.values(error.response?.data?.errors ?? {})
+        .flat()
+        .find(Boolean)
+      setErrorMessage(
+        validationMessage ?? error.response?.data?.message ?? 'Không thể tạo mùa vụ.',
+      )
+    } finally {
+      setIsCreatingSeason(false)
+    }
+  }
+
   async function createFarmingLog(event, batch) {
     event.preventDefault()
     setIsCreatingLog(true)
@@ -263,6 +307,70 @@ function BatchWasteDashboard() {
     }
   }
 
+  function getTraceUrl(qrCode) {
+    const baseUrl = (import.meta.env.VITE_APP_URL || window.location.origin)
+      .replace(/\/+$/, '')
+    return `${baseUrl}/trace/${encodeURIComponent(qrCode)}`
+  }
+
+  function getQrSvg(batch) {
+    return document.getElementById(`batch-qr-${batch.id}`)
+  }
+
+  function downloadQr(batch) {
+    const qrSvg = getQrSvg(batch)
+    if (!qrSvg) {
+      setToast({ message: 'Không tìm thấy ảnh QR để tải.', type: 'error' })
+      return
+    }
+
+    const svgMarkup = new XMLSerializer().serializeToString(qrSvg)
+    const objectUrl = URL.createObjectURL(new Blob([svgMarkup], { type: 'image/svg+xml' }))
+    const downloadLink = document.createElement('a')
+    downloadLink.href = objectUrl
+    downloadLink.download = `nong-lanh-${batch.ma_lo}.svg`
+    downloadLink.click()
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
+  }
+
+  function printQr(batch) {
+    const qrSvg = getQrSvg(batch)
+    if (!qrSvg) {
+      setToast({ message: 'Không tìm thấy ảnh QR để in.', type: 'error' })
+      return
+    }
+
+    const printWindow = window.open('', '_blank', 'width=480,height=600')
+    if (!printWindow) {
+      setToast({ message: 'Trình duyệt đang chặn cửa sổ in QR.', type: 'error' })
+      return
+    }
+
+    const svgData = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
+      new XMLSerializer().serializeToString(qrSvg),
+    )}`
+    printWindow.document.write(
+      `<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Tem truy xuất Nông Lành</title><style>body{font-family:Arial,sans-serif;text-align:center;padding:24px}img{width:240px;height:240px}p{font-size:14px}</style></head><body><h1>Nông Lành</h1><img src="${svgData}" alt="Mã QR truy xuất"><p>Mã lô: ${String(batch.ma_lo).replace(/[&<>"]/g, '')}</p><script>window.onload=()=>window.print()</script></body></html>`,
+    )
+    printWindow.document.close()
+  }
+
+  async function generateQr(batch) {
+    setIsSubmitting(true)
+    try {
+      await batchApi.generateQr(batch.id)
+      setToast({ message: `Đã tạo mã QR truy xuất cho lô ${batch.ma_lo}.`, type: 'success' })
+      await loadBatches()
+    } catch (error) {
+      setToast({
+        message: error.response?.data?.message ?? 'Không thể tạo mã QR cho lô hàng.',
+        type: 'error',
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
     <section>
       {toast && (
@@ -286,9 +394,14 @@ function BatchWasteDashboard() {
         </div>
         <div className="flex flex-wrap gap-3">
           {user?.role === 'farm_staff' && (
-            <Button onClick={() => setIsCreateBatchOpen((current) => !current)}>
-              Tạo lô hàng mới
-            </Button>
+            <>
+              <Button onClick={() => setIsCreateSeasonOpen((current) => !current)}>
+                Tạo mùa vụ mới
+              </Button>
+              <Button onClick={() => setIsCreateBatchOpen((current) => !current)}>
+                Tạo lô hàng mới
+              </Button>
+            </>
           )}
           <Button
             variant="secondary"
@@ -304,6 +417,81 @@ function BatchWasteDashboard() {
         <p className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-800" role="alert">
           {errorMessage}
         </p>
+      )}
+
+      {user?.role === 'farm_staff' && isCreateSeasonOpen && (
+        <form
+          onSubmit={createSeason}
+          className="form-panel mt-6 rounded-2xl border border-green-100 bg-green-50 p-5 sm:p-6"
+        >
+          <h2 className="font-bold text-slate-900">Tạo mùa vụ mới</h2>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <label className="text-sm font-medium text-slate-700">
+              Tên mùa vụ
+              <input
+                required
+                maxLength={120}
+                value={seasonForm.ten_mua_vu}
+                onChange={(event) => setSeasonForm((current) => ({
+                  ...current,
+                  ten_mua_vu: event.target.value,
+                }))}
+                className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3"
+              />
+            </label>
+            <label className="text-sm font-medium text-slate-700">
+              Khu vực canh tác (không bắt buộc)
+              <input
+                maxLength={100}
+                value={seasonForm.khu_vuc_canh_tac}
+                onChange={(event) => setSeasonForm((current) => ({
+                  ...current,
+                  khu_vuc_canh_tac: event.target.value,
+                }))}
+                className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3"
+              />
+            </label>
+            <label className="text-sm font-medium text-slate-700">
+              Ngày bắt đầu
+              <input
+                required
+                type="date"
+                value={seasonForm.ngay_bat_dau}
+                onChange={(event) => setSeasonForm((current) => ({
+                  ...current,
+                  ngay_bat_dau: event.target.value,
+                }))}
+                className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3"
+              />
+            </label>
+            <label className="text-sm font-medium text-slate-700">
+              Kết thúc dự kiến
+              <input
+                type="date"
+                min={seasonForm.ngay_bat_dau}
+                value={seasonForm.ngay_ket_thuc_du_kien}
+                onChange={(event) => setSeasonForm((current) => ({
+                  ...current,
+                  ngay_ket_thuc_du_kien: event.target.value,
+                }))}
+                className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3"
+              />
+            </label>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Button type="submit" disabled={isCreatingSeason}>
+              {isCreatingSeason ? 'Đang tạo...' : 'Tạo mùa vụ'}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setIsCreateSeasonOpen(false)}
+              disabled={isCreatingSeason}
+            >
+              Đóng
+            </Button>
+          </div>
+        </form>
       )}
 
       {user?.role === 'farm_staff' && isCreateBatchOpen && (
@@ -569,19 +757,75 @@ function BatchWasteDashboard() {
                           </button>
                         )}
                         {batch.qr_code ? (
-                          <Link
-                            className="mt-1 block text-xs font-semibold text-blue-700 hover:underline"
-                            to={`/trace/${encodeURIComponent(batch.qr_code)}`}
-                          >
-                            Xem truy xuất QR
-                          </Link>
+                          <>
+                            <Link
+                              className="mt-1 block text-xs font-semibold text-green-800 hover:underline"
+                              to={`/trace/${encodeURIComponent(batch.qr_code)}`}
+                            >
+                              Mở trang truy xuất
+                            </Link>
+                            <button
+                              type="button"
+                              className="mt-1 min-h-10 text-xs font-semibold text-green-800 hover:underline"
+                              onClick={() => setOpenQrBatchId((current) =>
+                                current === batch.id ? null : batch.id,
+                              )}
+                            >
+                              {openQrBatchId === batch.id ? 'Ẩn ảnh QR' : 'Ảnh QR / tải / in'}
+                            </button>
+                          </>
                         ) : (
-                          <p className="mt-1 text-xs text-slate-500">
-                            QR tạo sau nhật ký đầu tiên
-                          </p>
+                          <>
+                            <p className="mt-1 text-xs text-slate-500">
+                              QR tạo sau thu hoạch và nhật ký đầu tiên
+                            </p>
+                            {batch.ngay_thu_hoach && batch.farming_logs?.length > 0 && (
+                              <button
+                                type="button"
+                                className="mt-1 min-h-10 text-xs font-semibold text-green-800 hover:underline"
+                                onClick={() => generateQr(batch)}
+                                disabled={isSubmitting}
+                              >
+                                Tạo mã QR
+                              </button>
+                            )}
+                          </>
                         )}
                       </td>
                     </tr>
+                    {openQrBatchId === batch.id && batch.qr_code && (
+                      <tr>
+                        <td colSpan={6} className="bg-white px-5 py-5">
+                          <div className="flex flex-wrap items-center gap-5">
+                            <div className="rounded-xl border border-slate-200 bg-white p-3">
+                              <QRCodeSVG
+                                id={`batch-qr-${batch.id}`}
+                                value={getTraceUrl(batch.qr_code)}
+                                size={144}
+                                level="M"
+                                title={`Mã truy xuất lô ${batch.ma_lo}`}
+                              />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-slate-900">
+                                Tem truy xuất · {batch.ma_lo}
+                              </p>
+                              <p className="mt-1 break-all text-sm text-slate-600">
+                                {getTraceUrl(batch.qr_code)}
+                              </p>
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                <Button variant="secondary" onClick={() => downloadQr(batch)}>
+                                  Tải ảnh QR (SVG)
+                                </Button>
+                                <Button variant="secondary" onClick={() => printQr(batch)}>
+                                  In tem
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
                     {openLogBatchId === batch.id && user?.role === 'farm_staff' && (
                       <tr>
                         <td colSpan={6} className="bg-green-50/60 px-5 py-4">

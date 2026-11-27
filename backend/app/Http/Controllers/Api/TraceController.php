@@ -33,6 +33,7 @@ class TraceController extends Controller
      *
      *             @OA\Property(property="data", type="object",
      *                 @OA\Property(property="ma_lo", type="string"),
+     *                 @OA\Property(property="trang_thai", type="string"),
      *                 @OA\Property(property="ngay_thu_hoach", type="string", format="date", nullable=true),
      *                 @OA\Property(property="ngay_het_han", type="string", format="date", nullable=true),
      *                 @OA\Property(property="product", type="object"),
@@ -59,6 +60,7 @@ class TraceController extends Controller
         return response()->json([
             'data' => [
                 'ma_lo' => $batch->ma_lo,
+                'trang_thai' => $batch->trang_thai,
                 'ngay_thu_hoach' => $batch->ngay_thu_hoach?->toDateString(),
                 'ngay_het_han' => $batch->ngay_het_han?->toDateString(),
                 'product' => $batch->product,

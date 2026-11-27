@@ -3,6 +3,14 @@ import { Link, useParams } from 'react-router-dom'
 import traceApi from '../../api/traceApi.js'
 import LoadingSpinner from '../../components/LoadingSpinner.jsx'
 
+const BATCH_STATUSES = {
+  dang_canh_tac: 'Đang canh tác',
+  da_thu_hoach: 'Đã thu hoạch',
+  con_hang: 'Còn hàng',
+  het_hang: 'Hết hàng',
+  het_han: 'Hết hạn',
+}
+
 function TracePage() {
   const { qrCode } = useParams()
   const [trace, setTrace] = useState(null)
@@ -97,6 +105,10 @@ function TracePage() {
         <div className="rounded-2xl bg-white p-5 shadow-sm">
           <p className="text-sm font-medium text-slate-500">Mã lô</p>
           <p className="mt-1 text-xl font-bold text-slate-900">{trace.ma_lo}</p>
+          <p className="mt-4 text-sm font-medium text-slate-500">Trạng thái lô</p>
+          <p className="mt-1 font-semibold text-green-900">
+            {BATCH_STATUSES[trace.trang_thai] ?? trace.trang_thai ?? 'Chưa cập nhật'}
+          </p>
           <p className="mt-4 text-sm font-medium text-slate-500">Vùng trồng</p>
           <p className="mt-1 font-semibold text-green-900">
             {trace.season?.khu_vuc_canh_tac ?? 'Thông tin vùng trồng chưa cập nhật'}

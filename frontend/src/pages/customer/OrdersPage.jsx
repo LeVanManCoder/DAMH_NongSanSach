@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import orderApi from '../../api/orderApi.js'
 import reviewApi from '../../api/reviewApi.js'
 import Button from '../../components/Button.jsx'
@@ -63,6 +63,7 @@ function validateEvidence(file) {
 
 function OrdersPage() {
   const { user } = useAuth()
+  const { orderId } = useParams()
   const [orders, setOrders] = useState([])
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(false)
@@ -77,6 +78,7 @@ function OrdersPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [reviewDrafts, setReviewDrafts] = useState({})
   const [submittingReviewKey, setSubmittingReviewKey] = useState(null)
+  const [cancellingOrderId, setCancellingOrderId] = useState(null)
   const [toast, setToast] = useState(null)
   const dismissToast = useCallback(() => setToast(null), [])
 
@@ -85,12 +87,18 @@ function OrdersPage() {
 
     async function loadOrders() {
       try {
-        const response = await orderApi.getMyOrders(
-          { page: 1 },
-          { signal: controller.signal },
-        )
-        setOrders(response.data.data)
-        setHasMore(Boolean(response.data.links?.next))
+        if (orderId) {
+          const response = await orderApi.getMyOrder(orderId, { signal: controller.signal })
+          setOrders([response.data.data])
+          setHasMore(false)
+        } else {
+          const response = await orderApi.getMyOrders(
+            { page: 1 },
+            { signal: controller.signal },
+          )
+          setOrders(response.data.data)
+          setHasMore(Boolean(response.data.links?.next))
+        }
       } catch (error) {
         if (!controller.signal.aborted) {
           setErrorMessage(
@@ -107,9 +115,10 @@ function OrdersPage() {
     loadOrders()
 
     return () => controller.abort()
-  }, [])
+  }, [orderId])
 
   async function loadMoreOrders() {
+    if (orderId) return
     const nextPage = page + 1
     setIsLoadingMore(true)
     setErrorMessage('')
@@ -123,6 +132,25 @@ function OrdersPage() {
       setErrorMessage(error.response?.data?.message ?? 'Không tải thêm được đơn hàng.')
     } finally {
       setIsLoadingMore(false)
+    }
+  }
+
+  async function cancelOrder(order) {
+    if (!window.confirm(`Hủy đơn hàng ${order.ma_don}?`)) return
+    setCancellingOrderId(order.id)
+    try {
+      const response = await orderApi.cancel(order.id)
+      setOrders((current) => current.map((item) =>
+        item.id === order.id ? { ...item, ...response.data.data } : item,
+      ))
+      setToast({ message: 'Đã hủy đơn hàng.', type: 'success' })
+    } catch (error) {
+      setToast({
+        message: error.response?.data?.message ?? 'Không thể hủy đơn hàng ở trạng thái hiện tại.',
+        type: 'error',
+      })
+    } finally {
+      setCancellingOrderId(null)
     }
   }
 
@@ -237,7 +265,10 @@ function OrdersPage() {
         <p className="text-sm font-semibold uppercase tracking-wide text-green-700">
           Tài khoản khách hàng
         </p>
-        <h1 className="mt-2 text-3xl font-bold text-slate-900">Đơn hàng của tôi</h1>
+        <h1 className="mt-2 text-3xl font-bold text-slate-900">
+          {orderId ? 'Chi tiết đơn hàng' : 'Đơn hàng của tôi'}
+        </h1>
+        {orderId && <Link className="mt-2 inline-flex font-semibold text-green-800 hover:underline" to="/orders">Quay lại danh sách đơn</Link>}
       </header>
 
       {errorMessage && (
@@ -288,7 +319,13 @@ function OrdersPage() {
                   {(order.details ?? []).map((detail) => (
                     <li key={detail.id} className="flex justify-between gap-4 py-3 text-sm">
                       <span className="text-slate-700">
-                        {detail.product?.ten_san_pham ?? 'Sản phẩm'} × {detail.so_luong}
+                        <span className="block">
+                          {detail.product?.ten_san_pham ?? 'Sản phẩm'} × {detail.so_luong}
+                        </span>
+                        <span className="mt-1 block text-xs text-slate-500">
+                          Lô {detail.batch?.ma_lo ?? 'chưa phân bổ'}
+                          {detail.batch?.ngay_het_han ? ` · Hạn dùng ${detail.batch.ngay_het_han}` : ''}
+                        </span>
                       </span>
                       <span className="shrink-0 font-medium text-slate-900">
                         {Number(detail.thanh_tien ?? 0).toLocaleString('vi-VN')} đ
@@ -305,6 +342,26 @@ function OrdersPage() {
                     Tổng cộng: {Number(order.tong_thanh_toan ?? 0).toLocaleString('vi-VN')} đ
                   </span>
                 </div>
+
+                {!orderId && (
+                  <Link
+                    className="mt-4 inline-flex min-h-11 items-center rounded-lg border border-green-700 px-4 text-sm font-semibold text-green-800 hover:bg-green-50"
+                    to={`/orders/${order.id}`}
+                  >
+                    Xem chi tiết đơn
+                  </Link>
+                )}
+                {order.trang_thai === 'cho_duyet' && (
+                  <div className="mt-4">
+                    <Button
+                      variant="secondary"
+                      onClick={() => cancelOrder(order)}
+                      disabled={cancellingOrderId !== null}
+                    >
+                      {cancellingOrderId === order.id ? 'Đang hủy...' : 'Hủy đơn hàng'}
+                    </Button>
+                  </div>
+                )}
 
                 {complaint ? (
                   <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm">

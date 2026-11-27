@@ -121,6 +121,50 @@ class AdminApiTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_create_only_farm_staff_or_sales_accounts(): void
+    {
+        $adminToken = $this->tokenFor('admin');
+        $response = $this->withToken($adminToken)->postJson('/api/admin/users', [
+            'ho_ten' => 'Nhân viên mới',
+            'email' => 'nhanvienmoi@example.test',
+            'so_dien_thoai' => '0900000001',
+            'role' => 'farm_staff',
+            'password' => 'FarmStaff123',
+            'password_confirmation' => 'FarmStaff123',
+        ])->assertCreated()
+            ->assertJsonPath('data.ho_ten', 'Nhân viên mới')
+            ->assertJsonPath('data.role.ten_vai_tro', 'farm_staff');
+
+        $userId = $response->json('data.id');
+        $this->assertDatabaseHas('users', [
+            'id' => $userId,
+            'email' => 'nhanvienmoi@example.test',
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $this->userByRole('admin')->getKey(),
+            'hanh_dong' => 'tao_tai_khoan_nhan_vien',
+            'doi_tuong' => 'users',
+            'doi_tuong_id' => $userId,
+        ]);
+
+        $this->withToken($adminToken)->postJson('/api/admin/users', [
+            'ho_ten' => 'Quản trị mới',
+            'email' => 'adminmoi@example.test',
+            'role' => 'admin',
+            'password' => 'AdminStaff123',
+            'password_confirmation' => 'AdminStaff123',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['role']);
+
+        $this->withToken($this->tokenFor('sales'))->postJson('/api/admin/users', [
+            'ho_ten' => 'Không được phép',
+            'email' => 'blocked@example.test',
+            'role' => 'sales',
+            'password' => 'SalesStaff123',
+            'password_confirmation' => 'SalesStaff123',
+        ])->assertForbidden();
+    }
+
     public function test_admin_can_filter_paginated_audit_logs_by_action_and_table(): void
     {
         $admin = $this->userByRole('admin');
@@ -147,6 +191,18 @@ class AdminApiTest extends TestCase
             ->assertJsonPath('data.0.hanh_dong', 'khoa_tai_khoan')
             ->assertJsonPath('data.0.user.ho_ten', $admin->ho_ten)
             ->assertJsonPath('data.0.du_lieu_moi.is_active', false);
+
+        $today = now()->toDateString();
+        $this->withToken($this->tokenFor('admin'))
+            ->getJson('/api/admin/audit-logs?hanh_dong=cap_nhat&nguoi_thuc_hien='.urlencode($admin->ho_ten).'&tu_ngay='.$today.'&den_ngay='.$today)
+            ->assertOk()
+            ->assertJsonPath('total', 1)
+            ->assertJsonPath('data.0.hanh_dong', 'cap_nhat');
+
+        $this->withToken($this->tokenFor('admin'))
+            ->getJson('/api/admin/audit-logs?tu_ngay=2026-11-28&den_ngay=2026-11-27')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['den_ngay']);
     }
 
     private function userByRole(string $role): User

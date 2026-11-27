@@ -54,6 +54,7 @@ Route::middleware('auth.jwt')->group(function (): void {
     Route::prefix('admin')->middleware('role:admin')->group(function (): void {
         Route::get('/dashboard', [AdminController::class, 'dashboard']);
         Route::get('/users', [AdminController::class, 'users']);
+        Route::post('/users', [AdminController::class, 'createStaffUser']);
         Route::patch('/users/{id}/status', [AdminController::class, 'updateUserStatus']);
         Route::get('/audit-logs', [AdminController::class, 'auditLogs']);
         Route::get('/categories', [AdminCategoryController::class, 'index']);
@@ -93,6 +94,7 @@ Route::middleware('auth.jwt')->group(function (): void {
         Route::patch('/cart/{itemId}', [CartController::class, 'update']);
         Route::delete('/cart/{itemId}', [CartController::class, 'destroy']);
         Route::post('/orders', [OrderController::class, 'store']);
+        Route::post('/orders/{id}/cancel', [OrderController::class, 'cancel']);
         Route::get('/subscriptions', [SubscriptionController::class, 'index']);
         Route::post('/subscriptions', [SubscriptionController::class, 'store']);
         Route::patch('/subscriptions/{id}/status', [SubscriptionController::class, 'updateStatus']);
@@ -109,6 +111,7 @@ Route::middleware('auth.jwt')->group(function (): void {
 
     Route::middleware('role:customer,sales,admin')->group(function (): void {
         Route::get('/orders', [OrderController::class, 'index']);
+        Route::get('/orders/{id}', [OrderController::class, 'show']);
         Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']);
         Route::patch('/orders/{id}/status', [OrderController::class, 'updateStatus']);
     });
