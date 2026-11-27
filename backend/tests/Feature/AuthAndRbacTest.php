@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Batch;
+use App\Models\Order;
 use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
@@ -14,14 +15,15 @@ class AuthAndRbacTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const PASSWORD = 'Password@123';
+    private const PASSWORD = '12345678';
+    private const REGISTRATION_PASSWORD = 'Password@123';
 
     public function test_registration_login_current_user_and_logout(): void
     {
         $registration = $this->postJson('/api/auth/register', [
             'ho_ten' => 'Nguyễn Thị An',
             'email' => 'an@example.test',
-            'password' => self::PASSWORD,
+            'password' => self::REGISTRATION_PASSWORD,
         ]);
 
         $registration->assertCreated()
@@ -30,7 +32,7 @@ class AuthAndRbacTest extends TestCase
 
         $login = $this->postJson('/api/auth/login', [
             'email' => 'an@example.test',
-            'password' => self::PASSWORD,
+            'password' => self::REGISTRATION_PASSWORD,
         ])->assertOk()
             ->assertJsonPath('token_type', 'Bearer')
             ->assertJsonPath('expires_in', 3600)
@@ -51,7 +53,7 @@ class AuthAndRbacTest extends TestCase
     public function test_account_is_locked_for_fifteen_minutes_after_five_failed_logins(): void
     {
         $this->seed(DatabaseSeeder::class);
-        $email = 'khachhang@nonganhlanh.local';
+        $email = 'khach@nonglanh.vn';
 
         for ($attempt = 1; $attempt <= 4; $attempt++) {
             $this->postJson('/api/auth/login', [
@@ -89,11 +91,24 @@ class AuthAndRbacTest extends TestCase
         $this->seed(DatabaseSeeder::class);
 
         $this->assertSame(4, Role::query()->count());
-        $this->assertSame(4, User::query()->count());
-        $this->assertDatabaseCount('categories', 4);
-        $this->assertDatabaseCount('products', 8);
-        $this->assertDatabaseCount('batches', 16);
-        $this->assertDatabaseCount('farming_logs', 32);
+        $this->assertSame(6, User::query()->count());
+        $this->assertDatabaseCount('categories', 5);
+        $this->assertDatabaseCount('seasons', 4);
+        $this->assertDatabaseCount('products', 15);
+        $this->assertDatabaseCount('batches', 18);
+        $this->assertDatabaseCount('farming_logs', 72);
+        $this->assertDatabaseCount('waste_logs', 3);
+        $this->assertDatabaseCount('addresses', 4);
+        $this->assertDatabaseCount('subscription_plans', 2);
+        $this->assertDatabaseCount('subscriptions', 2);
+        $this->assertDatabaseCount('orders', 12);
+        $this->assertSame(12, Order::query()->where('ngay_tao', '>=', now()->subDays(7))->count());
+        $this->assertDatabaseCount('order_details', 24);
+        $this->assertDatabaseCount('payments', 12);
+        $this->assertDatabaseCount('reviews', 8);
+        $this->assertDatabaseCount('complaints', 2);
+        $this->assertDatabaseCount('complaint_media', 2);
+        $this->assertDatabaseCount('audit_logs', 10);
         $this->assertTrue(
             Batch::query()
                 ->where('trang_thai', 'con_hang')
@@ -103,6 +118,11 @@ class AuthAndRbacTest extends TestCase
 
         foreach (['customer', 'farm_staff', 'sales', 'admin'] as $roleName) {
             $account = User::query()->whereHas('role', fn ($query) => $query->where('ten_vai_tro', $roleName))->firstOrFail();
+            $this->assertTrue(Hash::check(self::PASSWORD, $account->password));
+        }
+
+        foreach (['khach2@nonglanh.vn', 'khach3@nonglanh.vn'] as $email) {
+            $account = User::query()->where('email', $email)->firstOrFail();
             $this->assertTrue(Hash::check(self::PASSWORD, $account->password));
         }
     }

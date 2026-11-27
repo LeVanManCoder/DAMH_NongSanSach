@@ -4,8 +4,10 @@ import {
   Camera,
   ChevronDown,
   CircleUserRound,
+  Home,
   Leaf,
   LogOut,
+  PackageSearch,
   Search,
   ShoppingBasket,
   X,
@@ -50,6 +52,13 @@ function Header() {
   const [cartCount, setCartCount] = useState(null)
   const [cartError, setCartError] = useState('')
   const dismissCartError = useCallback(() => setCartError(''), [])
+  const accountPath = {
+    customer: '/profile',
+    farm_staff: '/staff/batches',
+    sales: '/staff/orders',
+    admin: '/admin/dashboard',
+  }[user?.role] ?? '/login'
+  const accountLabel = user?.role === 'customer' ? 'Tài khoản' : 'Không gian'
 
   useEffect(() => {
     if (user?.role !== 'customer') return undefined
@@ -272,6 +281,38 @@ function Header() {
           </nav>
         </div>
       </header>
+
+      <nav className="mobile-bottom-nav" aria-label="Điều hướng nhanh">
+        <NavLink to="/" end aria-label="Trang chủ">
+          <Home size={20} aria-hidden="true" />
+          <span>Trang chủ</span>
+        </NavLink>
+        <NavLink to="/products" aria-label="Sản phẩm">
+          <PackageSearch size={20} aria-hidden="true" />
+          <span>Sản phẩm</span>
+        </NavLink>
+        <button
+          type="button"
+          className={isScannerOpen ? 'is-active' : ''}
+          onClick={() => {
+            setScannerMessage('')
+            setIsScannerOpen(true)
+          }}
+          aria-label="Quét QR truy xuất nguồn gốc"
+          aria-pressed={isScannerOpen}
+        >
+          <Camera size={20} aria-hidden="true" />
+          <span>Quét QR</span>
+        </button>
+        <NavLink to="/cart" aria-label={cartCount === null ? 'Giỏ hàng' : `Giỏ hàng, ${cartCount} sản phẩm`}>
+          <ShoppingBasket size={20} aria-hidden="true" />
+          <span>Giỏ hàng</span>
+        </NavLink>
+        <NavLink to={accountPath} aria-label={accountLabel}>
+          <CircleUserRound size={20} aria-hidden="true" />
+          <span>{accountLabel}</span>
+        </NavLink>
+      </nav>
 
       {cartError && user?.role === 'customer' && (
         <ToastNotification

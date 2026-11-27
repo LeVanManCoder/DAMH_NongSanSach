@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
+import { AlertCircle, BadgeCheck, CircleCheck } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import traceApi from '../../api/traceApi.js'
-import LoadingSpinner from '../../components/LoadingSpinner.jsx'
+import Breadcrumbs from '../../components/Breadcrumbs.jsx'
+import EmptyState from '../../components/EmptyState.jsx'
+import { TraceSkeleton } from '../../components/Skeletons.jsx'
 
 const BATCH_STATUSES = {
   dang_canh_tac: 'Đang canh tác',
@@ -51,36 +54,31 @@ function TracePage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-64 items-center justify-center">
-        <LoadingSpinner label="Đang tải thông tin truy xuất" className="text-green-700" />
-      </div>
+      <>
+        <Breadcrumbs items={[{ label: 'Truy xuất nguồn gốc' }]} />
+        <TraceSkeleton />
+      </>
     )
   }
 
   if (errorMessage || !trace) {
     return (
-      <section className="mx-auto max-w-2xl rounded-2xl bg-white p-8 text-center shadow-sm">
-        <p className="text-sm font-semibold uppercase tracking-wide text-amber-700">
-          Truy xuất nguồn gốc
-        </p>
-        <h1 className="mt-2 text-2xl font-bold text-slate-900">
-          Không tìm thấy thông tin lô hàng
-        </h1>
-        <p className="mt-3 text-slate-600">
-          {errorMessage || 'Mã QR không hợp lệ hoặc lô hàng chưa có dữ liệu công khai.'}
-        </p>
-        <Link
-          to="/products"
-          className="mt-6 inline-flex min-h-11 items-center rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white hover:bg-green-800"
-        >
-          Xem sản phẩm
-        </Link>
-      </section>
+      <>
+        <Breadcrumbs items={[{ label: 'Truy xuất nguồn gốc' }]} />
+        <EmptyState
+          icon={AlertCircle}
+          title="Không tìm thấy thông tin lô hàng"
+          description={errorMessage || 'Mã QR không hợp lệ hoặc lô hàng chưa có dữ liệu công khai.'}
+          actionLabel="Xem sản phẩm"
+          actionTo="/products"
+        />
+      </>
     )
   }
 
   return (
     <article className="mx-auto max-w-4xl">
+      <Breadcrumbs items={[{ label: 'Truy xuất nguồn gốc' }, { label: trace.ma_lo }]} />
       <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-green-900 via-green-800 to-lime-700 p-6 text-white shadow-lg sm:p-10">
         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-green-100">
           Nông Lành · Truy xuất nguồn gốc
@@ -106,7 +104,10 @@ function TracePage() {
           <p className="text-sm font-medium text-slate-500">Mã lô</p>
           <p className="mt-1 text-xl font-bold text-slate-900">{trace.ma_lo}</p>
           <p className="mt-4 text-sm font-medium text-slate-500">Trạng thái lô</p>
-          <p className="mt-1 font-semibold text-green-900">
+          <p className={`mt-1 inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-semibold ${trace.trang_thai === 'con_hang' ? 'bg-green-100 text-green-900' : 'bg-amber-100 text-amber-950'}`}>
+            {trace.trang_thai === 'con_hang'
+              ? <CircleCheck size={17} aria-hidden="true" />
+              : <BadgeCheck size={17} aria-hidden="true" />}
             {BATCH_STATUSES[trace.trang_thai] ?? trace.trang_thai ?? 'Chưa cập nhật'}
           </p>
           <p className="mt-4 text-sm font-medium text-slate-500">Vùng trồng</p>

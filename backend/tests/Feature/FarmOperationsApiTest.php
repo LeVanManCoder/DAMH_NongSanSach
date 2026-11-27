@@ -95,7 +95,7 @@ class FarmOperationsApiTest extends TestCase
         $this->assertNotEmpty($qrCode);
         $this->assertDatabaseHas('farming_logs', [
             'batch_id' => $batch['id'],
-            'farm_staff_id' => User::query()->where('email', 'nhanvien@nonganhlanh.local')->value('id'),
+            'farm_staff_id' => User::query()->where('email', 'nongtrai@nonglanh.vn')->value('id'),
             'hanh_dong' => 'cham_soc',
         ]);
         Storage::disk('public')->assertExists('qrcodes/batch-'.$batch['id'].'.svg');

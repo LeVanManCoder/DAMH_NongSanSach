@@ -5,7 +5,7 @@ const CURRENT_YEAR = new Date().getFullYear()
 
 function Footer() {
   return (
-    <footer className="site-footer">
+    <footer className="site-footer storefront-footer">
       <div className="site-footer-inner">
         <section className="site-footer-about">
           <Link className="site-footer-brand" to="/">

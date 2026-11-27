@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
+import { AlertCircle, CircleCheck, Clock3, PackageCheck } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import orderApi from '../../api/orderApi.js'
 import reviewApi from '../../api/reviewApi.js'
 import Button from '../../components/Button.jsx'
+import EmptyState from '../../components/EmptyState.jsx'
 import LoadingSpinner from '../../components/LoadingSpinner.jsx'
+import SkeletonBlock from '../../components/Skeletons.jsx'
 import ToastNotification from '../../components/ToastNotification.jsx'
+import useConfirm from '../../components/useConfirm.js'
 import useAuth from '../../contexts/useAuth.js'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024
@@ -24,6 +28,16 @@ const ORDER_STATUSES = {
   da_huy: 'Đã hủy',
   hoan_tien: 'Đã hoàn tiền',
   giao_bu: 'Đang giao bù',
+}
+const ORDER_STATUS_CLASSES = {
+  cho_duyet: 'bg-amber-100 text-amber-950',
+  da_thanh_toan: 'bg-blue-100 text-blue-950',
+  da_xac_nhan: 'bg-green-100 text-green-950',
+  dang_giao: 'bg-indigo-100 text-indigo-950',
+  da_giao: 'bg-emerald-100 text-emerald-950',
+  da_huy: 'bg-slate-200 text-slate-800',
+  hoan_tien: 'bg-violet-100 text-violet-950',
+  giao_bu: 'bg-cyan-100 text-cyan-950',
 }
 const COMPLAINT_STATUSES = {
   cho_xu_ly: 'Chờ xử lý',
@@ -63,6 +77,7 @@ function validateEvidence(file) {
 
 function OrdersPage() {
   const { user } = useAuth()
+  const confirm = useConfirm()
   const { orderId } = useParams()
   const [orders, setOrders] = useState([])
   const [page, setPage] = useState(1)
@@ -136,7 +151,12 @@ function OrdersPage() {
   }
 
   async function cancelOrder(order) {
-    if (!window.confirm(`Hủy đơn hàng ${order.ma_don}?`)) return
+    const confirmed = await confirm({
+      title: `Hủy đơn ${order.ma_don}?`,
+      description: 'Bạn chỉ có thể hủy đơn khi đơn còn đang chờ duyệt.',
+      confirmLabel: 'Hủy đơn hàng',
+    })
+    if (!confirmed) return
     setCancellingOrderId(order.id)
     try {
       const response = await orderApi.cancel(order.id)
@@ -278,21 +298,35 @@ function OrdersPage() {
       )}
 
       {isLoading ? (
-        <div className="flex min-h-48 items-center justify-center">
-          <LoadingSpinner label="Đang tải đơn hàng" className="text-green-700" />
+        <div className="space-y-5" role="status" aria-label="Đang tải đơn hàng">
+          {[0, 1].map((item) => (
+            <article className="skeleton-card space-y-4 p-5" key={item}>
+              <SkeletonBlock className="h-5 w-1/3" />
+              <SkeletonBlock className="h-4 w-full" />
+              <SkeletonBlock className="h-4 w-2/3" />
+            </article>
+          ))}
+          <span className="sr-only">Đang tải lịch sử đơn hàng…</span>
         </div>
       ) : orders.length === 0 ? (
-        <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
-          <p className="text-slate-600">Bạn chưa có đơn hàng nào.</p>
-          <Link className="mt-4 inline-flex font-semibold text-green-800 hover:underline" to="/products">
-            Khám phá sản phẩm
-          </Link>
-        </div>
+        <EmptyState
+          title={orderId ? 'Không tìm thấy đơn hàng này' : 'Bạn chưa có đơn hàng'}
+          description={orderId ? 'Đơn hàng có thể không tồn tại hoặc không thuộc tài khoản của bạn.' : 'Khám phá nông sản theo mùa và đặt đơn đầu tiên.'}
+          actionLabel={orderId ? 'Quay lại đơn hàng' : 'Khám phá sản phẩm'}
+          actionTo={orderId ? '/orders' : '/products'}
+        />
       ) : (
         <div className="space-y-5">
           {orders.map((order) => {
             const complaintWindowOpen = isWithinComplaintWindow(order)
             const complaint = order.complaint
+            const StatusIcon = order.trang_thai === 'da_giao'
+              ? CircleCheck
+              : order.trang_thai === 'cho_duyet'
+                ? Clock3
+                : ['da_huy', 'hoan_tien'].includes(order.trang_thai)
+                  ? AlertCircle
+                  : PackageCheck
             const products = Array.from(
               new Map(
                 (order.details ?? [])
@@ -310,7 +344,8 @@ function OrdersPage() {
                     </p>
                     <h2 className="mt-1 font-bold text-slate-900">{order.ma_don}</h2>
                   </div>
-                  <span className="rounded-full bg-green-50 px-3 py-1 text-sm font-semibold text-green-800">
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold ${ORDER_STATUS_CLASSES[order.trang_thai] ?? 'bg-slate-100 text-slate-800'}`}>
+                    <StatusIcon size={15} aria-hidden="true" />
                     {ORDER_STATUSES[order.trang_thai] ?? order.trang_thai}
                   </span>
                 </header>

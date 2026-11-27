@@ -45,15 +45,15 @@ class AdminApiTest extends TestCase
         $this->withToken($this->tokenFor('admin'))
             ->getJson('/api/admin/dashboard')
             ->assertOk()
-            ->assertJsonPath('data.doanh_thu', 150000)
-            ->assertJsonPath('data.don_hang.tong_so', 3)
-            ->assertJsonPath('data.don_hang.theo_trang_thai.da_giao', 1)
-            ->assertJsonPath('data.don_hang.theo_trang_thai.cho_duyet', 1)
-            ->assertJsonPath('data.khach_hang', 1)
-            ->assertJsonPath('data.hang_can_han.so_lo', 8)
-            ->assertJsonPath('data.hang_can_han.so_luong', 192)
-            ->assertJsonPath('data.hao_hut.so_lan_xuat_huy', 1)
-            ->assertJsonPath('data.hao_hut.so_luong', 2.5);
+            ->assertJsonPath('data.doanh_thu', 1375000)
+            ->assertJsonPath('data.don_hang.tong_so', 15)
+            ->assertJsonPath('data.don_hang.theo_trang_thai.da_giao', 5)
+            ->assertJsonPath('data.don_hang.theo_trang_thai.cho_duyet', 3)
+            ->assertJsonPath('data.khach_hang', 3)
+            ->assertJsonPath('data.hang_can_han.so_lo', 2)
+            ->assertJsonPath('data.hang_can_han.so_luong', 48)
+            ->assertJsonPath('data.hao_hut.so_lan_xuat_huy', 4)
+            ->assertJsonPath('data.hao_hut.so_luong', 62.5);
     }
 
     public function test_only_admin_can_access_admin_apis(): void

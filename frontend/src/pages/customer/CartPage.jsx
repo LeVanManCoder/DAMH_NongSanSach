@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Sprout } from 'lucide-react'
+import { ShoppingBasket, Sprout } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import cartApi from '../../api/cartApi.js'
 import Button from '../../components/Button.jsx'
-import LoadingSpinner from '../../components/LoadingSpinner.jsx'
+import Breadcrumbs from '../../components/Breadcrumbs.jsx'
+import EmptyState from '../../components/EmptyState.jsx'
 import ToastNotification from '../../components/ToastNotification.jsx'
 import useAuth from '../../contexts/useAuth.js'
 
@@ -124,9 +125,21 @@ function CartPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-64 items-center justify-center">
-        <LoadingSpinner label="Đang tải giỏ hàng" className="text-green-700" />
-      </div>
+      <>
+        <Breadcrumbs items={[{ label: 'Giỏ hàng' }]} />
+        <div className="space-y-4" role="status" aria-label="Đang tải giỏ hàng">
+          {[0, 1, 2].map((item) => (
+            <div className="skeleton-card flex items-center gap-4 p-4" key={item}>
+              <span className="skeleton-block h-24 w-24 shrink-0" />
+              <div className="grid min-w-0 flex-1 gap-3">
+                <span className="skeleton-block h-5 w-2/3" />
+                <span className="skeleton-block h-4 w-1/3" />
+              </div>
+            </div>
+          ))}
+          <span className="sr-only">Đang tải giỏ hàng…</span>
+        </div>
+      </>
     )
   }
 
@@ -149,6 +162,7 @@ function CartPage() {
 
   return (
     <section>
+      <Breadcrumbs items={[{ label: 'Giỏ hàng' }]} />
       {toast && (
         <ToastNotification
           message={toast.message}
@@ -168,15 +182,13 @@ function CartPage() {
           {errorMessage}
         </p>
       ) : items.length === 0 ? (
-        <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
-          <p className="text-slate-600">Giỏ hàng đang trống.</p>
-          <Link
-            to="/products"
-            className="mt-5 inline-flex min-h-11 items-center rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white hover:bg-green-800"
-          >
-            Khám phá sản phẩm
-          </Link>
-        </div>
+        <EmptyState
+          icon={ShoppingBasket}
+          title="Giỏ hàng đang trống"
+          description="Chọn nông sản yêu thích để bắt đầu đơn hàng của bạn."
+          actionLabel="Khám phá sản phẩm"
+          actionTo="/products"
+        />
       ) : (
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <div className="space-y-4">
@@ -250,7 +262,7 @@ function CartPage() {
                     onClick={() => removeItem(item.id)}
                     className="min-h-10 text-sm font-semibold text-red-700 hover:underline disabled:opacity-50"
                   >
-                    Xóa
+                    {updatingId === item.id ? 'Đang cập nhật…' : 'Xóa'}
                   </button>
                 </div>
               </article>

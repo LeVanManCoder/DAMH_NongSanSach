@@ -1,4 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
+import { AlertCircle, CircleCheck, Sprout } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import batchApi from '../../api/batchApi.js'
@@ -6,7 +7,9 @@ import productApi from '../../api/productApi.js'
 import seasonApi from '../../api/seasonApi.js'
 import Button from '../../components/Button.jsx'
 import LoadingSpinner from '../../components/LoadingSpinner.jsx'
+import { TableSkeleton } from '../../components/Skeletons.jsx'
 import ToastNotification from '../../components/ToastNotification.jsx'
+import useConfirm from '../../components/useConfirm.js'
 import useAuth from '../../contexts/useAuth.js'
 
 const statusLabels = {
@@ -15,6 +18,13 @@ const statusLabels = {
   con_hang: 'Còn hàng',
   het_hang: 'Hết hàng',
   het_han: 'Hết hạn',
+}
+const statusClasses = {
+  dang_canh_tac: 'bg-blue-100 text-blue-950',
+  da_thu_hoach: 'bg-emerald-100 text-emerald-950',
+  con_hang: 'bg-green-100 text-green-950',
+  het_hang: 'bg-amber-100 text-amber-950',
+  het_han: 'bg-red-100 text-red-950',
 }
 const farmingActions = [
   ['gieo_hat', 'Gieo hạt'],
@@ -44,6 +54,7 @@ async function fetchBatches(signal) {
 
 function BatchWasteDashboard() {
   const { user } = useAuth()
+  const confirm = useConfirm()
   const [batches, setBatches] = useState([])
   const [products, setProducts] = useState([])
   const [seasons, setSeasons] = useState([])
@@ -161,6 +172,14 @@ function BatchWasteDashboard() {
       setToast({ message: 'Vui lòng nhập số lượng xuất hủy hợp lệ.', type: 'error' })
       return
     }
+
+    const confirmed = await confirm({
+      title: 'Xác nhận ghi nhận xuất hủy?',
+      description: `Sẽ trừ ${quantity} ${selectedBatch.product?.don_vi_tinh ?? 'đơn vị'} khỏi lô ${selectedBatch.ma_lo}. Thao tác này sẽ được ghi vào nhật ký hao hụt.`,
+      confirmLabel: 'Ghi nhận xuất hủy',
+      tone: 'warning',
+    })
+    if (!confirmed) return
 
     setIsSubmitting(true)
     setErrorMessage('')
@@ -690,14 +709,16 @@ function BatchWasteDashboard() {
           <h2 className="font-bold text-slate-900">Tồn kho theo lô</h2>
         </div>
         {isLoading ? (
-          <div className="flex min-h-48 items-center justify-center">
-            <LoadingSpinner label="Đang tải lô hàng" className="text-green-700" />
+          <div className="p-4 sm:p-5">
+            <TableSkeleton columns={6} rows={6} label="Đang tải lô hàng" />
           </div>
         ) : batches.length === 0 ? (
-          <p className="p-6 text-slate-600">Chưa có dữ liệu lô hàng.</p>
+          <div className="p-5">
+            <p className="text-sm text-slate-600">Chưa có dữ liệu lô hàng. Tạo mùa vụ và lô mới để bắt đầu theo dõi.</p>
+          </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[960px] text-left text-sm">
+            <table className="mobile-card-table w-full min-w-[960px] text-left text-sm">
               <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                 <tr>
                   <th className="px-5 py-3 font-semibold">Mã lô / sản phẩm</th>
@@ -712,29 +733,28 @@ function BatchWasteDashboard() {
                 {batches.map((batch) => (
                   <Fragment key={batch.id}>
                     <tr className="text-slate-700">
-                      <td className="px-5 py-4">
+                      <td data-label="Mã lô / sản phẩm" className="px-5 py-4">
                         <p className="font-semibold text-slate-900">{batch.ma_lo}</p>
                         <p className="mt-1 text-xs text-slate-500">
                           {batch.product?.ten_san_pham ?? 'Sản phẩm'}
                         </p>
                       </td>
-                      <td className="px-5 py-4">{batch.ngay_thu_hoach ?? '—'}</td>
-                      <td className="px-5 py-4">{batch.ngay_het_han ?? '—'}</td>
-                      <td className="px-5 py-4 font-bold text-slate-900">
+                      <td data-label="Ngày thu hoạch" className="px-5 py-4">{batch.ngay_thu_hoach ?? '—'}</td>
+                      <td data-label="Hạn sử dụng" className="px-5 py-4">{batch.ngay_het_han ?? '—'}</td>
+                      <td data-label="Tồn thực tế" className="px-5 py-4 font-bold text-slate-900">
                         {batch.so_luong_ton} {batch.product?.don_vi_tinh}
                       </td>
-                      <td className="px-5 py-4">
-                        <span
-                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-                            batch.trang_thai === 'con_hang'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-slate-100 text-slate-700'
-                          }`}
-                        >
+                      <td data-label="Trạng thái" className="px-5 py-4">
+                        <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${statusClasses[batch.trang_thai] ?? 'bg-slate-100 text-slate-800'}`}>
+                          {batch.trang_thai === 'con_hang'
+                            ? <CircleCheck size={14} aria-hidden="true" />
+                            : batch.trang_thai === 'het_han'
+                              ? <AlertCircle size={14} aria-hidden="true" />
+                              : <Sprout size={14} aria-hidden="true" />}
                           {statusLabels[batch.trang_thai] ?? batch.trang_thai}
                         </span>
                       </td>
-                      <td className="px-5 py-4">
+                      <td data-label="Nhật ký / QR" className="px-5 py-4">
                         <p className="text-xs text-slate-600">
                           {batch.farming_logs?.length ?? 0} mốc canh tác
                         </p>
@@ -794,7 +814,7 @@ function BatchWasteDashboard() {
                       </td>
                     </tr>
                     {openQrBatchId === batch.id && batch.qr_code && (
-                      <tr>
+                      <tr className="mobile-table-empty">
                         <td colSpan={6} className="bg-white px-5 py-5">
                           <div className="flex flex-wrap items-center gap-5">
                             <div className="rounded-xl border border-slate-200 bg-white p-3">

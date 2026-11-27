@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Address;
 use App\Models\Product;
 use App\Models\Role;
+use App\Models\Subscription;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
 use App\Services\JwtTokenService;
@@ -195,7 +196,7 @@ class AddressSubscriptionApiTest extends TestCase
             ])
             ->assertNotFound();
 
-        $this->assertDatabaseCount('subscriptions', 0);
+        $this->assertSame(0, Subscription::query()->where('user_id', $customer->getKey())->count());
     }
 
     private function customer(): User
@@ -205,7 +206,7 @@ class AddressSubscriptionApiTest extends TestCase
         return User::query()->create([
             'ho_ten' => 'Khách kiểm thử địa chỉ và gói',
             'email' => Str::uuid().'@example.test',
-            'password' => 'Password@123',
+            'password' => '12345678',
             'role_id' => $customerRole->getKey(),
         ]);
     }

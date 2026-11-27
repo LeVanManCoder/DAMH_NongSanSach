@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import adminApi from '../../api/adminApi.js'
-import LoadingSpinner from '../../components/LoadingSpinner.jsx'
+import SkeletonBlock from '../../components/Skeletons.jsx'
 
 const currency = new Intl.NumberFormat('vi-VN', {
   style: 'currency',
@@ -64,7 +64,24 @@ function AdminDashboardPage() {
   }, [])
 
   if (isLoading) {
-    return <div className="flex min-h-64 items-center justify-center"><LoadingSpinner label="Đang tải thống kê" className="text-green-700" /></div>
+    return (
+      <div className="space-y-6" role="status" aria-label="Đang tải thống kê">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {[0, 1, 2, 3].map((item) => (
+            <div className="skeleton-card space-y-3 p-5" key={item}>
+              <SkeletonBlock className="h-4 w-1/2" />
+              <SkeletonBlock className="h-8 w-2/3" />
+              <SkeletonBlock className="h-3 w-4/5" />
+            </div>
+          ))}
+        </div>
+        <div className="grid gap-5 lg:grid-cols-2">
+          <div className="skeleton-card h-72 p-6"><SkeletonBlock className="h-5 w-1/3" /></div>
+          <div className="skeleton-card h-72 p-6"><SkeletonBlock className="h-5 w-1/3" /></div>
+        </div>
+        <span className="sr-only">Đang tải bảng điều khiển…</span>
+      </div>
+    )
   }
 
   if (errorMessage) {

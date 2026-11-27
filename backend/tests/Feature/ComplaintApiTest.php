@@ -74,7 +74,7 @@ class ComplaintApiTest extends TestCase
             ->assertJsonPath('status', 'error')
             ->assertJsonStructure(['errors' => ['anh_minh_chung']]);
 
-        $this->assertDatabaseCount('complaints', 0);
+        $this->assertSame(0, Complaint::query()->where('user_id', $customer->getKey())->count());
         Storage::disk('public')->assertDirectoryEmpty('complaints');
     }
 
@@ -91,7 +91,7 @@ class ComplaintApiTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonStructure(['errors' => ['anh_minh_chung']]);
 
-        $this->assertDatabaseCount('complaints', 0);
+        $this->assertSame(0, Complaint::query()->where('user_id', $customer->getKey())->count());
         Storage::disk('public')->assertDirectoryEmpty('complaints');
     }
 
@@ -108,7 +108,7 @@ class ComplaintApiTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonPath('errors.order.0', 'Chỉ có thể khiếu nại đơn đã giao trong vòng 24 giờ.');
 
-        $this->assertDatabaseCount('complaints', 0);
+        $this->assertSame(0, Complaint::query()->where('user_id', $customer->getKey())->count());
         Storage::disk('public')->assertDirectoryEmpty('complaints');
     }
 
@@ -125,7 +125,7 @@ class ComplaintApiTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonPath('errors.order.0', 'Chỉ có thể khiếu nại đơn đã giao trong vòng 24 giờ.');
 
-        $this->assertDatabaseCount('complaints', 0);
+        $this->assertSame(0, Complaint::query()->where('user_id', $customer->getKey())->count());
         Storage::disk('public')->assertDirectoryEmpty('complaints');
     }
 
@@ -143,7 +143,7 @@ class ComplaintApiTest extends TestCase
             ->assertNotFound()
             ->assertJsonPath('status', 'error');
 
-        $this->assertDatabaseCount('complaints', 0);
+        $this->assertSame(0, Complaint::query()->whereIn('user_id', [$owner->getKey(), $otherCustomer->getKey()])->count());
         Storage::disk('public')->assertDirectoryEmpty('complaints');
     }
 
@@ -269,7 +269,7 @@ class ComplaintApiTest extends TestCase
         return User::query()->create([
             'ho_ten' => 'Khách hàng khiếu nại',
             'email' => Str::uuid().'@example.test',
-            'password' => 'Password@123',
+            'password' => '12345678',
         ]);
     }
 

@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
+import { CircleCheck, CircleX } from 'lucide-react'
+import { TableSkeleton } from '../../components/Skeletons.jsx'
 import adminApi from '../../api/adminApi.js'
 import Button from '../../components/Button.jsx'
 import LoadingSpinner from '../../components/LoadingSpinner.jsx'
 import ToastNotification from '../../components/ToastNotification.jsx'
+import useConfirm from '../../components/useConfirm.js'
 
 const emptyCategory = {
   ten_danh_muc: '',
@@ -20,6 +23,7 @@ const emptyProduct = {
 }
 
 function AdminProductsPage() {
+  const confirm = useConfirm()
   const [categories, setCategories] = useState([])
   const [products, setProducts] = useState([])
   const [categoryForm, setCategoryForm] = useState(emptyCategory)
@@ -189,9 +193,12 @@ function AdminProductsPage() {
   }
 
   async function deleteCategory(category) {
-    if (!window.confirm(`Xóa danh mục "${category.ten_danh_muc}"?`)) {
-      return
-    }
+    const confirmed = await confirm({
+      title: `Xóa danh mục “${category.ten_danh_muc}”?`,
+      description: 'Danh mục đang có sản phẩm hoặc danh mục con sẽ không thể xóa.',
+      confirmLabel: 'Xóa danh mục',
+    })
+    if (!confirmed) return
     setBusyItem(`category-${category.id}`)
     try {
       await adminApi.deleteCategory(category.id)
@@ -208,9 +215,12 @@ function AdminProductsPage() {
   }
 
   async function deleteProduct(product) {
-    if (!window.confirm(`Xóa sản phẩm "${product.ten_san_pham}"?`)) {
-      return
-    }
+    const confirmed = await confirm({
+      title: `Xóa sản phẩm “${product.ten_san_pham}”?`,
+      description: 'Sản phẩm đã có lô hoặc xuất hiện trong đơn hàng sẽ không thể xóa.',
+      confirmLabel: 'Xóa sản phẩm',
+    })
+    if (!confirmed) return
     setBusyItem(`product-${product.id}`)
     try {
       await adminApi.deleteProduct(product.id)
@@ -251,8 +261,9 @@ function AdminProductsPage() {
       )}
 
       {isLoading ? (
-        <div className="flex min-h-48 items-center justify-center">
-          <LoadingSpinner label="Đang tải danh mục và sản phẩm" className="text-green-700" />
+        <div className="space-y-7" aria-busy="true">
+          <TableSkeleton columns={4} rows={4} label="Đang tải danh mục" />
+          <TableSkeleton columns={5} rows={5} label="Đang tải sản phẩm" />
         </div>
       ) : (
         <div className="space-y-8">
@@ -306,7 +317,7 @@ function AdminProductsPage() {
             </form>
 
             <div className="dashboard-panel overflow-x-auto rounded-2xl bg-white">
-              <table className="min-w-full divide-y divide-slate-100 text-left text-sm">
+              <table className="mobile-card-table min-w-full divide-y divide-slate-100 text-left text-sm">
                 <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                   <tr>
                     <th className="px-4 py-3">Danh mục</th>
@@ -318,12 +329,17 @@ function AdminProductsPage() {
                 <tbody className="divide-y divide-slate-100">
                   {categories.map((category) => (
                     <tr key={category.id}>
-                      <td className="px-4 py-4 font-semibold text-slate-900">{category.ten_danh_muc}</td>
-                      <td className="px-4 py-4 text-slate-600">{category.products_count ?? 0}</td>
-                      <td className="px-4 py-4 text-slate-600">
-                        {category.trang_thai === 'dang_ban' ? 'Đang hoạt động' : 'Ngừng hoạt động'}
+                      <td data-label="Danh mục" className="px-4 py-4 font-semibold text-slate-900">{category.ten_danh_muc}</td>
+                      <td data-label="Sản phẩm" className="px-4 py-4 text-slate-600">{category.products_count ?? 0}</td>
+                      <td data-label="Trạng thái" className="px-4 py-4">
+                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${category.trang_thai === 'dang_ban' ? 'bg-green-100 text-green-950' : 'bg-slate-200 text-slate-800'}`}>
+                          {category.trang_thai === 'dang_ban'
+                            ? <CircleCheck size={14} aria-hidden="true" />
+                            : <CircleX size={14} aria-hidden="true" />}
+                          {category.trang_thai === 'dang_ban' ? 'Đang hoạt động' : 'Ngừng hoạt động'}
+                        </span>
                       </td>
-                      <td className="px-4 py-4">
+                      <td data-label="Thao tác" className="px-4 py-4">
                         <div className="flex gap-2">
                           <Button variant="secondary" onClick={() => editCategory(category)}>Sửa</Button>
                           <Button
@@ -338,7 +354,7 @@ function AdminProductsPage() {
                     </tr>
                   ))}
                   {categories.length === 0 && (
-                    <tr><td colSpan="4" className="px-4 py-8 text-center text-slate-500">Chưa có danh mục.</td></tr>
+                    <tr className="mobile-table-empty"><td colSpan="4" className="px-4 py-8 text-center text-slate-500">Chưa có danh mục.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -443,7 +459,7 @@ function AdminProductsPage() {
             </form>
 
             <div className="dashboard-panel overflow-x-auto rounded-2xl bg-white">
-              <table className="min-w-full divide-y divide-slate-100 text-left text-sm">
+              <table className="mobile-card-table min-w-full divide-y divide-slate-100 text-left text-sm">
                 <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                   <tr>
                     <th className="px-4 py-3">Sản phẩm</th>
@@ -456,7 +472,7 @@ function AdminProductsPage() {
                 <tbody className="divide-y divide-slate-100">
                   {products.map((product) => (
                     <tr key={product.id}>
-                      <td className="px-4 py-4">
+                      <td data-label="Sản phẩm" className="px-4 py-4">
                         <p className="font-semibold text-slate-900">{product.ten_san_pham}</p>
                         {product.hinh_anh_dai_dien && (
                           <a
@@ -469,14 +485,19 @@ function AdminProductsPage() {
                           </a>
                         )}
                       </td>
-                      <td className="px-4 py-4 text-slate-600">{product.category?.ten_danh_muc ?? '—'}</td>
-                      <td className="px-4 py-4 text-slate-700">
+                      <td data-label="Danh mục" className="px-4 py-4 text-slate-600">{product.category?.ten_danh_muc ?? '—'}</td>
+                      <td data-label="Giá" className="px-4 py-4 text-slate-700">
                         {Number(product.gia_ban).toLocaleString('vi-VN')} đ / {product.don_vi_tinh}
                       </td>
-                      <td className="px-4 py-4 text-slate-600">
-                        {product.trang_thai === 'dang_ban' ? 'Đang bán' : 'Ngừng bán'}
+                      <td data-label="Trạng thái" className="px-4 py-4">
+                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${product.trang_thai === 'dang_ban' ? 'bg-green-100 text-green-950' : 'bg-slate-200 text-slate-800'}`}>
+                          {product.trang_thai === 'dang_ban'
+                            ? <CircleCheck size={14} aria-hidden="true" />
+                            : <CircleX size={14} aria-hidden="true" />}
+                          {product.trang_thai === 'dang_ban' ? 'Đang bán' : 'Ngừng bán'}
+                        </span>
                       </td>
-                      <td className="px-4 py-4">
+                      <td data-label="Thao tác" className="px-4 py-4">
                         <div className="flex gap-2">
                           <Button variant="secondary" onClick={() => editProduct(product)}>Sửa</Button>
                           <Button
@@ -491,7 +512,7 @@ function AdminProductsPage() {
                     </tr>
                   ))}
                   {products.length === 0 && (
-                    <tr><td colSpan="5" className="px-4 py-8 text-center text-slate-500">Chưa có sản phẩm.</td></tr>
+                    <tr className="mobile-table-empty"><td colSpan="5" className="px-4 py-8 text-center text-slate-500">Chưa có sản phẩm.</td></tr>
                   )}
                 </tbody>
               </table>

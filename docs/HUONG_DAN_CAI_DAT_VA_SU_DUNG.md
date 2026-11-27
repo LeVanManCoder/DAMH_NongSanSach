@@ -100,14 +100,16 @@ cd DAMH_NongSanSach
    * Truy cập ứng dụng trên trình duyệt tại địa chỉ: `http://localhost:5173`
 
 ### A.5. Danh sách tài khoản kiểm thử mặc định
-Sau khi chạy lệnh `php artisan migrate --seed`, hệ thống tự động khởi tạo sẵn bộ tài khoản cho đầy đủ 04 vai trò RBAC để đăng nhập và kiểm thử:
+Sau khi chạy lệnh `php artisan migrate:fresh --seed`, hệ thống tự động khởi tạo sẵn tài khoản cho 04 vai trò RBAC để đăng nhập và kiểm thử. Các tài khoản mẫu dùng chung mật khẩu `12345678`:
 
 | STT | Vai trò (Role) | Email đăng nhập | Mật khẩu mặc định | Phạm vi truy cập giao diện |
 | :---: | :--- | :--- | :--- | :--- |
-| 1 | **Super Admin** | `admin@nonganhlanh.local` | `Password@123` | `/admin` (Thống kê, Tài khoản, Cấu hình, Audit Log) |
-| 2 | **Sales (Bán hàng)** | `sales@nonganhlanh.local` | `Password@123` | `/staff/orders`, `/staff/complaints` (Duyệt đơn FEFO, Khiếu nại) |
-| 3 | **Farm Staff (Nông trại)** | `farm@nonganhlanh.local` | `Password@123` | `/farm` (Mùa vụ, Lô hàng, Nhật ký canh tác, QR, Xuất hủy) |
-| 4 | **Customer (Khách hàng)** | `khachhang@nonganhlanh.local` | `Password@123` | `/`, `/cart`, `/checkout`, `/orders`, `/subscriptions` |
+| 1 | **Super Admin** | `admin@nonglanh.vn` | `12345678` | `/admin/dashboard`, `/admin/users`, `/admin/audit-logs` |
+| 2 | **Sales (Bán hàng)** | `banhang@nonglanh.vn` | `12345678` | `/staff/orders`, `/staff/complaints` (Duyệt đơn FEFO, Khiếu nại) |
+| 3 | **Farm Staff (Nông trại)** | `nongtrai@nonglanh.vn` | `12345678` | `/staff/batches` (Mùa vụ, Lô hàng, Nhật ký canh tác, QR, Xuất hủy) |
+| 4 | **Customer (Khách hàng)** | `khach@nonglanh.vn` | `12345678` | `/`, `/cart`, `/checkout`, `/orders`, `/subscriptions` |
+
+Hai tài khoản khách hàng mẫu phụ là `khach2@nonglanh.vn` và `khach3@nonglanh.vn`, cùng mật khẩu `12345678`. Đây là thông tin demo local, không dùng trong môi trường production.
 
 ### A.6. Chạy hàng đợi và Scheduler cho gói định kỳ
 
@@ -141,8 +143,8 @@ Queue worker phải luôn chạy riêng với web server. Khi triển khai phiê
 Nhân viên Nông trại chịu trách nhiệm quản lý quy trình sản xuất tại vườn, tạo lô thu hoạch, ghi nhật ký minh bạch nguồn gốc và phát hành mã QR. *(Lưu ý: Tài khoản Farm Staff không thể truy cập thông tin đơn hàng hay doanh thu của khách hàng).*
 
 * **Bước 1 – Đăng nhập & Truy cập phân hệ Nông trại:**
-  1. Truy cập trang đăng nhập (`/login`), nhập tài khoản `farm@nonganhlanh.local` / `Password@123`.
-  2. Hệ thống tự động điều hướng đến trang **Quản lý Lô hàng & Canh tác (`/farm`)**.
+  1. Truy cập trang đăng nhập (`/login`), nhập tài khoản `nongtrai@nonglanh.vn` / `12345678`.
+  2. Hệ thống tự động điều hướng đến trang **Quản lý Lô hàng & Canh tác (`/staff/batches`)**.
 
 * **Bước 2 – Khởi tạo Lô hàng mới (`Batch`):**
   1. Tại khu vực tạo lô mới, chọn **Sản phẩm nông sản** (ví dụ: *Cà chua hữu cơ*) và **Mùa vụ** tương ứng.
@@ -169,7 +171,7 @@ Nhân viên Nông trại chịu trách nhiệm quản lý quy trình sản xuấ
 Nhân viên Bán hàng đảm nhận việc kiểm tra đơn đặt hàng, kích hoạt xuất kho tự động theo nguyên tắc FEFO, theo dõi hàng cận hạn và giải quyết khiếu nại sau bán hàng.
 
 * **Bước 1 – Đăng nhập & Theo dõi danh sách đơn hàng:**
-  1. Đăng nhập bằng tài khoản `sales@nonganhlanh.local` / `Password@123`.
+  1. Đăng nhập bằng tài khoản `banhang@nonglanh.vn` / `12345678`.
   2. Tại màn hình **Quản lý Đơn hàng (`/staff/orders`)**, sử dụng bộ lọc trạng thái (*Chờ thanh toán*, *Chờ duyệt*, *Đang giao*, *Đã giao*) để ưu tiên xử lý các đơn hàng hỏa tốc trong ngày.
 
 * **Bước 2 – Duyệt đơn hàng & Kích hoạt trừ kho tự động (FEFO):**
@@ -192,7 +194,7 @@ Nhân viên Bán hàng đảm nhận việc kiểm tra đơn đặt hàng, kích
 Quản trị viên nắm quyền giám sát toàn diện chỉ số vận hành kinh doanh, quản lý nhân sự phân quyền và kiểm toán an toàn dữ liệu.
 
 * **Bước 1 – Đăng nhập & Xem Báo cáo tổng quan (`Admin Dashboard`):**
-  1. Đăng nhập bằng tài khoản `admin@nonganhlanh.local` / `Password@123` để truy cập khu vực quản trị **`/admin`**.
+  1. Đăng nhập bằng tài khoản `admin@nonglanh.vn` / `12345678` để truy cập khu vực quản trị **`/admin/dashboard`**.
   2. Theo dõi các thẻ chỉ số thống kê thời gian thực: **Tổng doanh thu**, **Tổng số đơn hàng**, **Số lượng khách hàng**, **Số lượng lô hàng đang lưu thông** và danh sách **Cảnh báo lô cận hạn**.
 
 * **Bước 2 – Quản lý Tài khoản & Phân quyền người dùng:**
