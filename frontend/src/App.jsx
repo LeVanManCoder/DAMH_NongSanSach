@@ -10,10 +10,12 @@ import StaffOrdersPage from './pages/staff/StaffOrdersPage.jsx'
 import StaffComplaintsPage from './pages/staff/StaffComplaintsPage.jsx'
 import CartPage from './pages/customer/CartPage.jsx'
 import CheckoutPage from './pages/customer/CheckoutPage.jsx'
+import ContactPage from './pages/customer/ContactPage.jsx'
 import HomePage from './pages/customer/HomePage.jsx'
 import ProductDetail from './pages/customer/ProductDetail.jsx'
 import LoginPage from './pages/customer/LoginPage.jsx'
 import ProductList from './pages/customer/ProductList.jsx'
+import AboutPage from './pages/customer/AboutPage.jsx'
 import OrdersPage from './pages/customer/OrdersPage.jsx'
 import ProfilePage from './pages/customer/ProfilePage.jsx'
 import SubscriptionsPage from './pages/customer/SubscriptionsPage.jsx'
@@ -33,6 +35,8 @@ function App() {
             <Route path="products" element={<ProductList />} />
             <Route path="products/:slug" element={<ProductDetail />} />
             <Route path="login" element={<LoginPage />} />
+            <Route path="about" element={<AboutPage />} />
+            <Route path="contact" element={<ContactPage />} />
             <Route path="trace/:qrCode" element={<TracePage />} />
             <Route path="cart" element={<CartPage />} />
             <Route path="checkout" element={<CheckoutPage />} />

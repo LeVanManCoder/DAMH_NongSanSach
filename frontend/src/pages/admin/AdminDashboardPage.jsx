@@ -32,7 +32,7 @@ const orderColors = [
 
 function KpiCard({ label, value, detail, accent }) {
   return (
-    <article className="rounded-2xl bg-white p-5 shadow-sm">
+    <article className="dashboard-panel rounded-2xl bg-white p-5">
       <p className="text-sm font-medium text-slate-500">{label}</p>
       <p className={`mt-3 text-2xl font-bold ${accent ?? 'text-slate-900'}`}>{value}</p>
       {detail && <p className="mt-2 text-xs text-slate-500">{detail}</p>}
@@ -82,8 +82,8 @@ function AdminDashboardPage() {
 
   return (
     <section className="space-y-7">
-      <header>
-        <p className="text-sm font-semibold uppercase tracking-wide text-green-700">Bảng điều khiển</p>
+      <header className="page-heading py-1">
+        <p className="section-kicker">Bảng điều khiển</p>
         <h1 className="mt-2 text-3xl font-bold text-slate-900">Thống kê tổng quan</h1>
         <p className="mt-2 text-sm text-slate-600">Cập nhật số liệu trực tiếp từ đơn hàng và kho lô.</p>
       </header>
@@ -101,7 +101,7 @@ function AdminDashboardPage() {
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <section className="rounded-2xl bg-white p-5 shadow-sm sm:p-6">
+        <section className="dashboard-panel rounded-2xl bg-white p-5 sm:p-6">
           <h2 className="text-lg font-bold text-slate-900">Đơn hàng theo trạng thái</h2>
           <p className="mt-1 text-sm text-slate-500">Tổng {dashboard.don_hang.tong_so} đơn</p>
           <div className="mt-5 space-y-4">
@@ -123,7 +123,7 @@ function AdminDashboardPage() {
         </section>
 
         <section className="space-y-5">
-          <article className="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm sm:p-6">
+          <article className="dashboard-panel rounded-2xl border border-amber-200 bg-amber-50 p-5 sm:p-6">
             <p className="text-sm font-semibold text-amber-900">Lô hàng cận hạn</p>
             <p className="mt-2 text-3xl font-bold text-amber-950">{dashboard.hang_can_han.so_lo} lô</p>
             <p className="mt-1 text-sm text-amber-900">
@@ -131,7 +131,7 @@ function AdminDashboardPage() {
             </p>
             <p className="mt-2 text-xs text-amber-800">Ngưỡng cảnh báo: còn hạn trong {dashboard.hang_can_han.nguong_ngay} ngày</p>
           </article>
-          <article className="rounded-2xl bg-white p-5 shadow-sm sm:p-6">
+          <article className="dashboard-panel rounded-2xl bg-white p-5 sm:p-6">
             <p className="text-sm font-semibold text-slate-600">Tỷ lệ hao hụt</p>
             <p className="mt-2 text-3xl font-bold text-rose-700">{dashboard.hao_hut.ty_le_tren_luong_nhap}%</p>
             <p className="mt-1 text-sm text-slate-600">

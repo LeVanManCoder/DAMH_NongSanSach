@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ArrowRight, Leaf, LockKeyhole, Mail } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import authApi from '../../api/authApi.js'
 import Button from '../../components/Button.jsx'
@@ -22,7 +23,13 @@ function LoginPage() {
     try {
       const response = await authApi.login({ email, password })
       signIn(response.data.access_token, response.data.user)
-      navigate(location.state?.from?.pathname ?? '/products', { replace: true })
+      const workspaceByRole = {
+        admin: '/admin/dashboard',
+        farm_staff: '/staff/batches',
+        sales: '/staff/orders',
+        customer: '/',
+      }
+      navigate(workspaceByRole[response.data.user.role] ?? '/', { replace: true })
     } catch (error) {
       setErrorMessage(
         error.response?.data?.message ??
@@ -34,79 +41,87 @@ function LoginPage() {
   }
 
   return (
-    <section className="mx-auto max-w-md rounded-2xl bg-white p-6 shadow-sm sm:p-8">
-      <p className="text-sm font-semibold uppercase tracking-wide text-green-700">
-        Chào mừng trở lại
-      </p>
-      <h1 className="mt-2 text-2xl font-bold text-slate-900">Đăng nhập Nông Lành</h1>
-      <p className="mt-2 text-sm text-slate-600">
-        Đăng nhập để quản lý giỏ hàng và đơn hàng của bạn.
-      </p>
-
-      {location.state?.notice && (
-        <p className="mt-5 rounded-lg bg-amber-50 p-3 text-sm text-amber-900" role="status">
-          {location.state.notice}
-        </p>
-      )}
-      {errorMessage && (
-        <p className="mt-5 rounded-lg bg-red-50 p-3 text-sm text-red-800" role="alert">
-          {errorMessage}
-        </p>
-      )}
-
-      <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="login-email" className="block text-sm font-medium text-slate-700">
-            Email
-          </label>
-          <input
-            id="login-email"
-            type="email"
-            name="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 px-3 text-slate-900 focus:border-green-700 focus:outline-none focus:ring-2 focus:ring-green-700/20"
-          />
-        </div>
-        <div>
-          <label htmlFor="login-password" className="block text-sm font-medium text-slate-700">
-            Mật khẩu
-          </label>
-          <input
-            id="login-password"
-            type="password"
-            name="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 px-3 text-slate-900 focus:border-green-700 focus:outline-none focus:ring-2 focus:ring-green-700/20"
-          />
-        </div>
-        <Button
-          type="submit"
-          className="w-full disabled:cursor-not-allowed disabled:opacity-60"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
-            <>
-              <LoadingSpinner label="Đang đăng nhập" className="mr-2" />
-              Đang đăng nhập...
-            </>
-          ) : (
-            'Đăng nhập'
-          )}
-        </Button>
-      </form>
-
-      <p className="mt-6 text-center text-sm text-slate-600">
-        Chưa muốn đăng nhập?{' '}
-        <Link to="/products" className="font-semibold text-green-800 hover:underline">
-          Tiếp tục xem sản phẩm
+    <section className="login-shell">
+      <div className="login-story">
+        <Link to="/" className="login-brand">
+          <span><Leaf size={21} /></span>
+          Nông Lành
         </Link>
-      </p>
+        <div className="login-story-copy">
+          <p>THỰC PHẨM TỬ TẾ, NGUỒN GỐC RÕ RÀNG</p>
+          <h1>Tươi lành<br />từ nông trại<br /><em>đến bàn ăn.</em></h1>
+          <span>Một tài khoản cho hành trình mua sắm và vận hành nông sản minh bạch.</span>
+        </div>
+        <div className="login-story-footer">Nông Lành <span>·</span> Ăn sạch, sống lành</div>
+      </div>
+      <div className="login-form-wrap">
+        <div className="login-card">
+          <p className="section-kicker">Chào mừng trở lại</p>
+          <h2>Đăng nhập</h2>
+          <p className="login-subtitle">Đăng nhập để tiếp tục tới không gian làm việc của bạn.</p>
+
+          {location.state?.notice && (
+            <p className="login-notice" role="status">{location.state.notice}</p>
+          )}
+          {errorMessage && (
+            <p className="login-error" role="alert">{errorMessage}</p>
+          )}
+
+          <form className="login-form" onSubmit={handleSubmit}>
+            <label htmlFor="login-email">
+              Email
+              <span className="login-input-wrap">
+                <Mail size={18} aria-hidden="true" />
+                <input
+                  id="login-email"
+                  type="email"
+                  name="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="ban@example.com"
+                />
+              </span>
+            </label>
+            <label htmlFor="login-password">
+              Mật khẩu
+              <span className="login-input-wrap">
+                <LockKeyhole size={18} aria-hidden="true" />
+                <input
+                  id="login-password"
+                  type="password"
+                  name="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="Nhập mật khẩu"
+                />
+              </span>
+            </label>
+            <Button
+              type="submit"
+              className="login-submit w-full disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <LoadingSpinner label="Đang đăng nhập" className="mr-2" />
+                  Đang xác thực...
+                </>
+              ) : (
+                <>Đăng nhập <ArrowRight size={17} className="ml-2" /></>
+              )}
+            </Button>
+          </form>
+
+          <p className="login-continue">
+            Chưa muốn đăng nhập?{' '}
+            <Link to="/products">Tiếp tục xem sản phẩm</Link>
+          </p>
+        </div>
+      </div>
     </section>
   )
 }

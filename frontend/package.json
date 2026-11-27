@@ -10,8 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@zxing/browser": "^0.2.1",
     "autoprefixer": "^10.7.0",
     "axios": "^1.21.1",
+    "lucide-react": "^1.82.0",
     "postcss": "^8.5.33",
     "qrcode.react": "^4.2.0",
     "react": "^19.3.1",

@@ -104,12 +104,12 @@ function AdminUsersPage() {
   return (
     <section>
       {toast && <ToastNotification message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-      <header className="mb-6">
-        <p className="text-sm font-semibold uppercase tracking-wide text-green-700">Quản trị hệ thống</p>
+      <header className="page-heading mb-6 py-1">
+        <p className="section-kicker">Quản trị hệ thống</p>
         <h1 className="mt-2 text-3xl font-bold text-slate-900">Quản lý tài khoản</h1>
       </header>
 
-      <form onSubmit={applyFilters} className="mb-5 grid gap-3 rounded-2xl bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-[minmax(12rem,1fr)_12rem_12rem_auto]">
+      <form onSubmit={applyFilters} className="filter-panel mb-5 grid gap-3 rounded-2xl bg-white p-4 sm:grid-cols-2 lg:grid-cols-[minmax(12rem,1fr)_12rem_12rem_auto]">
         <input
           value={search}
           onChange={(event) => setSearch(event.target.value)}
@@ -134,7 +134,7 @@ function AdminUsersPage() {
         <div className="flex min-h-48 items-center justify-center"><LoadingSpinner label="Đang tải tài khoản" className="text-green-700" /></div>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-2xl bg-white shadow-sm">
+          <div className="dashboard-panel overflow-x-auto rounded-2xl bg-white">
             <table className="min-w-full divide-y divide-slate-100 text-left text-sm">
               <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                 <tr>

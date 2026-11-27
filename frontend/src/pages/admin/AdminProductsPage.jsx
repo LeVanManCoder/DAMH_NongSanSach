@@ -235,8 +235,8 @@ function AdminProductsPage() {
           onClose={() => setToast(null)}
         />
       )}
-      <header className="mb-6">
-        <p className="text-sm font-semibold uppercase tracking-wide text-green-700">
+      <header className="page-heading mb-6 py-1">
+        <p className="section-kicker">
           Quản trị hệ thống
         </p>
         <h1 className="mt-2 text-3xl font-bold text-slate-900">
@@ -257,7 +257,7 @@ function AdminProductsPage() {
       ) : (
         <div className="space-y-8">
           <section className="grid gap-6 xl:grid-cols-[minmax(18rem,0.8fr)_minmax(0,1.2fr)]">
-            <form onSubmit={submitCategory} className="space-y-4 rounded-2xl bg-white p-5 shadow-sm">
+            <form onSubmit={submitCategory} className="form-panel space-y-4 rounded-2xl bg-white p-5">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">
                   {editingCategoryId ? 'Sửa danh mục' : 'Thêm danh mục'}
@@ -305,7 +305,7 @@ function AdminProductsPage() {
               </div>
             </form>
 
-            <div className="overflow-x-auto rounded-2xl bg-white shadow-sm">
+            <div className="dashboard-panel overflow-x-auto rounded-2xl bg-white">
               <table className="min-w-full divide-y divide-slate-100 text-left text-sm">
                 <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                   <tr>
@@ -346,7 +346,7 @@ function AdminProductsPage() {
           </section>
 
           <section className="grid gap-6 xl:grid-cols-[minmax(18rem,0.8fr)_minmax(0,1.2fr)]">
-            <form onSubmit={submitProduct} className="space-y-4 rounded-2xl bg-white p-5 shadow-sm">
+            <form onSubmit={submitProduct} className="form-panel space-y-4 rounded-2xl bg-white p-5">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">
                   {editingProductId ? 'Sửa sản phẩm' : 'Thêm sản phẩm'}
@@ -442,7 +442,7 @@ function AdminProductsPage() {
               </div>
             </form>
 
-            <div className="overflow-x-auto rounded-2xl bg-white shadow-sm">
+            <div className="dashboard-panel overflow-x-auto rounded-2xl bg-white">
               <table className="min-w-full divide-y divide-slate-100 text-left text-sm">
                 <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                   <tr>
