@@ -1,0 +1,2857 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Nông Lành - API thương mại điện tử nông sản sạch",
+        "description": "Tài liệu RESTful API của hệ thống Nông Lành. Các endpoint có bảo vệ yêu cầu JWT trong header Authorization: Bearer <token>.",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://127.0.0.1:8000",
+            "description": "Máy chủ phát triển Laravel"
+        }
+    ],
+    "paths": {
+        "/api/addresses": {
+            "get": {
+                "tags": [
+                    "Địa chỉ"
+                ],
+                "summary": "Danh sách địa chỉ giao hàng của khách hàng",
+                "operationId": "dc6b190d3f07db7ed032fa181dc45150",
+                "responses": {
+                    "200": {
+                        "description": "Danh sách địa chỉ, địa chỉ mặc định đứng đầu."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Địa chỉ"
+                ],
+                "summary": "Thêm địa chỉ giao hàng",
+                "operationId": "6344fc023028e43a5490f1c6372bd391",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "ten_nguoi_nhan",
+                                    "so_dien_thoai",
+                                    "dia_chi"
+                                ],
+                                "properties": {
+                                    "ten_nguoi_nhan": {
+                                        "type": "string"
+                                    },
+                                    "so_dien_thoai": {
+                                        "type": "string"
+                                    },
+                                    "dia_chi": {
+                                        "type": "string"
+                                    },
+                                    "vi_do": {
+                                        "type": "number",
+                                        "nullable": true
+                                    },
+                                    "kinh_do": {
+                                        "type": "number",
+                                        "nullable": true
+                                    },
+                                    "la_mac_dinh": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Địa chỉ đã được lưu."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/addresses/{id}": {
+            "put": {
+                "tags": [
+                    "Địa chỉ"
+                ],
+                "summary": "Cập nhật địa chỉ thuộc tài khoản",
+                "operationId": "b4967e4140f305290dbde0982a3fc7d0",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "ten_nguoi_nhan",
+                                    "so_dien_thoai",
+                                    "dia_chi"
+                                ],
+                                "properties": {
+                                    "ten_nguoi_nhan": {
+                                        "type": "string"
+                                    },
+                                    "so_dien_thoai": {
+                                        "type": "string"
+                                    },
+                                    "dia_chi": {
+                                        "type": "string"
+                                    },
+                                    "vi_do": {
+                                        "type": "number",
+                                        "nullable": true
+                                    },
+                                    "kinh_do": {
+                                        "type": "number",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Địa chỉ đã cập nhật."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy địa chỉ thuộc tài khoản."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Địa chỉ"
+                ],
+                "summary": "Xóa địa chỉ thuộc tài khoản",
+                "operationId": "eedadf79fef97e5ee1af0b11c8856d8b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Địa chỉ đã xóa."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy địa chỉ thuộc tài khoản."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/addresses/{id}/default": {
+            "patch": {
+                "tags": [
+                    "Địa chỉ"
+                ],
+                "summary": "Đặt địa chỉ mặc định",
+                "operationId": "0341db0238290f4d8ef9c22a3a542e87",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Địa chỉ mặc định đã được cập nhật."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy địa chỉ thuộc tài khoản."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/categories": {
+            "get": {
+                "tags": [
+                    "Quản trị"
+                ],
+                "summary": "Danh sách danh mục cho Admin",
+                "operationId": "65c63a6d35e189039a3f53d203350dbf",
+                "responses": {
+                    "200": {
+                        "description": "Danh sách danh mục có số sản phẩm."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Quản trị"
+                ],
+                "summary": "Tạo danh mục",
+                "operationId": "7bdb27a361d8e1df02b5ee7d01700a63",
+                "responses": {
+                    "201": {
+                        "description": "Danh mục đã được tạo."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/categories/{id}": {
+            "put": {
+                "tags": [
+                    "Quản trị"
+                ],
+                "summary": "Cập nhật danh mục",
+                "operationId": "d15302427ce0eeb2044e5bcb88160a86",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Danh mục đã được cập nhật."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Quản trị"
+                ],
+                "summary": "Xóa danh mục không có dữ liệu liên kết",
+                "operationId": "0e54d59f434c8d51c2b544f44af48ba1",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Danh mục đã được xóa."
+                    },
+                    "409": {
+                        "description": "Danh mục còn sản phẩm hoặc danh mục con."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/dashboard": {
+            "get": {
+                "tags": [
+                    "Quản trị"
+                ],
+                "summary": "Thống kê tổng quan hệ thống",
+                "operationId": "a4e953abeda97cdeaa1c2af786aea1f3",
+                "responses": {
+                    "200": {
+                        "description": "Doanh thu, đơn hàng, khách hàng, hàng cận hạn và hao hụt."
+                    },
+                    "403": {
+                        "description": "Chỉ Admin được truy cập."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/users": {
+            "get": {
+                "tags": [
+                    "Quản trị"
+                ],
+                "summary": "Danh sách tài khoản và vai trò",
+                "operationId": "8734f0eb21eaec99b614d902ba09f030",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "role",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "is_active",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Danh sách tài khoản phân trang."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/users/{id}/status": {
+            "patch": {
+                "tags": [
+                    "Quản trị"
+                ],
+                "summary": "Khóa hoặc mở khóa tài khoản",
+                "operationId": "f46158426946893f0ec4297831f47670",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "is_active"
+                                ],
+                                "properties": {
+                                    "is_active": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Trạng thái tài khoản đã cập nhật."
+                    },
+                    "403": {
+                        "description": "Chỉ Admin được thực hiện."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy tài khoản."
+                    },
+                    "422": {
+                        "description": "Không được tự khóa tài khoản."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/audit-logs": {
+            "get": {
+                "tags": [
+                    "Quản trị"
+                ],
+                "summary": "Tra cứu nhật ký hoạt động",
+                "operationId": "f8abfa8ddd859e2b8d37a89a732215cf",
+                "parameters": [
+                    {
+                        "name": "hanh_dong",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "doi_tuong",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Nhật ký mới nhất, phân trang và có thông tin người thao tác."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/products": {
+            "get": {
+                "tags": [
+                    "Quản trị"
+                ],
+                "summary": "Danh sách sản phẩm cho Admin",
+                "operationId": "9bb005e7e461e715b03cd64168905062",
+                "responses": {
+                    "200": {
+                        "description": "Danh sách sản phẩm có danh mục."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Quản trị"
+                ],
+                "summary": "Tạo sản phẩm kèm ảnh tùy chọn",
+                "operationId": "f18b2a7391d1e59fee2598d9936b00d2",
+                "responses": {
+                    "201": {
+                        "description": "Sản phẩm đã được tạo."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/admin/products/{id}": {
+            "put": {
+                "tags": [
+                    "Quản trị"
+                ],
+                "summary": "Cập nhật sản phẩm kèm ảnh tùy chọn",
+                "operationId": "c00ca07e9d3e1360627366437336babe",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sản phẩm đã được cập nhật."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Quản trị"
+                ],
+                "summary": "Ngừng và xóa mềm sản phẩm chưa phát sinh lô hoặc đơn",
+                "operationId": "e70da76819b8205a26f8bb2155aec413",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Sản phẩm đã được xóa mềm."
+                    },
+                    "409": {
+                        "description": "Sản phẩm đã có lô hàng hoặc đơn hàng."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/auth/register": {
+            "post": {
+                "tags": [
+                    "Xác thực"
+                ],
+                "summary": "Đăng ký tài khoản khách hàng",
+                "description": "Tạo tài khoản mới với vai trò customer.",
+                "operationId": "c7bb21a0d87049e161b8e4c9b0d909f2",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "ho_ten",
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "ho_ten": {
+                                        "type": "string",
+                                        "example": "Nguyễn Thị An",
+                                        "maxLength": 100
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "an@example.com"
+                                    },
+                                    "so_dien_thoai": {
+                                        "type": "string",
+                                        "example": "0901234567",
+                                        "nullable": true
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "Password@123",
+                                        "minLength": 8
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Tạo tài khoản thành công.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Tạo tài khoản thành công."
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Dữ liệu đăng ký không hợp lệ."
+                    }
+                }
+            }
+        },
+        "/api/auth/login": {
+            "post": {
+                "tags": [
+                    "Xác thực"
+                ],
+                "summary": "Đăng nhập và nhận JWT",
+                "description": "Đăng nhập bằng email và mật khẩu. Tài khoản bị tạm khóa 15 phút sau 5 lần nhập sai liên tiếp.",
+                "operationId": "dd51a484b7fa0f97c7680fdbde14cf5f",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "khachhang@nonganhlanh.local"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "Password@123"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Đăng nhập thành công.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "token_type": {
+                                            "type": "string",
+                                            "example": "Bearer"
+                                        },
+                                        "access_token": {
+                                            "type": "string"
+                                        },
+                                        "expires_in": {
+                                            "type": "integer",
+                                            "example": 3600
+                                        },
+                                        "user": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Thông tin đăng nhập không chính xác."
+                    },
+                    "422": {
+                        "description": "Thiếu hoặc sai định dạng thông tin đăng nhập."
+                    }
+                }
+            }
+        },
+        "/api/auth/logout": {
+            "post": {
+                "tags": [
+                    "Xác thực"
+                ],
+                "summary": "Đăng xuất",
+                "description": "Thu hồi JWT hiện tại.",
+                "operationId": "df9bdc6c7a6d9f20b983526b2ec0f698",
+                "responses": {
+                    "200": {
+                        "description": "Đăng xuất thành công.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Đăng xuất thành công."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Thiếu hoặc token không hợp lệ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/auth/me": {
+            "get": {
+                "tags": [
+                    "Xác thực"
+                ],
+                "summary": "Lấy thông tin tài khoản hiện tại",
+                "operationId": "b5de204f5e452ef51327c691aa99e77c",
+                "responses": {
+                    "200": {
+                        "description": "Thông tin tài khoản và vai trò hiện tại.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Thiếu hoặc token không hợp lệ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/batches": {
+            "get": {
+                "tags": [
+                    "Quản lý lô hàng"
+                ],
+                "summary": "Danh sách lô hàng",
+                "description": "Trả danh sách phân trang; có thể lọc theo sản phẩm và trạng thái. Farm Staff, Sales và Admin được xem.",
+                "operationId": "f1d958aaba020b1d4ceb3788c6c90a98",
+                "parameters": [
+                    {
+                        "name": "product_id",
+                        "in": "query",
+                        "description": "Lọc theo mã sản phẩm.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "trang_thai",
+                        "in": "query",
+                        "description": "Lọc theo trạng thái lô.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "dang_canh_tac",
+                                "da_thu_hoach",
+                                "con_hang",
+                                "het_hang",
+                                "het_han"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Số bản ghi mỗi trang (1-100).",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 20,
+                            "maximum": 100,
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Danh sách lô hàng."
+                    },
+                    "401": {
+                        "description": "Thiếu hoặc token không hợp lệ."
+                    },
+                    "403": {
+                        "description": "Vai trò không được phép xem danh sách lô."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Quản lý lô hàng"
+                ],
+                "summary": "Tạo lô hàng",
+                "description": "Chỉ Farm Staff được tạo lô hàng.",
+                "operationId": "bf81da9bbdb2ff772f26c82436a22eb7",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "product_id",
+                                    "so_luong_nhap"
+                                ],
+                                "properties": {
+                                    "ma_lo": {
+                                        "type": "string",
+                                        "example": "LO-2026-001"
+                                    },
+                                    "product_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "season_id": {
+                                        "type": "integer",
+                                        "example": 1,
+                                        "nullable": true
+                                    },
+                                    "ngay_thu_hoach": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2026-11-24",
+                                        "nullable": true
+                                    },
+                                    "ngay_het_han": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2026-11-30",
+                                        "nullable": true
+                                    },
+                                    "so_luong_nhap": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 20
+                                    },
+                                    "so_luong_ton": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 20
+                                    },
+                                    "trang_thai": {
+                                        "type": "string",
+                                        "example": "con_hang",
+                                        "enum": [
+                                            "dang_canh_tac",
+                                            "da_thu_hoach",
+                                            "con_hang",
+                                            "het_hang",
+                                            "het_han"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Lô hàng đã được tạo."
+                    },
+                    "401": {
+                        "description": "Thiếu hoặc token không hợp lệ."
+                    },
+                    "403": {
+                        "description": "Chỉ Farm Staff được tạo lô."
+                    },
+                    "422": {
+                        "description": "Dữ liệu lô hàng không hợp lệ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/batches/{id}": {
+            "get": {
+                "tags": [
+                    "Quản lý lô hàng"
+                ],
+                "summary": "Chi tiết lô hàng và nhật ký canh tác",
+                "operationId": "ca685d4fc2e9f8def28237324bd3ef08",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID lô hàng.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thông tin lô, sản phẩm, mùa vụ và nhật ký canh tác.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Thiếu hoặc token không hợp lệ."
+                    },
+                    "403": {
+                        "description": "Vai trò không được phép xem chi tiết lô."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy lô hàng."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Quản lý lô hàng"
+                ],
+                "summary": "Cập nhật thông tin lô hàng",
+                "description": "Chỉ Farm Staff được cập nhật thông tin lô; số lượng tồn và số lượng nhập không thể sửa qua endpoint này.",
+                "operationId": "4b3f03463dbfa64a3277431737d39b03",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "ma_lo": {
+                                        "type": "string",
+                                        "example": "LO-2026-001"
+                                    },
+                                    "ngay_thu_hoach": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "nullable": true
+                                    },
+                                    "ngay_het_han": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "nullable": true
+                                    },
+                                    "trang_thai": {
+                                        "type": "string",
+                                        "enum": [
+                                            "dang_canh_tac",
+                                            "da_thu_hoach",
+                                            "con_hang",
+                                            "het_hang",
+                                            "het_han"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Thông tin lô đã được cập nhật."
+                    },
+                    "401": {
+                        "description": "Thiếu hoặc token không hợp lệ."
+                    },
+                    "403": {
+                        "description": "Chỉ Farm Staff được cập nhật lô."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy lô hàng."
+                    },
+                    "422": {
+                        "description": "Dữ liệu cập nhật không hợp lệ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Quản lý lô hàng"
+                ],
+                "summary": "Xóa lô chưa phát sinh giao dịch",
+                "description": "Chỉ xóa được lô chưa có giao dịch, nhật ký canh tác hoặc nhật ký xuất hủy.",
+                "operationId": "41a7d8727dc6cf7468df4119ccc4d0c9",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Đã xóa lô hàng."
+                    },
+                    "401": {
+                        "description": "Thiếu hoặc token không hợp lệ."
+                    },
+                    "403": {
+                        "description": "Chỉ Farm Staff được xóa lô."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy lô hàng."
+                    },
+                    "409": {
+                        "description": "Lô hàng đã có dữ liệu phụ thuộc nên không thể xóa."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/batches/{id}/generate-qr": {
+            "post": {
+                "tags": [
+                    "Quản lý lô hàng"
+                ],
+                "summary": "Tạo mã QR truy xuất nguồn gốc",
+                "description": "Sinh mã QR sau thu hoạch khi lô đã có nhật ký canh tác. Chỉ Farm Staff được sử dụng.",
+                "operationId": "d844b0cdc1fbe129b39327d9a2dedb05",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Mã QR và URL ảnh QR.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "qr_code": {
+                                                    "type": "string"
+                                                },
+                                                "image_url": {
+                                                    "type": "string",
+                                                    "format": "uri"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Thiếu hoặc token không hợp lệ."
+                    },
+                    "403": {
+                        "description": "Chỉ Farm Staff được tạo mã QR."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy lô hàng."
+                    },
+                    "422": {
+                        "description": "Lô chưa thu hoạch hoặc chưa có nhật ký canh tác."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/batches/{id}/waste": {
+            "post": {
+                "tags": [
+                    "Quản lý lô hàng"
+                ],
+                "summary": "Ghi nhận xuất hủy hoặc hao hụt",
+                "description": "Ghi nhận lượng hủy, cập nhật tồn kho và nhật ký hao hụt trong một giao dịch. Chỉ Farm Staff được sử dụng.",
+                "operationId": "abffdd572a7ce663f251c94ea3da407c",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "so_luong",
+                                    "ly_do"
+                                ],
+                                "properties": {
+                                    "so_luong": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 1.5
+                                    },
+                                    "ly_do": {
+                                        "type": "string",
+                                        "example": "Dập nát trong quá trình phân loại",
+                                        "maxLength": 255
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Đã ghi nhận xuất hủy."
+                    },
+                    "401": {
+                        "description": "Thiếu hoặc token không hợp lệ."
+                    },
+                    "403": {
+                        "description": "Chỉ Farm Staff được ghi nhận xuất hủy."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy lô hàng."
+                    },
+                    "422": {
+                        "description": "Số lượng xuất hủy không hợp lệ hoặc vượt tồn kho."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/cart": {
+            "get": {
+                "tags": [
+                    "Giỏ hàng"
+                ],
+                "summary": "Xem giỏ hàng của khách hàng hiện tại",
+                "operationId": "7fdb9b40bd4ad2baf12aa15164eab788",
+                "responses": {
+                    "200": {
+                        "description": "Danh sách sản phẩm trong giỏ hàng."
+                    },
+                    "401": {
+                        "description": "Thiếu hoặc token không hợp lệ."
+                    },
+                    "403": {
+                        "description": "Chỉ khách hàng được sử dụng giỏ hàng."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Giỏ hàng"
+                ],
+                "summary": "Thêm sản phẩm vào giỏ hàng",
+                "description": "Nếu sản phẩm đã có trong giỏ, số lượng mới được cộng vào số lượng hiện có.",
+                "operationId": "cf9633893102fd28e9f7fa0e8bff7f36",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "product_id",
+                                    "so_luong"
+                                ],
+                                "properties": {
+                                    "product_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "so_luong": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 2
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Sản phẩm đã được thêm vào giỏ."
+                    },
+                    "401": {
+                        "description": "Thiếu hoặc token không hợp lệ."
+                    },
+                    "403": {
+                        "description": "Chỉ khách hàng được sử dụng giỏ hàng."
+                    },
+                    "422": {
+                        "description": "Sản phẩm hoặc số lượng không hợp lệ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/cart/{itemId}": {
+            "put": {
+                "tags": [
+                    "Giỏ hàng"
+                ],
+                "summary": "Cập nhật số lượng sản phẩm trong giỏ",
+                "operationId": "35a223046c629be491d4c543ce9d8b02",
+                "parameters": [
+                    {
+                        "name": "itemId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "so_luong"
+                                ],
+                                "properties": {
+                                    "so_luong": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 3
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Số lượng giỏ hàng đã được cập nhật."
+                    },
+                    "401": {
+                        "description": "Thiếu hoặc token không hợp lệ."
+                    },
+                    "403": {
+                        "description": "Chỉ khách hàng được sử dụng giỏ hàng."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy sản phẩm trong giỏ."
+                    },
+                    "422": {
+                        "description": "Số lượng không hợp lệ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Giỏ hàng"
+                ],
+                "summary": "Xóa sản phẩm khỏi giỏ hàng",
+                "operationId": "61467a79ad43faca035fc4491264d48a",
+                "parameters": [
+                    {
+                        "name": "itemId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Đã xóa sản phẩm khỏi giỏ hàng."
+                    },
+                    "401": {
+                        "description": "Thiếu hoặc token không hợp lệ."
+                    },
+                    "403": {
+                        "description": "Chỉ khách hàng được sử dụng giỏ hàng."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy sản phẩm trong giỏ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Giỏ hàng"
+                ],
+                "summary": "Cập nhật số lượng sản phẩm trong giỏ",
+                "operationId": "bf6243cf2881dfd707f614e995a90fcf",
+                "parameters": [
+                    {
+                        "name": "itemId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "so_luong"
+                                ],
+                                "properties": {
+                                    "so_luong": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 3
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Số lượng giỏ hàng đã được cập nhật."
+                    },
+                    "401": {
+                        "description": "Thiếu hoặc token không hợp lệ."
+                    },
+                    "403": {
+                        "description": "Chỉ khách hàng được sử dụng giỏ hàng."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy sản phẩm trong giỏ."
+                    },
+                    "422": {
+                        "description": "Số lượng không hợp lệ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/categories": {
+            "get": {
+                "tags": [
+                    "Danh mục"
+                ],
+                "summary": "Danh sách danh mục sản phẩm đang hoạt động",
+                "operationId": "ac9c4d978ea4e5b72915ca9728e5b8b1",
+                "responses": {
+                    "200": {
+                        "description": "Danh sách danh mục."
+                    }
+                }
+            }
+        },
+        "/api/complaints": {
+            "get": {
+                "tags": [
+                    "Khiếu nại"
+                ],
+                "summary": "Danh sách khiếu nại cho Sales và Admin",
+                "operationId": "c896b092927624ef9ad25851388b1a78",
+                "responses": {
+                    "200": {
+                        "description": "Danh sách phân trang kèm đơn hàng, khách hàng và ảnh minh chứng."
+                    },
+                    "403": {
+                        "description": "Không đủ quyền xem khiếu nại."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/complaints/{id}": {
+            "put": {
+                "tags": [
+                    "Khiếu nại"
+                ],
+                "summary": "Sales chấp nhận hoặc từ chối khiếu nại",
+                "operationId": "6c87981b9860d45daee4b3c6d4b20e4a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "trang_thai",
+                                    "phan_hoi"
+                                ],
+                                "properties": {
+                                    "trang_thai": {
+                                        "type": "string",
+                                        "enum": [
+                                            "chap_nhan",
+                                            "tu_choi"
+                                        ]
+                                    },
+                                    "phan_hoi": {
+                                        "type": "string",
+                                        "maxLength": 2000
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Khiếu nại đã được xử lý."
+                    },
+                    "403": {
+                        "description": "Chỉ Sales được xử lý khiếu nại."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy khiếu nại."
+                    },
+                    "422": {
+                        "description": "Dữ liệu không hợp lệ hoặc khiếu nại đã được xử lý."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/orders/{id}/complaints": {
+            "post": {
+                "tags": [
+                    "Khiếu nại"
+                ],
+                "summary": "Gửi khiếu nại kèm ảnh minh chứng",
+                "description": "Customer chỉ khiếu nại đơn của mình đã giao trong vòng 24 giờ; mỗi đơn chỉ gửi một khiếu nại.",
+                "operationId": "e120b168643908ded84bc574865c2943",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID đơn hàng.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "ly_do",
+                                    "anh_minh_chung"
+                                ],
+                                "properties": {
+                                    "ly_do": {
+                                        "type": "string",
+                                        "enum": [
+                                            "dap_nat",
+                                            "hu_hong",
+                                            "thieu_hang",
+                                            "sai_san_pham",
+                                            "khac"
+                                        ]
+                                    },
+                                    "mo_ta": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "maxLength": 2000
+                                    },
+                                    "anh_minh_chung": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Khiếu nại và ảnh minh chứng đã được ghi nhận."
+                    },
+                    "401": {
+                        "description": "Thiếu hoặc token không hợp lệ."
+                    },
+                    "403": {
+                        "description": "Chỉ Customer được gửi khiếu nại."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy đơn hàng thuộc tài khoản."
+                    },
+                    "409": {
+                        "description": "Đơn hàng đã có khiếu nại."
+                    },
+                    "422": {
+                        "description": "Đơn chưa giao, quá 24 giờ hoặc tệp minh chứng không hợp lệ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/batches/{id}/farming-logs": {
+            "post": {
+                "tags": [
+                    "Nhật ký canh tác"
+                ],
+                "summary": "Ghi nhật ký canh tác cho một lô hàng",
+                "description": "Farm Staff tạo nhật ký; khi lô đã có ngày thu hoạch, QR được sinh tự động sau nhật ký đầu tiên.",
+                "operationId": "311b299fca09223b244d070a5b822ce8",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "hanh_dong",
+                                    "ghi_chu",
+                                    "thoi_gian"
+                                ],
+                                "properties": {
+                                    "hanh_dong": {
+                                        "type": "string",
+                                        "enum": [
+                                            "gieo_hat",
+                                            "bon_phan",
+                                            "tuoi_nuoc",
+                                            "phun_thuoc",
+                                            "cham_soc",
+                                            "thu_hoach",
+                                            "khac"
+                                        ]
+                                    },
+                                    "ghi_chu": {
+                                        "type": "string"
+                                    },
+                                    "thoi_gian": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                    },
+                                    "hinh_anh_minh_chung": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Nhật ký đã được ghi nhận; có thể kèm QR mới."
+                    },
+                    "403": {
+                        "description": "Chỉ Farm Staff được ghi nhật ký."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy lô."
+                    },
+                    "422": {
+                        "description": "Dữ liệu nhật ký không hợp lệ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/orders": {
+            "get": {
+                "tags": [
+                    "Đơn hàng"
+                ],
+                "summary": "Danh sách đơn hàng",
+                "description": "Khách hàng chỉ xem đơn của mình; Sales và Admin xem toàn bộ đơn hàng.",
+                "operationId": "955bb77a45ae173a485fadb8befed93f",
+                "responses": {
+                    "200": {
+                        "description": "Danh sách đơn hàng phân trang, kèm chi tiết sản phẩm và lô."
+                    },
+                    "401": {
+                        "description": "Thiếu hoặc token không hợp lệ."
+                    },
+                    "403": {
+                        "description": "Vai trò không được phép xem đơn hàng."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Đơn hàng"
+                ],
+                "summary": "Tạo đơn hàng từ giỏ hàng",
+                "description": "Customer tạo đơn ở trạng thái chờ duyệt; backend tự tính phí giao hàng theo địa chỉ, chụp giá và làm trống giỏ hàng.",
+                "operationId": "2123ba58dadb22bd6f2c8081af562230",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "ten_nguoi_nhan",
+                                    "sdt_nguoi_nhan",
+                                    "dia_chi_giao"
+                                ],
+                                "properties": {
+                                    "ten_nguoi_nhan": {
+                                        "type": "string",
+                                        "example": "Nguyễn Thị An"
+                                    },
+                                    "sdt_nguoi_nhan": {
+                                        "type": "string",
+                                        "example": "0901234567"
+                                    },
+                                    "dia_chi_giao": {
+                                        "type": "string",
+                                        "example": "12 Đường Xanh, Đà Lạt"
+                                    },
+                                    "ngay_giao_du_kien": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2026-11-28",
+                                        "nullable": true
+                                    },
+                                    "ghi_chu": {
+                                        "type": "string",
+                                        "example": "Giao giờ hành chính",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Đơn hàng đã được tạo và đang chờ duyệt."
+                    },
+                    "401": {
+                        "description": "Thiếu hoặc token không hợp lệ."
+                    },
+                    "403": {
+                        "description": "Chỉ khách hàng được tạo đơn."
+                    },
+                    "422": {
+                        "description": "Giỏ hàng trống hoặc dữ liệu giao hàng không hợp lệ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/orders/{id}/approve": {
+            "patch": {
+                "tags": [
+                    "Đơn hàng"
+                ],
+                "summary": "Duyệt đơn và phân bổ tồn kho theo FEFO",
+                "description": "Chỉ Sales được duyệt đơn. Hệ thống trừ hàng từ các lô còn hạn theo ngày hết hạn gần nhất và lưu chi tiết phân bổ.",
+                "operationId": "e311d9117e1c32d34ee2065f9c83595b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID đơn hàng.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Đơn được duyệt và hàng đã được phân bổ theo FEFO."
+                    },
+                    "401": {
+                        "description": "Thiếu hoặc token không hợp lệ."
+                    },
+                    "403": {
+                        "description": "Chỉ Sales được duyệt đơn."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy đơn hàng."
+                    },
+                    "409": {
+                        "description": "Đơn hàng không ở trạng thái chờ duyệt."
+                    },
+                    "422": {
+                        "description": "Tồn kho khả dụng không đủ; giao dịch được rollback.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "error"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Số lượng tồn kho không đủ"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/orders/{id}/status": {
+            "put": {
+                "tags": [
+                    "Đơn hàng"
+                ],
+                "summary": "Cập nhật trạng thái đơn hàng bằng PUT",
+                "description": "Sales/Admin cập nhật tiến trình giao hàng; Customer chỉ được hủy đơn đang chờ duyệt.",
+                "operationId": "2b29ab889c21230523d142cbe158780e",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID đơn hàng.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "trang_thai"
+                                ],
+                                "properties": {
+                                    "trang_thai": {
+                                        "type": "string",
+                                        "example": "da_giao",
+                                        "enum": [
+                                            "da_huy",
+                                            "dang_giao",
+                                            "da_giao",
+                                            "giao_bu"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Trạng thái đơn hàng đã được cập nhật."
+                    },
+                    "401": {
+                        "description": "Thiếu hoặc token không hợp lệ."
+                    },
+                    "403": {
+                        "description": "Vai trò không được phép cập nhật trạng thái."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy đơn hàng."
+                    },
+                    "409": {
+                        "description": "Không thể chuyển trạng thái theo yêu cầu."
+                    },
+                    "422": {
+                        "description": "Trạng thái không hợp lệ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Đơn hàng"
+                ],
+                "summary": "Cập nhật trạng thái đơn hàng",
+                "description": "Customer chỉ được hủy đơn đang chờ duyệt; Sales/Admin cập nhật các bước giao hàng hợp lệ.",
+                "operationId": "6171b061f04a36658d9bca106ece32b5",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID đơn hàng.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "trang_thai"
+                                ],
+                                "properties": {
+                                    "trang_thai": {
+                                        "type": "string",
+                                        "example": "dang_giao",
+                                        "enum": [
+                                            "da_huy",
+                                            "dang_giao",
+                                            "da_giao",
+                                            "giao_bu"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Trạng thái đơn hàng đã được cập nhật."
+                    },
+                    "401": {
+                        "description": "Thiếu hoặc token không hợp lệ."
+                    },
+                    "403": {
+                        "description": "Vai trò không được phép cập nhật trạng thái."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy đơn hàng."
+                    },
+                    "409": {
+                        "description": "Không thể chuyển trạng thái theo yêu cầu."
+                    },
+                    "422": {
+                        "description": "Trạng thái không hợp lệ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/orders/{id}/confirm-payment": {
+            "patch": {
+                "tags": [
+                    "Đơn hàng"
+                ],
+                "summary": "Sales/Admin xác nhận đã nhận tiền VietQR",
+                "description": "Xác nhận giao dịch VietQR đang chờ, phân bổ tồn kho theo FEFO và ghi audit log theo cách idempotent.",
+                "operationId": "cfaf1b8bf145efeb6ff93a994fa0fb3a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thanh toán đã được xác nhận."
+                    },
+                    "403": {
+                        "description": "Chỉ Sales/Admin được xác nhận."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy đơn hàng."
+                    },
+                    "409": {
+                        "description": "Không có giao dịch VietQR chờ xử lý hoặc đơn không còn chờ thanh toán."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/payments/create": {
+            "post": {
+                "tags": [
+                    "Thanh toán"
+                ],
+                "summary": "Tạo giao dịch thanh toán",
+                "description": "Tạo giao dịch MoMo mô phỏng, VietQR, PayOS hoặc VNPay Sandbox cho đơn hàng hiện tại.",
+                "operationId": "26dedad4479cbe8f6d6a694bd352a654",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "order_id",
+                                    "phuong_thuc"
+                                ],
+                                "properties": {
+                                    "order_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "phuong_thuc": {
+                                        "type": "string",
+                                        "example": "vietqr",
+                                        "enum": [
+                                            "momo",
+                                            "vnpay",
+                                            "vietqr",
+                                            "payos"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Giao dịch và QR payload đã được tạo."
+                    },
+                    "401": {
+                        "description": "Thiếu hoặc token không hợp lệ."
+                    },
+                    "403": {
+                        "description": "Chỉ chủ đơn hàng được tạo giao dịch."
+                    },
+                    "409": {
+                        "description": "Đơn không còn chờ thanh toán hoặc đã có giao dịch khác."
+                    },
+                    "422": {
+                        "description": "Dữ liệu thanh toán không hợp lệ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/payments/ipn": {
+            "post": {
+                "tags": [
+                    "Thanh toán"
+                ],
+                "summary": "Nhận callback thanh toán mô phỏng",
+                "description": "Callback demo chỉ chấp nhận mã giao dịch tồn tại và khớp số tiền. Khi thành công, cập nhật trạng thái đơn và phân bổ FEFO trong cùng transaction. Production phải xác minh chữ ký của cổng thanh toán.",
+                "operationId": "1ac70b4340a24ce4fa14a6bd0782b1a2",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "ma_giao_dich",
+                                    "so_tien",
+                                    "trang_thai"
+                                ],
+                                "properties": {
+                                    "ma_giao_dich": {
+                                        "type": "string",
+                                        "example": "NL-6B53C05E-5DD2-4A4D-A869-7C4AFB0D1BA0"
+                                    },
+                                    "so_tien": {
+                                        "type": "integer",
+                                        "example": 475000
+                                    },
+                                    "trang_thai": {
+                                        "type": "string",
+                                        "example": "thanh_cong",
+                                        "enum": [
+                                            "thanh_cong",
+                                            "that_bai"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Callback được xử lý; lặp lại callback thành công không trừ kho lần nữa."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy giao dịch."
+                    },
+                    "409": {
+                        "description": "Giao dịch hoặc đơn hàng không thể chuyển trạng thái."
+                    },
+                    "422": {
+                        "description": "Số tiền callback không khớp hoặc dữ liệu không hợp lệ."
+                    }
+                }
+            }
+        },
+        "/api/payments/payos/webhook": {
+            "post": {
+                "tags": [
+                    "Thanh toán"
+                ],
+                "summary": "PayOS webhook đã xác thực chữ ký",
+                "operationId": "8b355a91a336ee18a9ed85c2901801d7",
+                "responses": {
+                    "200": {
+                        "description": "Webhook hợp lệ đã được xử lý idempotent."
+                    },
+                    "401": {
+                        "description": "Chữ ký không hợp lệ."
+                    }
+                }
+            }
+        },
+        "/api/payments/vnpay/ipn": {
+            "get": {
+                "tags": [
+                    "Thanh toán"
+                ],
+                "summary": "VNPay Sandbox IPN",
+                "operationId": "55b6d02731f182abbb43220e3bdf1550",
+                "responses": {
+                    "200": {
+                        "description": "Phản hồi theo định dạng chuẩn VNPay."
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Thanh toán"
+                ],
+                "summary": "VNPay Sandbox IPN",
+                "operationId": "2486d692e0f4a1dd4796983fc05d68c9",
+                "responses": {
+                    "200": {
+                        "description": "Phản hồi theo định dạng chuẩn VNPay."
+                    }
+                }
+            }
+        },
+        "/api/products": {
+            "get": {
+                "tags": [
+                    "Sản phẩm"
+                ],
+                "summary": "Danh sách sản phẩm đang mở bán",
+                "description": "Chỉ trả sản phẩm đang hoạt động có ít nhất một lô còn hạn và còn tồn kho; kèm thông tin lô và nhật ký canh tác.",
+                "operationId": "d97d1c3727cbac49708b85f7d11f7d58",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Tìm theo tên sản phẩm.",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "description": "Từ khóa tương thích ngược, tìm theo tên hoặc mô tả.",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "category_id",
+                        "in": "query",
+                        "description": "Lọc theo danh mục.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Số sản phẩm mỗi trang (1-100).",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 20,
+                            "maximum": 100,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "Thứ tự: name hoặc newest.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "name",
+                                "newest"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Danh sách sản phẩm đang mở bán, có phân trang."
+                    },
+                    "422": {
+                        "description": "Tham số tìm kiếm không hợp lệ."
+                    }
+                }
+            }
+        },
+        "/api/products/{slug}": {
+            "get": {
+                "tags": [
+                    "Sản phẩm"
+                ],
+                "summary": "Chi tiết sản phẩm theo slug",
+                "description": "Trả thông tin sản phẩm, các lô đang mở bán, mã QR và timeline nhật ký canh tác.",
+                "operationId": "5bbb6d725346d38781b256ed5c715d62",
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "description": "Slug sản phẩm.",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "ca-chua-bi-huu-co"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Chi tiết sản phẩm đang mở bán."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy sản phẩm đang mở bán."
+                    }
+                }
+            }
+        },
+        "/api/products/{id}/reviews": {
+            "get": {
+                "tags": [
+                    "Đánh giá"
+                ],
+                "summary": "Danh sách đánh giá và điểm trung bình sản phẩm",
+                "operationId": "b1db3c16536f19231153510e28632164",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Danh sách đánh giá công khai kèm điểm trung bình."
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Đánh giá"
+                ],
+                "summary": "Customer đánh giá sản phẩm đã mua trong đơn đã giao",
+                "operationId": "d6404cfe493e45f971af7bb8e3775044",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "order_id",
+                                    "so_sao"
+                                ],
+                                "properties": {
+                                    "order_id": {
+                                        "type": "integer"
+                                    },
+                                    "so_sao": {
+                                        "type": "integer",
+                                        "maximum": 5,
+                                        "minimum": 1
+                                    },
+                                    "noi_dung": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "maxLength": 500
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Đánh giá đã được ghi nhận."
+                    },
+                    "403": {
+                        "description": "Chỉ Customer được đánh giá."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy sản phẩm hoặc đơn hàng thuộc tài khoản."
+                    },
+                    "409": {
+                        "description": "Sản phẩm trong đơn này đã được đánh giá."
+                    },
+                    "422": {
+                        "description": "Đơn chưa giao hoặc không chứa sản phẩm."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/seasons": {
+            "get": {
+                "tags": [
+                    "Mùa vụ"
+                ],
+                "summary": "Danh sách mùa vụ",
+                "operationId": "f55b17cd44508137a1e2315a5891ac42",
+                "responses": {
+                    "200": {
+                        "description": "Danh sách mùa vụ cho Farm Staff."
+                    },
+                    "403": {
+                        "description": "Chỉ Farm Staff được xem mùa vụ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Mùa vụ"
+                ],
+                "summary": "Tạo mùa vụ",
+                "operationId": "f15e050263ea25449cfe8e4388aae9fb",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "ten_mua_vu",
+                                    "ngay_bat_dau"
+                                ],
+                                "properties": {
+                                    "ten_mua_vu": {
+                                        "type": "string",
+                                        "maxLength": 120
+                                    },
+                                    "khu_vuc_canh_tac": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "maxLength": 100
+                                    },
+                                    "ngay_bat_dau": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "ngay_ket_thuc_du_kien": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Mùa vụ đã được tạo."
+                    },
+                    "403": {
+                        "description": "Chỉ Farm Staff được tạo mùa vụ."
+                    },
+                    "422": {
+                        "description": "Dữ liệu mùa vụ không hợp lệ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/shipping/calculate": {
+            "post": {
+                "tags": [
+                    "Giao hàng"
+                ],
+                "summary": "Tính khoảng cách và phí giao hàng",
+                "description": "Phí được tính theo 5.000 đồng/km. Có thể cung cấp địa chỉ giao hoặc khoảng cách đã biết.",
+                "operationId": "3235d48c86c4ac70373de329e0759a8d",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "dia_chi_giao": {
+                                        "type": "string",
+                                        "example": "12 Đường Xanh, Đà Lạt"
+                                    },
+                                    "khoang_cach_km": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 4.5
+                                    },
+                                    "vi_do": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 11.94
+                                    },
+                                    "kinh_do": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 108.45
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Khoảng cách, phương pháp ước tính và phí giao hàng."
+                    },
+                    "401": {
+                        "description": "Thiếu hoặc token không hợp lệ."
+                    },
+                    "403": {
+                        "description": "Chỉ khách hàng được tính phí giao hàng."
+                    },
+                    "422": {
+                        "description": "Cần cung cấp địa chỉ hoặc khoảng cách hợp lệ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/subscription-plans": {
+            "get": {
+                "tags": [
+                    "Gói định kỳ"
+                ],
+                "summary": "Danh sách gói định kỳ đang mở",
+                "operationId": "e6d2a83b3e5de82bf0c09f856e72d7db",
+                "responses": {
+                    "200": {
+                        "description": "Các gói khách hàng có thể đăng ký."
+                    }
+                }
+            }
+        },
+        "/api/subscriptions": {
+            "get": {
+                "tags": [
+                    "Gói định kỳ"
+                ],
+                "summary": "Danh sách gói định kỳ của khách hàng hiện tại",
+                "operationId": "351423904a0a5ffde2680533b3076476",
+                "responses": {
+                    "200": {
+                        "description": "Các gói kèm sản phẩm, địa chỉ và lịch giao."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Gói định kỳ"
+                ],
+                "summary": "Đăng ký gói nhận nông sản định kỳ",
+                "operationId": "e95a22144803689290e2415240feac54",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "plan_id",
+                                    "address_id",
+                                    "ngay_bat_dau",
+                                    "chu_ky_giao_ngay",
+                                    "items"
+                                ],
+                                "properties": {
+                                    "plan_id": {
+                                        "type": "integer"
+                                    },
+                                    "address_id": {
+                                        "type": "integer"
+                                    },
+                                    "ngay_bat_dau": {
+                                        "type": "string",
+                                        "format": "date"
+                                    },
+                                    "chu_ky_giao_ngay": {
+                                        "type": "integer",
+                                        "enum": [
+                                            7,
+                                            14
+                                        ]
+                                    },
+                                    "items": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Gói định kỳ đã được đăng ký."
+                    },
+                    "404": {
+                        "description": "Địa chỉ không thuộc tài khoản."
+                    },
+                    "422": {
+                        "description": "Dữ liệu đăng ký không hợp lệ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/subscriptions/{id}/status": {
+            "patch": {
+                "tags": [
+                    "Gói định kỳ"
+                ],
+                "summary": "Tạm dừng, tiếp tục hoặc hủy gói định kỳ",
+                "operationId": "667bc2441d3e8ea67614c33797211cb7",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "trang_thai"
+                                ],
+                                "properties": {
+                                    "trang_thai": {
+                                        "type": "string",
+                                        "enum": [
+                                            "tam_dung",
+                                            "dang_hoat_dong",
+                                            "da_huy"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Trạng thái gói đã được cập nhật."
+                    },
+                    "404": {
+                        "description": "Không tìm thấy gói thuộc tài khoản."
+                    },
+                    "422": {
+                        "description": "Chuyển trạng thái không hợp lệ."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/trace/{qrCode}": {
+            "get": {
+                "tags": [
+                    "Truy xuất nguồn gốc"
+                ],
+                "summary": "Tra cứu nhật ký canh tác bằng mã QR",
+                "description": "Endpoint công khai, trả thông tin sản phẩm, mùa vụ, ngày thu hoạch và nhật ký canh tác của lô.",
+                "operationId": "b20c27218af8dee67abbb30860e0d793",
+                "parameters": [
+                    {
+                        "name": "qrCode",
+                        "in": "path",
+                        "description": "Mã QR công khai của lô hàng.",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "batch-12"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Thông tin truy xuất nguồn gốc.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "ma_lo": {
+                                                    "type": "string"
+                                                },
+                                                "ngay_thu_hoach": {
+                                                    "type": "string",
+                                                    "format": "date",
+                                                    "nullable": true
+                                                },
+                                                "ngay_het_han": {
+                                                    "type": "string",
+                                                    "format": "date",
+                                                    "nullable": true
+                                                },
+                                                "product": {
+                                                    "type": "object"
+                                                },
+                                                "season": {
+                                                    "type": "object",
+                                                    "nullable": true
+                                                },
+                                                "farming_logs": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Không tìm thấy mã QR."
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "description": "Nhập JWT access token nhận được từ endpoint đăng nhập.",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Địa chỉ",
+            "description": "Địa chỉ"
+        },
+        {
+            "name": "Quản trị",
+            "description": "Quản trị"
+        },
+        {
+            "name": "Xác thực",
+            "description": "Xác thực"
+        },
+        {
+            "name": "Quản lý lô hàng",
+            "description": "Quản lý lô hàng"
+        },
+        {
+            "name": "Giỏ hàng",
+            "description": "Giỏ hàng"
+        },
+        {
+            "name": "Danh mục",
+            "description": "Danh mục"
+        },
+        {
+            "name": "Khiếu nại",
+            "description": "Khiếu nại"
+        },
+        {
+            "name": "Nhật ký canh tác",
+            "description": "Nhật ký canh tác"
+        },
+        {
+            "name": "Đơn hàng",
+            "description": "Đơn hàng"
+        },
+        {
+            "name": "Thanh toán",
+            "description": "Thanh toán"
+        },
+        {
+            "name": "Sản phẩm",
+            "description": "Sản phẩm"
+        },
+        {
+            "name": "Đánh giá",
+            "description": "Đánh giá"
+        },
+        {
+            "name": "Mùa vụ",
+            "description": "Mùa vụ"
+        },
+        {
+            "name": "Giao hàng",
+            "description": "Giao hàng"
+        },
+        {
+            "name": "Gói định kỳ",
+            "description": "Gói định kỳ"
+        },
+        {
+            "name": "Truy xuất nguồn gốc",
+            "description": "Truy xuất nguồn gốc"
+        }
+    ]
+}
