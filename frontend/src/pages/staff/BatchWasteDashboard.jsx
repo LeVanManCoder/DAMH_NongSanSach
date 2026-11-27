@@ -272,9 +272,9 @@ function BatchWasteDashboard() {
           onClose={dismissToast}
         />
       )}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="page-heading flex flex-col gap-4 py-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-green-700">
+          <p className="section-kicker">
             Khu vực nhân viên
           </p>
           <h1 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">
@@ -309,7 +309,7 @@ function BatchWasteDashboard() {
       {user?.role === 'farm_staff' && isCreateBatchOpen && (
         <form
           onSubmit={createBatch}
-          className="mt-6 rounded-2xl border border-green-100 bg-green-50 p-5 sm:p-6"
+          className="form-panel mt-6 rounded-2xl border border-green-100 bg-green-50 p-5 sm:p-6"
         >
           <h2 className="font-bold text-slate-900">Tạo lô hàng mới</h2>
           <p className="mt-1 text-sm text-slate-600">
@@ -429,7 +429,7 @@ function BatchWasteDashboard() {
       {user?.role === 'farm_staff' && (
         <form
           onSubmit={recordWaste}
-          className="mt-6 rounded-2xl border border-amber-100 bg-amber-50 p-5 sm:p-6"
+          className="form-panel mt-6 rounded-2xl border border-amber-100 bg-amber-50 p-5 sm:p-6"
         >
           <h2 className="font-bold text-slate-900">Ghi nhận xuất hủy / hao hụt</h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-3">
@@ -497,7 +497,7 @@ function BatchWasteDashboard() {
         </form>
       )}
 
-      <div className="mt-6 overflow-hidden rounded-2xl bg-white shadow-sm">
+      <div className="dashboard-panel mt-6 overflow-hidden rounded-2xl bg-white">
         <div className="border-b border-slate-100 px-5 py-4">
           <h2 className="font-bold text-slate-900">Tồn kho theo lô</h2>
         </div>

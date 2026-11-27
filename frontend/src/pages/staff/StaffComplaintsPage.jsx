@@ -133,8 +133,8 @@ function StaffComplaintsPage() {
           onClose={() => setToast(null)}
         />
       )}
-      <header className="mb-6">
-        <p className="text-sm font-semibold uppercase tracking-wide text-green-700">
+      <header className="page-heading mb-6 py-1">
+        <p className="section-kicker">
           Chăm sóc khách hàng
         </p>
         <h1 className="mt-2 text-3xl font-bold text-slate-900">Quản lý khiếu nại</h1>
@@ -162,7 +162,7 @@ function StaffComplaintsPage() {
             const isUpdating = updatingId === complaint.id
 
             return (
-              <article key={complaint.id} className="rounded-2xl bg-white p-5 shadow-sm sm:p-6">
+              <article key={complaint.id} className="dashboard-panel rounded-2xl bg-white p-5 sm:p-6">
                 <header className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-4">
                   <div>
                     <h2 className="font-bold text-slate-900">

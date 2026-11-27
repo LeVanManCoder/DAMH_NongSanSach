@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Sprout } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import cartApi from '../../api/cartApi.js'
 import Button from '../../components/Button.jsx'
@@ -155,8 +156,8 @@ function CartPage() {
           onClose={dismissToast}
         />
       )}
-      <div className="mb-6">
-        <p className="text-sm font-semibold uppercase tracking-wide text-green-700">
+      <div className="page-heading mb-6 py-1">
+        <p className="section-kicker">
           Mua sắm
         </p>
         <h1 className="mt-2 text-3xl font-bold text-slate-900">Giỏ hàng của bạn</h1>
@@ -182,7 +183,7 @@ function CartPage() {
             {items.map((item) => (
               <article
                 key={item.id}
-                className="flex flex-col gap-4 rounded-2xl bg-white p-5 shadow-sm sm:flex-row sm:items-center"
+                className="product-card flex flex-col gap-4 rounded-2xl bg-white p-5 shadow-sm sm:flex-row sm:items-center"
               >
                 {item.product?.hinh_anh_dai_dien ? (
                   <img
@@ -193,9 +194,9 @@ function CartPage() {
                 ) : (
                   <div
                     aria-hidden="true"
-                    className="flex h-24 w-full items-center justify-center rounded-xl bg-green-50 text-3xl sm:w-28"
+                    className="flex h-24 w-full items-center justify-center rounded-xl bg-green-50 text-green-800 sm:w-28"
                   >
-                    🌱
+                    <Sprout size={34} strokeWidth={1.5} />
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
@@ -256,7 +257,7 @@ function CartPage() {
             ))}
           </div>
 
-          <aside className="h-fit rounded-2xl bg-white p-5 shadow-sm">
+          <aside className="summary-panel h-fit rounded-2xl bg-white p-5 lg:sticky lg:top-28">
             <h2 className="text-lg font-bold text-slate-900">Tóm tắt đơn hàng</h2>
             <div className="mt-4 flex justify-between text-sm text-slate-600">
               <span>Tạm tính</span>

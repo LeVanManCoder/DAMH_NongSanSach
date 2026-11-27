@@ -67,13 +67,13 @@ function AdminAuditLogsPage() {
 
   return (
     <section>
-      <header className="mb-6">
-        <p className="text-sm font-semibold uppercase tracking-wide text-green-700">Kiểm soát hoạt động</p>
+      <header className="page-heading mb-6 py-1">
+        <p className="section-kicker">Kiểm soát hoạt động</p>
         <h1 className="mt-2 text-3xl font-bold text-slate-900">Nhật ký hệ thống</h1>
         <p className="mt-2 text-sm text-slate-600">Tra cứu thao tác, đối tượng dữ liệu và người thực hiện.</p>
       </header>
 
-      <form onSubmit={applyFilters} className="mb-5 grid gap-3 rounded-2xl bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto]">
+      <form onSubmit={applyFilters} className="filter-panel mb-5 grid gap-3 rounded-2xl bg-white p-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto]">
         <input
           value={action}
           onChange={(event) => setAction(event.target.value)}
@@ -98,7 +98,7 @@ function AdminAuditLogsPage() {
         <div className="flex min-h-48 items-center justify-center"><LoadingSpinner label="Đang tải nhật ký" className="text-green-700" /></div>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-2xl bg-white shadow-sm">
+          <div className="dashboard-panel overflow-x-auto rounded-2xl bg-white">
             <table className="min-w-full divide-y divide-slate-100 text-left text-sm">
               <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                 <tr>

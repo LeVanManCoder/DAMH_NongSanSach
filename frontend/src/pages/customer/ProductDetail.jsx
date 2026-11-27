@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Sprout } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import cartApi from '../../api/cartApi.js'
@@ -180,7 +181,7 @@ function ProductDetail() {
           </Link>
 
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.8fr)]">
-            <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
+            <div className="overflow-hidden rounded-2xl border border-[#eeefe4] bg-white shadow-sm">
               {product.hinh_anh_dai_dien ? (
                 <img
                   src={product.hinh_anh_dai_dien}
@@ -190,9 +191,9 @@ function ProductDetail() {
               ) : (
                 <div
                   aria-hidden="true"
-                  className="flex h-64 items-center justify-center bg-gradient-to-br from-green-100 to-lime-50 text-7xl sm:h-96"
+                  className="flex h-64 items-center justify-center bg-gradient-to-br from-green-100 to-lime-50 text-green-800 sm:h-96"
                 >
-                  🌱
+                  <Sprout size={68} strokeWidth={1.35} />
                 </div>
               )}
               <div className="p-5 sm:p-8">
@@ -208,7 +209,7 @@ function ProductDetail() {
               </div>
             </div>
 
-            <aside className="h-fit rounded-2xl bg-white p-5 shadow-sm sm:p-7">
+            <aside className="summary-panel h-fit rounded-2xl bg-white p-5 sm:p-7">
               <p className="text-sm text-slate-500">Giá bán</p>
               <p className="mt-1 text-2xl font-bold text-green-800">
                 {currencyFormatter.format(Number(product.gia_ban_co_ban))}
@@ -273,7 +274,7 @@ function ProductDetail() {
               {product.batches.map((batch) => (
                 <article
                   key={batch.id}
-                  className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm sm:p-6"
+                  className="dashboard-panel rounded-2xl border border-slate-100 bg-white p-5 sm:p-6"
                 >
                   <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
                     <div>

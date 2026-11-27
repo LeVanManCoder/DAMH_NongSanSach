@@ -299,8 +299,8 @@ function CheckoutPage() {
           onClose={dismissToast}
         />
       )}
-      <div className="mb-6">
-        <p className="text-sm font-semibold uppercase tracking-wide text-green-700">
+      <div className="page-heading mb-6 py-1">
+        <p className="section-kicker">
           Hoàn tất đơn hàng
         </p>
         <h1 className="mt-2 text-3xl font-bold text-slate-900">Thanh toán</h1>
@@ -314,7 +314,7 @@ function CheckoutPage() {
 
       {order ? (
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-          <section className="rounded-2xl bg-white p-6 shadow-sm">
+          <section className="dashboard-panel rounded-2xl bg-white p-6">
             <p className="text-sm font-semibold uppercase tracking-wide text-green-700">
               Đơn hàng {order.ma_don}
             </p>
@@ -409,7 +409,7 @@ function CheckoutPage() {
             )}
           </section>
 
-          <aside className="h-fit rounded-2xl bg-white p-5 shadow-sm">
+          <aside className="summary-panel h-fit rounded-2xl bg-white p-5 lg:sticky lg:top-28">
             <h3 className="font-bold text-slate-900">Thông tin giao hàng</h3>
             <p className="mt-3 text-sm text-slate-700">{order.ten_nguoi_nhan}</p>
             <p className="mt-1 text-sm text-slate-600">{order.sdt_nguoi_nhan}</p>
@@ -435,7 +435,7 @@ function CheckoutPage() {
       ) : (
         <form onSubmit={placeOrder} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <div className="space-y-6">
-            <section className="rounded-2xl bg-white p-5 shadow-sm sm:p-7">
+            <section className="form-panel rounded-2xl bg-white p-5 sm:p-7">
               <h2 className="text-lg font-bold text-slate-900">Địa chỉ nhận hàng</h2>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <label className="text-sm font-medium text-slate-700 sm:col-span-2">
@@ -544,7 +544,7 @@ function CheckoutPage() {
               </div>
             </section>
 
-            <section className="rounded-2xl bg-white p-5 shadow-sm sm:p-7">
+            <section className="form-panel rounded-2xl bg-white p-5 sm:p-7">
               <h2 className="text-lg font-bold text-slate-900">Phương thức thanh toán</h2>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {[
@@ -575,7 +575,7 @@ function CheckoutPage() {
             </section>
           </div>
 
-          <aside className="h-fit rounded-2xl bg-white p-5 shadow-sm">
+          <aside className="summary-panel h-fit rounded-2xl bg-white p-5 lg:sticky lg:top-28">
             <h2 className="text-lg font-bold text-slate-900">Tóm tắt đơn hàng</h2>
             <ul className="mt-4 space-y-3">
               {items.map((item) => (

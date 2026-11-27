@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Sprout } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import LoadingSpinner from '../../components/LoadingSpinner.jsx'
 import productApi from '../../api/productApi.js'
@@ -92,8 +93,8 @@ function ProductList() {
 
   return (
     <section>
-      <div className="mb-8">
-        <p className="text-sm font-semibold uppercase tracking-wide text-green-700">
+      <div className="page-heading mb-8 py-1">
+        <p className="section-kicker">
           Nông sản sạch theo mùa
         </p>
         <h1 className="mt-2 text-3xl font-bold text-slate-900 sm:text-4xl">
@@ -104,7 +105,7 @@ function ProductList() {
         </p>
       </div>
 
-      <div className="mb-7 grid gap-3 rounded-2xl bg-white p-4 shadow-sm sm:grid-cols-[minmax(0,1fr)_15rem_12rem] sm:p-5">
+      <div className="filter-panel mb-7 grid gap-3 rounded-2xl bg-white p-4 sm:grid-cols-[minmax(0,1fr)_15rem_12rem] sm:p-5">
         <label className="text-sm font-semibold text-slate-700">
           Tìm sản phẩm
           <input
@@ -170,7 +171,7 @@ function ProductList() {
             return (
               <article
                 key={product.id}
-                className="flex flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
+                className="product-card flex flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
               >
                 {product.hinh_anh_dai_dien ? (
                   <img
@@ -182,9 +183,9 @@ function ProductList() {
                 ) : (
                   <div
                     aria-hidden="true"
-                    className="flex h-48 items-center justify-center bg-gradient-to-br from-green-100 to-lime-50 text-5xl"
+                    className="flex h-48 items-center justify-center bg-gradient-to-br from-green-100 to-lime-50 text-green-800"
                   >
-                    🌱
+                    <Sprout size={48} strokeWidth={1.4} />
                   </div>
                 )}
                 <div className="flex flex-1 flex-col p-5">

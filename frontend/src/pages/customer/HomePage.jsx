@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { BadgeCheck, Leaf, MapPinned, Truck } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import productApi from '../../api/productApi.js'
 import LoadingSpinner from '../../components/LoadingSpinner.jsx'
@@ -14,6 +15,24 @@ const categoryAccents = [
   'from-amber-100 to-lime-50',
   'from-green-100 to-emerald-50',
   'from-yellow-100 to-green-50',
+]
+
+const assurances = [
+  {
+    icon: MapPinned,
+    title: 'Rõ nguồn gốc',
+    description: 'Theo dõi lô hàng qua mã QR truy xuất.',
+  },
+  {
+    icon: BadgeCheck,
+    title: 'Thông tin minh bạch',
+    description: 'Ngày thu hoạch và nhật ký theo từng lô.',
+  },
+  {
+    icon: Truck,
+    title: 'Giao nhận rõ ràng',
+    description: 'Phí giao được tính theo địa chỉ nhận.',
+  },
 ]
 
 function HomePage() {
@@ -59,8 +78,8 @@ function HomePage() {
   }, [])
 
   return (
-    <div className="space-y-14 sm:space-y-20">
-      <section className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-green-950 via-green-800 to-lime-700 px-6 py-12 text-white shadow-xl sm:px-12 sm:py-16">
+    <div className="space-y-12 sm:space-y-16">
+      <section className="home-hero-panel relative overflow-hidden rounded-[2rem] px-6 py-12 text-white sm:px-12 sm:py-16">
         <div
           aria-hidden="true"
           className="absolute -right-12 -top-20 h-72 w-72 rounded-full border-[36px] border-white/10"
@@ -70,7 +89,7 @@ function HomePage() {
           className="absolute -bottom-28 right-40 h-64 w-64 rounded-full bg-lime-300/10 blur-2xl"
         />
         <div className="relative max-w-2xl">
-          <p className="inline-flex rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-lime-100">
+          <p className="inline-flex rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-lime-100">
             Tươi lành từ nông trại
           </p>
           <h1 className="mt-5 text-4xl font-black leading-tight sm:text-6xl">
@@ -84,7 +103,7 @@ function HomePage() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               to="/products"
-              className="inline-flex min-h-12 items-center rounded-xl bg-lime-300 px-6 py-3 font-bold text-green-950 transition hover:bg-lime-200"
+              className="inline-flex min-h-12 items-center rounded-xl bg-[#ed9233] px-6 py-3 font-bold text-white transition hover:bg-[#d87e22]"
             >
               Khám phá sản phẩm
             </Link>
@@ -96,6 +115,15 @@ function HomePage() {
             </Link>
           </div>
         </div>
+      </section>
+
+      <section className="home-assurances" aria-label="Cam kết dịch vụ">
+        {assurances.map(({ icon: Icon, title, description }) => (
+          <article key={title}>
+            <span aria-hidden="true"><Icon size={22} strokeWidth={1.8} /></span>
+            <div><h2>{title}</h2><p>{description}</p></div>
+          </article>
+        ))}
       </section>
 
       <section>
@@ -122,13 +150,13 @@ function HomePage() {
               <Link
                 key={category.id}
                 to={`/products?category_id=${category.id}`}
-                className={`group rounded-2xl bg-gradient-to-br ${categoryAccents[index % categoryAccents.length]} p-5 transition hover:-translate-y-1 hover:shadow-md`}
+                className={`group rounded-2xl border border-white/70 bg-gradient-to-br ${categoryAccents[index % categoryAccents.length]} p-5 transition hover:-translate-y-1 hover:shadow-md`}
               >
-                <span className="text-2xl" aria-hidden="true">✿</span>
+                <span className="home-category-icon" aria-hidden="true"><Leaf size={22} /></span>
                 <h3 className="mt-3 font-bold text-green-950">
                   {category.ten_danh_muc}
                 </h3>
-                <p className="mt-1 text-sm text-green-900/70">
+                <p className="mt-1 text-sm text-slate-700">
                   Khám phá sản phẩm
                 </p>
               </Link>
@@ -169,7 +197,7 @@ function HomePage() {
             {products.map((product) => (
               <article
                 key={product.id}
-                className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
+                className="product-card overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
               >
                 {product.hinh_anh_dai_dien ? (
                   <img
@@ -179,8 +207,8 @@ function HomePage() {
                     loading="lazy"
                   />
                 ) : (
-                  <div className="flex h-48 items-center justify-center bg-gradient-to-br from-green-100 to-lime-50 text-5xl" aria-hidden="true">
-                    🌿
+                  <div className="flex h-48 items-center justify-center bg-gradient-to-br from-green-100 to-lime-50 text-green-800" aria-hidden="true">
+                    <Leaf size={48} strokeWidth={1.4} />
                   </div>
                 )}
                 <div className="p-5">

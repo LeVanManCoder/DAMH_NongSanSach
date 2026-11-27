@@ -193,9 +193,9 @@ function StaffOrdersPage() {
           onClose={dismissToast}
         />
       )}
-      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <header className="page-heading mb-6 flex flex-col gap-4 py-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-green-700">
+          <p className="section-kicker">
             Khu vực nhân viên bán hàng
           </p>
           <h1 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">
@@ -235,12 +235,12 @@ function StaffOrdersPage() {
             return (
               <article
                 key={order.id}
-                className="rounded-2xl bg-white p-5 shadow-sm sm:flex sm:items-center sm:justify-between sm:gap-6"
+                className="dashboard-panel rounded-2xl bg-white p-5 sm:flex sm:items-center sm:justify-between sm:gap-6"
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-3">
                     <h2 className="font-bold text-slate-900">{order.ma_don}</h2>
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                    <span className="status-pill rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
                       {awaitingVietQr ? 'Chờ thanh toán VietQR' : ORDER_STATUSES[order.trang_thai] ?? order.trang_thai}
                     </span>
                   </div>
