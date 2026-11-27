@@ -10,9 +10,14 @@ const COMPLAINT_STATUSES = {
   cho_xu_ly: 'Chờ xử lý',
   chap_nhan: 'Đã chấp nhận',
   hoan_tien: 'Hoàn tiền',
-  giao_bu: 'Giao bù',
+  giao_bu: 'Đổi / giao bù',
   tu_choi: 'Đã từ chối',
 }
+const RESOLUTION_OPTIONS = [
+  ['hoan_tien', 'Hoàn tiền'],
+  ['giao_bu', 'Đổi hàng / giao bù'],
+  ['tu_choi', 'Từ chối'],
+]
 
 function StaffComplaintsPage() {
   const { user } = useAuth()
@@ -23,6 +28,7 @@ function StaffComplaintsPage() {
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [updatingId, setUpdatingId] = useState(null)
   const [responses, setResponses] = useState({})
+  const [resolutions, setResolutions] = useState({})
   const [selectedImage, setSelectedImage] = useState(null)
   const [toast, setToast] = useState(null)
   const [errorMessage, setErrorMessage] = useState('')
@@ -78,10 +84,11 @@ function StaffComplaintsPage() {
     }
   }, [user?.role])
 
-  async function resolveComplaint(complaint, status) {
+  async function resolveComplaint(complaint) {
     const responseNote = responses[complaint.id]?.trim()
-    if (!responseNote) {
-      setToast({ message: 'Vui lòng nhập ghi chú phản hồi cho khách hàng.', type: 'error' })
+    const status = resolutions[complaint.id]
+    if (!responseNote || !status) {
+      setToast({ message: 'Vui lòng chọn phương án và nhập phản hồi cho khách hàng.', type: 'error' })
       return
     }
 
@@ -97,9 +104,9 @@ function StaffComplaintsPage() {
         ),
       )
       setToast({
-        message: status === 'chap_nhan'
-          ? 'Đã chấp nhận khiếu nại.'
-          : 'Đã từ chối khiếu nại.',
+        message: status === 'tu_choi'
+          ? 'Đã ghi nhận từ chối khiếu nại.'
+          : `Đã ghi nhận phương án ${COMPLAINT_STATUSES[status].toLowerCase()}.`,
         type: 'success',
       })
     } catch (error) {
@@ -209,7 +216,24 @@ function StaffComplaintsPage() {
                 {isPending && user?.role === 'sales' && (
                   <div className="mt-5 border-t border-slate-100 pt-4">
                     <label className="block text-sm font-medium text-slate-700">
-                      Ghi chú phản hồi khách hàng (bắt buộc)
+                      Phương án xử lý
+                      <select
+                        required
+                        value={resolutions[complaint.id] ?? ''}
+                        onChange={(event) => setResolutions((current) => ({
+                          ...current,
+                          [complaint.id]: event.target.value,
+                        }))}
+                        className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 sm:max-w-sm"
+                      >
+                        <option value="">Chọn phương án</option>
+                        {RESOLUTION_OPTIONS.map(([value, label]) => (
+                          <option key={value} value={value}>{label}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="block text-sm font-medium text-slate-700">
+                      Phản hồi khách hàng (bắt buộc)
                       <textarea
                         rows={3}
                         maxLength={2000}
@@ -223,20 +247,16 @@ function StaffComplaintsPage() {
                         className="mt-2 w-full rounded-lg border border-slate-300 p-3"
                       />
                     </label>
+                    <p className="mt-2 text-xs text-slate-600">
+                      Phương án được lưu vào trạng thái khiếu nại; giao dịch hoàn tiền thực tế cần được thực hiện theo quy trình thanh toán riêng.
+                    </p>
                     <div className="mt-3 flex flex-wrap gap-3">
                       <Button
-                        onClick={() => resolveComplaint(complaint, 'chap_nhan')}
+                        onClick={() => resolveComplaint(complaint)}
                         disabled={isUpdating}
                       >
                         {isUpdating ? <LoadingSpinner label="Đang xử lý" className="mr-2" /> : null}
-                        Chấp nhận khiếu nại
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        onClick={() => resolveComplaint(complaint, 'tu_choi')}
-                        disabled={isUpdating}
-                      >
-                        Từ chối
+                        Lưu phương án xử lý
                       </Button>
                     </div>
                   </div>

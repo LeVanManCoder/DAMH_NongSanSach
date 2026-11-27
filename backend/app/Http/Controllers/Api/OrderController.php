@@ -52,6 +52,40 @@ class OrderController extends Controller
     }
 
     /**
+     * @OA\Get(
+     *     path="/api/orders/{id}",
+     *     tags={"Đơn hàng"},
+     *     summary="Chi tiết đơn hàng",
+     *     description="Customer chỉ xem đơn của mình; Sales/Admin có thể xem chi tiết đơn phục vụ vận hành.",
+     *     security={{"bearerAuth":{}}},
+     *
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Chi tiết đơn, sản phẩm, lô, khiếu nại và đánh giá."),
+     *     @OA\Response(response=404, description="Không tìm thấy đơn hàng thuộc tài khoản.")
+     * )
+     */
+    public function show(Request $request, int $id): JsonResponse
+    {
+        $query = Order::query()->with([
+            'details.product',
+            'details.batch',
+            'complaint.media',
+            'reviews',
+        ]);
+
+        if ($request->user()->role->ten_vai_tro === 'customer') {
+            $query->where('user_id', $request->user()->getKey());
+        } else {
+            $query->with([
+                'user:id,ho_ten',
+                'payments:id,order_id,phuong_thuc,so_tien,trang_thai,created_at',
+            ]);
+        }
+
+        return response()->json(['data' => $query->findOrFail($id)]);
+    }
+
+    /**
      * @OA\Post(
      *     path="/api/orders",
      *     tags={"Đơn hàng"},
@@ -151,6 +185,38 @@ class OrderController extends Controller
         });
 
         return response()->json(['data' => $order], 201);
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/api/orders/{id}/cancel",
+     *     tags={"Đơn hàng"},
+     *     summary="Khách hàng hủy đơn đang chờ duyệt",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Đơn hàng đã được hủy."),
+     *     @OA\Response(response=404, description="Không tìm thấy đơn hàng thuộc tài khoản."),
+     *     @OA\Response(response=409, description="Đơn không còn ở trạng thái chờ duyệt.")
+     * )
+     */
+    public function cancel(Request $request, int $id): JsonResponse
+    {
+        $order = DB::transaction(function () use ($request, $id): Order {
+            $order = Order::query()
+                ->where('user_id', $request->user()->getKey())
+                ->lockForUpdate()
+                ->findOrFail($id);
+
+            if ($order->trang_thai !== 'cho_duyet') {
+                throw new HttpException(409, 'Chỉ có thể hủy đơn hàng đang chờ duyệt.');
+            }
+
+            $order->update(['trang_thai' => 'da_huy']);
+
+            return $order;
+        });
+
+        return response()->json(['data' => $order]);
     }
 
     /**

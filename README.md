@@ -1,138 +1,137 @@
-# Website Thương mại điện tử Nông sản sạch
+# Nông Lành — Website thương mại điện tử nông sản sạch
 
-## Giới thiệu
+Nông Lành là ứng dụng thương mại điện tử nông sản sạch, gồm frontend SPA và Laravel REST API. Khách hàng có thể mua sản phẩm, quản lý địa chỉ và tra cứu nguồn gốc; nhân viên nông trại và bán hàng thao tác trong các không gian riêng theo RBAC.
 
-Đồ án xây dựng nền tảng thương mại điện tử kết nối khách hàng với nông sản sạch, hỗ trợ quản lý hoạt động bán hàng và vận hành tại vườn. Giao diện được phát triển theo hướng **mobile-first**, ưu tiên trải nghiệm mua sắm rõ ràng và thuận tiện trên điện thoại.
+## Công nghệ
 
-Các chức năng trọng tâm theo định hướng đồ án:
+- **Frontend:** React 19, React Router 7, Vite 8, Tailwind CSS 3, Axios, `lucide-react`.
+- **Backend:** PHP 8.2+, Laravel 12, REST API JSON, JWT và middleware RBAC.
+- **Database:** MySQL 8.
+- **Tích hợp tùy cấu hình:** Cloudinary, VietQR, PayOS, VNPay; giao diện QR sử dụng `qrcode.react`, quét QR dùng `@zxing/browser`.
 
-- **Truy xuất nguồn gốc bằng QR:** giúp khách hàng tra cứu thông tin sản phẩm, lô hàng và nguồn gốc nông sản.
-- **Xuất kho theo FEFO (First Expired, First Out):** ưu tiên xuất các lô có hạn sử dụng gần nhất.
-- **Gói định kỳ (Subscription):** hỗ trợ đăng ký nhận nông sản theo chu kỳ.
-- **Quản lý hao hụt tại vườn:** ghi nhận và theo dõi hao hụt trong quá trình thu hoạch, bảo quản và vận hành.
+## Chức năng theo vai trò
 
-## Kiến trúc hệ thống
+Guest là khách chưa đăng nhập, không phải role trong hệ thống. Bốn role đăng nhập là `customer`, `farm_staff`, `sales` và `admin`.
 
-Ứng dụng sử dụng kiến trúc tách rời: **Laravel RESTful API** cung cấp backend, còn **ReactJS + Tailwind CSS** xây dựng frontend SPA. Thay cho Blade, cách tổ chức này tách biệt giao diện và API, hỗ trợ điều hướng mượt mà, dễ phát triển độc lập hai phần và tối ưu trải nghiệm SPA trên thiết bị di động. Component `MainLayout.jsx` quản lý phần bố cục dùng chung của frontend, đóng vai trò tương đương layout `app.blade.php` theo yêu cầu đề bài; các trang được hiển thị bên trong layout qua React Router.
+| Vai trò | Chức năng chính |
+|---|---|
+| Guest | Duyệt danh mục/sản phẩm, đăng ký hoặc đăng nhập, tra cứu công khai tại `/trace/:qrCode`. |
+| Customer | Giỏ hàng, thanh toán, địa chỉ giao hàng, lịch sử/chi tiết và hủy đơn đang chờ duyệt, khiếu nại kèm ảnh trong 24 giờ, đánh giá sản phẩm và quản lý gói định kỳ. |
+| Farm Staff | Quản lý mùa vụ/lô, ghi nhật ký canh tác, tạo và tải/in QR, ghi nhận xuất hủy. |
+| Sales | Xem và duyệt đơn theo FEFO, xác nhận thanh toán VietQR sau khi đối soát, cập nhật giao hàng, theo dõi lô cận hạn và phản hồi khiếu nại. |
+| Admin | Dashboard, quản lý danh mục/sản phẩm, tạo tài khoản Farm Staff/Sales, khóa/mở tài khoản và tra cứu audit logs. |
 
-Theo thiết kế đồ án, dữ liệu được lưu trong **MySQL 8.0**, với lược đồ mục tiêu gồm **24 bảng chuẩn hóa 3NF**. Hệ thống phân quyền theo năm vai trò:
+Farm Staff không truy cập đơn hàng, khách hàng hoặc doanh thu. Sales không được tạo lô, sửa tồn kho thủ công, sửa nhật ký canh tác hay ghi nhận xuất hủy. Tài khoản không tự chọn role lúc đăng nhập. Các route frontend và quyền API chi tiết được mô tả trong [hợp đồng API](docs/api-contract.md).
 
-1. **Guest:** khách chưa đăng nhập; xem thông tin và sản phẩm công khai.
-2. **Customer:** khách hàng; sử dụng các chức năng mua sắm và gói định kỳ.
-3. **Farm Staff:** nhân viên nông trại; quản lý thông tin lô hàng và ghi nhận hoạt động tại vườn.
-4. **Sales:** nhân viên bán hàng; hỗ trợ quản lý nghiệp vụ bán hàng.
-5. **Admin:** quản trị viên; quản lý cấu hình, tài khoản và phân quyền hệ thống.
+## Luồng và route giao diện
+
+- **Customer/Public:** `/`, `/products`, `/products/:slug`, `/about`, `/contact`, `/trace/:qrCode`, `/cart`, `/checkout`, `/orders`, `/orders/:orderId`, `/profile`, `/subscriptions`, `/login`, `/register`.
+- **Farm Staff/Sales:** `/staff/batches`, `/staff/orders`, `/staff/complaints`. Menu nội bộ được lọc theo role.
+- **Admin:** `/admin/dashboard`, `/admin/products`, `/admin/users`, `/admin/audit-logs`.
+
+Frontend dùng React Router và `AuthProvider`. Storefront, workspace nhân viên và workspace Admin dùng layout tách biệt; sau đăng nhập, người dùng được chuyển tới không gian phù hợp với role.
+
+## Quy tắc nghiệp vụ đáng chú ý
+
+- Tồn kho được quản lý theo lô. Khi Sales duyệt đơn, backend phân bổ và trừ tồn theo FEFO trong transaction; không cho Sales/Admin sửa số tồn thủ công.
+- Lô có QR truy xuất nguồn gốc công khai, gồm thông tin sản phẩm/lô và nhật ký canh tác.
+- Gói định kỳ hiện hỗ trợ chu kỳ 7 hoặc 14 ngày; chưa có chu kỳ theo tháng.
+- Khiếu nại có thể ghi nhận phương án hoàn tiền/đổi hàng/từ chối, nhưng trạng thái “hoàn tiền” hoặc “đổi hàng” chưa tự thực hiện giao dịch hay tạo đơn thay thế.
+- VietQR không tự gửi xác nhận giao dịch về hệ thống; Sales/Admin phải đối soát trước khi xác nhận. PayOS/VNPay cần credentials và callback cấu hình phù hợp.
+- Khi chưa cấu hình Cloudinary, ảnh dùng public disk của Laravel trong môi trường local.
 
 ## Cấu trúc thư mục
 
 ```text
 .
-├── .github/
-│   └── pull_request_template.md
-├── backend/                     # Laravel RESTful API
-│   ├── app/
-│   │   ├── Http/
-│   │   │   ├── Controllers/Api/
-│   │   │   └── Requests/
-│   │   └── Services/
-│   │       └── FefoService.php
-│   ├── config/
+├── backend/                 # Laravel REST API
+│   ├── app/Http/
+│   │   ├── Controllers/Api/
+│   │   └── Requests/
 │   ├── database/
-│   ├── routes/
-│   │   └── api.php
+│   ├── routes/api.php
 │   └── .env.example
 ├── docs/
-│   ├── api-contract.md
-│   ├── database-schema.sql
-│   └── tu-dien-du-lieu-tuan-3.xlsx
-├── frontend/                    # ReactJS + Vite + Tailwind CSS
-│   ├── src/
-│   │   ├── api/
-│   │   ├── components/
-│   │   ├── layouts/
-│   │   └── pages/
-│   ├── .env.example
-│   └── package.json
-├── AI_CONTEXT.md
-├── README.md
-└── .gitignore
+│   ├── api-contract.md      # Endpoint, payload, RBAC và tình trạng triển khai
+│   └── database-schema.sql
+├── frontend/                # React SPA
+│   ├── src/api/              # API clients
+│   ├── src/contexts/         # AuthProvider
+│   ├── src/layouts/
+│   ├── src/pages/
+│   └── .env.example
+└── AI_CONTEXT.md
 ```
 
-## Cài đặt và chạy dự án
+## Cài đặt và chạy local
 
-### Yêu cầu môi trường
+Yêu cầu: PHP 8.2+, Composer, Node.js 20.19+, npm và MySQL 8.
 
-- PHP 8.2 trở lên và Composer
-- Node.js 20.19 trở lên và npm
-- MySQL 8.0
-- Git
+### 1. Backend
 
-### Backend — Laravel API
-
-Từ thư mục gốc, tạo cấu hình môi trường và cài dependencies:
+Từ PowerShell tại thư mục gốc:
 
 ```powershell
-Copy-Item backend/.env.example backend/.env
-cd backend
+Copy-Item backend\.env.example backend\.env
+Set-Location backend
 composer install
 php artisan key:generate
 ```
 
-Tạo database MySQL cho dự án, sau đó cấu hình kết nối trong `backend/.env`, ví dụ:
-
-```dotenv
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=nongsan_sach
-DB_USERNAME=root
-DB_PASSWORD=
-```
-
-Chạy migration và khởi động API:
+Tạo database MySQL rồi cập nhật `DB_DATABASE`, `DB_USERNAME` và `DB_PASSWORD` trong `backend\.env`. Sau đó:
 
 ```powershell
 php artisan migrate
 php artisan serve
 ```
 
-API mặc định chạy tại `http://localhost:8000`. Endpoint kiểm tra kết nối: `GET http://localhost:8000/api/ping`.
+API mặc định chạy tại `http://localhost:8000`; health check là `GET http://localhost:8000/api/ping`.
 
-### Frontend — ReactJS + Vite
+### 2. Frontend
 
-Mở terminal thứ hai tại thư mục gốc:
+Mở terminal mới tại thư mục gốc:
 
 ```powershell
-Copy-Item frontend/.env.example frontend/.env
-cd frontend
+Copy-Item frontend\.env.example frontend\.env
+Set-Location frontend
 npm install
 npm run dev
 ```
 
-Vite mặc định chạy tại `http://localhost:5173`. Biến `VITE_API_BASE_URL` trong `frontend/.env` cấu hình địa chỉ Laravel API; giá trị mặc định là `http://localhost:8000/api`.
+Vite mặc định chạy tại `http://localhost:5173`. `VITE_API_BASE_URL` trong `frontend\.env` trỏ tới API, mặc định `http://localhost:8000/api`.
 
-## Quy trình làm việc nhóm — Git Flow
+### Tích hợp ngoài
 
-- **`main`:** nhánh ổn định, chứa phiên bản sẵn sàng phát hành.
-- **`develop`:** nhánh tích hợp các thay đổi đã hoàn tất, làm cơ sở cho phát triển tính năng.
-- **`feature/*`:** nhánh tính năng, tạo từ `develop`; ví dụ `feature/cap-nhat-readme`. Sau khi hoàn tất và kiểm tra, mở Pull Request từ nhánh feature vào `develop`.
-- Phát hành bằng Pull Request từ `develop` vào `main` sau khi kiểm thử và được duyệt.
+Các biến cấu hình tùy chọn như `CLOUDINARY_*`, `VIETQR_*`, `PAYOS_*`, `VNPAY_*` và cấu hình địa chỉ/tọa độ giao hàng nằm trong [backend/.env.example](backend/.env.example). Không đưa credentials thật vào repository. Nếu thiếu cấu hình Cloudinary, backend dùng public disk; các phương thức thanh toán có behavior phụ thuộc gateway và cấu hình môi trường.
 
-### Quy chuẩn Commit — Conventional Commits
+## Kiểm tra chất lượng
 
-Viết commit message ngắn gọn bằng **tiếng Việt có dấu**, theo định dạng:
+Chạy từ các thư mục tương ứng:
 
-```text
-<type>(<phạm-vi-tuỳ-chọn>): <mô tả ngắn bằng tiếng Việt>
+```powershell
+# backend
+Set-Location backend
+php artisan test
+
+# frontend
+Set-Location ..\frontend
+npm run lint
+npm run build
 ```
 
-Ví dụ:
+## Quy trình làm việc — Git Flow
+
+- `main`: nhánh ổn định.
+- `develop`: nhánh tích hợp.
+- `feature/*`: tạo từ `develop`; mở Pull Request về `develop` sau khi kiểm tra.
+- Phát hành bằng Pull Request từ `develop` vào `main`.
+
+### Conventional Commits
+
+Dùng commit message ngắn gọn bằng tiếng Việt theo định dạng:
 
 ```text
-feat: khởi tạo giao diện chi tiết sản phẩm
-fix(api): sửa phản hồi kiểm tra kết nối
-docs: cập nhật hướng dẫn cài đặt dự án
-chore: cấu hình khung dự án Laravel và ReactJS
+<type>(<phạm-vi-tuỳ-chọn>): <mô tả ngắn>
 ```
 
-Các type thường dùng: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `build`, `ci`, `chore`.
+Ví dụ: `docs: cập nhật hướng dẫn sử dụng`. Các type thường dùng: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `build`, `ci`, `chore`.

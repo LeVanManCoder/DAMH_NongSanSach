@@ -185,6 +185,8 @@ class ComplaintApiTest extends TestCase
         $customer = $this->customer();
         $accepted = $this->createComplaint($customer);
         $rejected = $this->createComplaint($customer);
+        $refund = $this->createComplaint($customer);
+        $replacement = $this->createComplaint($customer);
         $token = $this->tokenFor($sales);
 
         $this->withToken($token)
@@ -206,10 +208,27 @@ class ComplaintApiTest extends TestCase
             ->assertJsonPath('data.trang_thai', 'tu_choi')
             ->assertJsonPath('data.phan_hoi', 'Ảnh minh chứng không cho thấy lỗi sản phẩm.');
 
+        foreach ([
+            [$refund, 'hoan_tien'],
+            [$replacement, 'giao_bu'],
+        ] as [$complaint, $status]) {
+            $this->withToken($token)
+                ->putJson('/api/complaints/'.$complaint->getKey(), [
+                    'trang_thai' => $status,
+                    'phan_hoi' => 'Đã ghi nhận phương án xử lý.',
+                ])
+                ->assertOk()
+                ->assertJsonPath('data.trang_thai', $status);
+        }
+
         $this->assertDatabaseHas('complaints', [
             'id' => $rejected->getKey(),
             'ly_do_tu_choi' => 'Ảnh minh chứng không cho thấy lỗi sản phẩm.',
             'nguoi_xu_ly_id' => $sales->getKey(),
+        ]);
+        $this->assertDatabaseMissing('payments', [
+            'order_id' => $refund->order_id,
+            'trang_thai' => 'hoan_tien',
         ]);
     }
 

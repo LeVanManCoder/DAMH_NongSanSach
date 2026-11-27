@@ -47,7 +47,7 @@ Tên bảng trong cơ sở dữ liệu giữ tiếng Anh theo thiết kế; tên
 | GET | `/products` | Công khai | **Đã triển khai.** Danh sách sản phẩm đang hoạt động có ít nhất một lô còn hạn, còn tồn; lọc theo `search` (tên), `category_id`, `per_page`, `sort=name|newest` (mặc định 20, tối đa 100), có phân trang. Tham số cũ `q` vẫn được hỗ trợ tương thích ngược. |
 | GET | `/products/{slug}` | Công khai | **Đã triển khai.** Chi tiết theo slug, gồm danh mục, lô đang mở bán, tồn khả dụng, mã QR và nhật ký canh tác công khai. |
 | GET | `/products/{product}/reviews` | Công khai | Đánh giá đã công bố. |
-| GET | `/trace/{qr_code}` | Công khai | Truy xuất nguồn gốc lô: sản phẩm, mùa vụ, ngày thu hoạch, chứng nhận nếu có và timeline canh tác. |
+| GET | `/trace/{qr_code}` | Công khai | Truy xuất nguồn gốc lô: sản phẩm, mùa vụ, ngày thu hoạch, hạn sử dụng, trạng thái lô và timeline canh tác. |
 | GET | `/batches/{batch}/trace` | Customer, Sales, Admin; Farm Staff chỉ lô thuộc nghiệp vụ được cấp | Tra cứu timeline nội bộ theo mã lô. |
 | GET | `/products/{id}/reviews` | Công khai | **Đã triển khai.** Danh sách đánh giá phân trang, tên người đánh giá, điểm trung bình và tổng số đánh giá. |
 | POST | `/products/{id}/reviews` | Customer | **Đã triển khai.** Đánh giá 1–5 sao, bình luận tùy chọn; yêu cầu đơn của chính khách ở trạng thái `da_giao` và có sản phẩm, mỗi cặp đơn/sản phẩm chỉ đánh giá một lần. |
@@ -70,13 +70,13 @@ QR chỉ được tạo sau khi lô chuyển sang `da_thu_hoach` và đã có í
 | POST | `/shipping/calculate` | Customer | **Đã triển khai.** Tính phí `5.000đ/km` từ địa chỉ, khoảng cách hoặc Haversine khi có tọa độ; không có Google Maps key thì dùng khoảng cách dự phòng cấu hình (mặc định 5 km). |
 | POST | `/orders` | Customer | Tạo đơn lẻ từ giỏ; backend tự tính lại khoảng cách/phí theo địa chỉ và không nhận phí ship do client gửi. |
 | GET | `/orders` | Customer; Sales/Admin | Customer chỉ xem đơn của mình; Sales/Admin xem toàn bộ đơn (kèm tên khách hàng và danh sách payment gồm phương thức, số tiền, trạng thái để đối soát). |
-| GET | `/orders/{order}` | Customer sở hữu đơn | Xem chi tiết đơn và trạng thái. |
-| POST | `/orders/{order}/cancel` | Customer sở hữu đơn, khi còn được phép hủy | Gửi yêu cầu hủy đơn. |
+| GET | `/orders/{id}` | Customer sở hữu đơn; Sales/Admin | **Đã triển khai.** Xem chi tiết sản phẩm, lô phân bổ, khiếu nại/ảnh và đánh giá; Customer chỉ truy cập đơn của mình. |
+| POST | `/orders/{id}/cancel` | Customer sở hữu đơn đang chờ duyệt | **Đã triển khai.** Hủy đơn trong transaction; trả `409` nếu đơn không còn ở trạng thái `cho_duyet`. |
 | POST | `/orders/{id}/complaints` | Customer sở hữu đơn đã giao trong 24 giờ | **Đã triển khai.** Gửi một khiếu nại cho đơn bằng `multipart/form-data`, bắt buộc có ảnh JPG/JPEG/PNG tối đa 5 MB. |
 | PUT/PATCH | `/orders/{id}/status` | Customer; Sales/Admin | Cập nhật trạng thái theo state machine; Sales/Admin dùng PUT để cập nhật tiến trình giao hàng. |
 | PATCH | `/orders/{id}/confirm-payment` | Sales, Admin | Xác nhận đã nhận tiền cho payment VietQR `cho_xu_ly` của đơn `cho_duyet`; đối chiếu số tiền, khóa đơn/payment, phân bổ FEFO và ghi audit trong transaction. Gọi lặp lại trên giao dịch thành công trả kết quả hiện tại, không trừ kho lần nữa. |
 | GET | `/complaints` | Sales, Admin | **Đã triển khai.** Danh sách phân trang kèm đơn hàng, khách hàng, người xử lý và URL ảnh minh chứng công khai. |
-| PUT | `/complaints/{id}` | Sales | **Đã triển khai.** Xử lý khiếu nại đang chờ với `trang_thai` là `chap_nhan` hoặc `tu_choi`, bắt buộc ghi `phan_hoi`; lưu Sales xử lý và thời điểm xử lý. |
+| PUT | `/complaints/{id}` | Sales | **Đã triển khai.** Ghi nhận phương án `hoan_tien`, `giao_bu` hoặc `tu_choi` (giữ `chap_nhan` tương thích), bắt buộc có `phan_hoi`; việc ghi nhận phương án không tự thực hiện giao dịch hoàn tiền. |
 
 Khi tạo đơn, kiểm tra giá/trạng thái sản phẩm và tồn khả dụng; không ghi tồn kho vào `products`. Sales duyệt đơn mới kích hoạt trừ tồn FEFO trong transaction có khóa dòng.
 
@@ -92,7 +92,7 @@ Khi tạo đơn, kiểm tra giá/trạng thái sản phẩm và tồn khả dụ
 | GET | `/orders/{order}/payments` | Customer sở hữu đơn, Sales, Admin | Lịch sử giao dịch được phép xem. |
 | POST | `/subscriptions/{subscription}/payments` | Customer sở hữu gói | Thanh toán trước gói định kỳ. |
 | POST | `/payments/webhooks/{provider}` | Provider, xác thực chữ ký | Nhận callback MoMo/VNPay; không dùng JWT người dùng. |
-| POST | `/sales/orders/{order}/refunds` | Sales | Hoàn tiền qua payment service; ghi audit log. |
+| POST | `/sales/orders/{order}/refunds` | Sales | **Chưa triển khai.** |
 
 VietQR cần `VIETQR_BANK_ID` và `VIETQR_ACCOUNT_NO`; callback ngân hàng không tự có từ URL QR nên không tự xác nhận giao dịch nếu chưa nối dịch vụ đối soát. PayOS cần đủ `PAYOS_CLIENT_ID`, `PAYOS_API_KEY`, `PAYOS_CHECKSUM_KEY`; VNPay Sandbox cần `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET`, `VNPAY_RETURN_URL`. Cấu hình callback public `/api/payments/payos/webhook` và `/api/payments/vnpay/ipn` ở cổng tương ứng. Không đưa API secret/checksum key vào frontend. IPN cũ chỉ bật ở local/testing. Mỗi payment gắn chính xác một `order_id` hoặc `subscription_id`.
 
@@ -115,16 +115,16 @@ PayOS gửi callback tại `/api/payments/payos/webhook` dạng `{"success":true
 | Method | Endpoint | Quyền | Mục đích |
 |---|---|---|---|
 | GET | `/subscription-plans` | Công khai | **Đã triển khai.** Danh sách gói đang hoạt động. |
-| GET | `/subscription-plans/{plan}` | Công khai | Chi tiết gói. |
+| GET | `/subscription-plans/{plan}` | Công khai | **Chưa triển khai.** |
 | POST | `/subscriptions` | Customer | **Đã triển khai.** Đăng ký gói với `plan_id`, địa chỉ, ngày bắt đầu, sản phẩm/số lượng mỗi lần giao, `chu_ky_giao_ngay` 7 hoặc 14 và ngày giao trong tuần (mặc định là thứ trong ngày bắt đầu). |
 | GET | `/subscriptions` | Customer | **Đã triển khai.** Danh sách gói của chính mình, kèm sản phẩm, địa chỉ, chu kỳ giao và ngày giao. |
-| GET | `/subscriptions/{subscription}` | Customer sở hữu gói | Chi tiết gói, sản phẩm và lịch giao. |
+| GET | `/subscriptions/{subscription}` | Customer sở hữu gói | **Chưa triển khai.** |
 | PATCH | `/subscriptions/{id}/status` | Customer sở hữu gói | **Đã triển khai.** Tạm dừng, tiếp tục hoặc hủy theo chuyển trạng thái hợp lệ. |
-| POST | `/subscriptions/{subscription}/cancel` | Customer sở hữu gói | Hủy gói theo chính sách. |
-| GET | `/subscriptions/{subscription}/schedules` | Customer sở hữu gói, Sales | Lịch giao và đơn con đã sinh. |
-| POST | `/sales/delivery-schedules/{schedule}/substitutions` | Sales | Đề xuất sản phẩm thay thế khi thiếu hàng, lưu quyết định vào lịch/đơn. |
+| POST | `/subscriptions/{subscription}/cancel` | Customer sở hữu gói | **Chưa triển khai;** dùng `PATCH /subscriptions/{id}/status` với trạng thái `da_huy`. |
+| GET | `/subscriptions/{subscription}/schedules` | Customer sở hữu gói, Sales | **Chưa triển khai.** |
+| POST | `/sales/delivery-schedules/{schedule}/substitutions` | Sales | **Chưa triển khai.** |
 
-Laravel Scheduler quét `delivery_schedules` và sinh đơn con trước ngày giao một ngày; unique `(subscription_id, ngay_giao)` ngăn sinh lịch trùng.
+Chu kỳ hiện hỗ trợ 7 hoặc 14 ngày; lịch theo tháng chưa được hỗ trợ. Laravel Scheduler quét `delivery_schedules` và sinh đơn con trước ngày giao một ngày; unique `(subscription_id, ngay_giao)` ngăn sinh lịch trùng.
 
 ## Farm Staff — mùa vụ, lô, nhật ký & hao hụt
 
@@ -155,15 +155,15 @@ Farm Staff không được gọi API đơn hàng hoặc xem thông tin khách; c
 
 | Method | Endpoint | Quyền | Mục đích |
 |---|---|---|---|
-| GET | `/sales/orders` | Sales, Admin | Danh sách đơn; hỗ trợ lọc trạng thái/ngày. |
-| GET | `/sales/orders/{order}` | Sales, Admin | Xem đơn và thông tin cần thiết để xử lý. |
+| GET | `/sales/orders` | Sales, Admin | **Chưa triển khai;** dùng `GET /orders` với quyền Sales/Admin. |
+| GET | `/sales/orders/{order}` | Sales, Admin | **Chưa triển khai;** dùng `GET /orders/{id}`. |
 | PATCH | `/orders/{id}/approve` | Sales | Duyệt đơn và trừ kho FEFO trong transaction `FOR UPDATE`; lưu từng `batch_id` vào `order_details` và ghi audit. |
 | PUT/PATCH | `/orders/{id}/status` | Sales, Admin | Cập nhật tiến trình giao hàng theo state machine và ghi audit. |
-| GET | `/sales/batches/expiring` | Sales, Admin | Lô còn hàng sắp hết hạn theo ngưỡng cấu hình (mặc định 2 ngày). |
-| GET | `/sales/notifications` | Sales | Danh sách cảnh báo lô cận hạn/thiếu hàng. |
-| PATCH | `/sales/notifications/{notification}/read` | Sales | Đánh dấu đã đọc. |
+| GET | `/sales/batches/expiring` | Sales, Admin | **Chưa triển khai;** giao diện tính cảnh báo từ `GET /batches`. |
+| GET | `/sales/notifications` | Sales | **Chưa triển khai.** |
+| PATCH | `/sales/notifications/{notification}/read` | Sales | **Chưa triển khai.** |
 | GET | `/complaints` | Sales, Admin | **Đã triển khai.** Danh sách khiếu nại cùng thông tin đơn, khách hàng và ảnh minh chứng. |
-| PUT | `/complaints/{id}` | Sales | **Đã triển khai.** Chấp nhận/từ chối khiếu nại đang chờ, kèm phản hồi gửi khách hàng. |
+| PUT | `/complaints/{id}` | Sales | **Đã triển khai.** Ghi nhận phương án hoàn tiền/đổi hàng/từ chối với phản hồi; đây chưa xử lý giao dịch hoàn tiền hoặc tạo đơn đổi hàng thực tế. |
 
 Sales không được gọi API tạo lô, cập nhật tồn thủ công, sửa nhật ký canh tác hoặc ghi nhận xuất hủy; các yêu cầu này trả `403`.
 
@@ -177,15 +177,16 @@ Sales không được gọi API tạo lô, cập nhật tồn thủ công, sửa
 | PUT/DELETE | `/admin/products/{id}` | Admin | **Đã triển khai.** Cập nhật thông tin/ảnh; xóa bị chặn nếu có lô hoặc chi tiết đơn hàng, nếu đủ điều kiện thì xóa mềm và ngừng bán. Với upload qua multipart, gửi `_method=PUT` trong FormData. |
 | GET | `/admin/dashboard` | Admin | **Đã triển khai.** Tổng doanh thu đơn đã thanh toán/đã giao, đơn theo trạng thái, khách hàng, lô cận hạn và hao hụt. |
 | GET | `/admin/users` | Admin | Danh sách tài khoản, lọc role/trạng thái. |
-| GET | `/admin/users/{user}` | Admin | Chi tiết tài khoản. |
-| PATCH | `/admin/users/{user}/role` | Admin | Gán role hợp lệ. |
+| POST | `/admin/users` | Admin | Tạo tài khoản nhân viên với role `farm_staff` hoặc `sales`; không tạo Admin qua chức năng này. |
+| GET | `/admin/users/{user}` | Admin | **Chưa triển khai.** |
+| PATCH | `/admin/users/{user}/role` | Admin | **Chưa triển khai.** |
 | PATCH | `/admin/users/{id}/status` | Admin | **Đã triển khai.** Khóa/mở tài khoản; không cho tự khóa, ghi audit log và vô hiệu hóa JWT đang hoạt động của tài khoản bị khóa. |
-| GET | `/admin/reports/overview` | Admin | Báo cáo tổng quan bán hàng/kho. |
-| GET | `/admin/reports/waste` | Admin | Báo cáo hao hụt theo lô/mùa vụ/thời gian. |
-| GET | `/admin/system-settings` | Admin | Xem cấu hình hệ thống. |
-| PUT | `/admin/system-settings/{key}` | Admin | Cấu hình, gồm ngưỡng cảnh báo xả hàng. |
-| GET | `/admin/audit-logs` | Admin | **Đã triển khai.** Tra cứu có phân trang, lọc theo hành động/bảng và thông tin người thao tác. |
-| GET | `/admin/batches` | Admin | Chỉ đọc thông tin lô; không sửa lịch sử canh tác đã thu hoạch. |
+| GET | `/admin/reports/overview` | Admin | **Chưa triển khai;** hiện có số liệu tổng quan qua `GET /admin/dashboard`. |
+| GET | `/admin/reports/waste` | Admin | **Chưa triển khai.** |
+| GET | `/admin/system-settings` | Admin | **Chưa triển khai.** |
+| PUT | `/admin/system-settings/{key}` | Admin | **Chưa triển khai.** |
+| GET | `/admin/audit-logs` | Admin | **Đã triển khai.** Tra cứu phân trang, lọc theo hành động/bảng, tên hoặc email người thao tác và khoảng ngày (`tu_ngay`, `den_ngay`). |
+| GET | `/admin/batches` | Admin | **Chưa triển khai.** |
 
 Các thao tác quản trị danh mục/sản phẩm, khóa tài khoản, Sales duyệt/cập nhật trạng thái đơn và xử lý khiếu nại, Farm Staff ghi nhận xuất hủy, cùng Sales/Admin xác nhận thanh toán VietQR đều ghi `audit_logs` trong cùng transaction với người thực hiện, hành động, đối tượng, ID bản ghi, IP và dữ liệu trước/sau. Schema hiện hành đặt tên cột tương ứng là `doi_tuong`, `doi_tuong_id`, `dia_chi_ip` (không phải `bang_tac_dong`, `ban_ghi_id`, `ip_address`). Lưu trữ audit log tối thiểu 90 ngày vẫn cần chính sách dọn dẹp riêng.
 
@@ -209,7 +210,7 @@ Tạo/cập nhật sản phẩm dùng JSON hoặc `multipart/form-data` với `t
 
 - **FEFO:** chọn lô `con_hang`, tồn `> 0`, chưa hết hạn, sắp xếp `ngay_het_han ASC, ngay_thu_hoach ASC`; khóa dòng và cập nhật tồn trong cùng transaction. Tồn không âm.
 - **IPN mô phỏng:** không thay thế xác minh chữ ký MoMo/VNPay. Trước khi phát hành thật, phải xác minh chữ ký callback, merchant/order reference và idempotency theo tài liệu provider.
-- **Khiếu nại:** Endpoint hiện triển khai chỉ nhận một ảnh minh chứng JPG/JPEG/PNG (kiểm tra phần mở rộng và MIME type, tối đa 5 MB), chỉ chủ đơn được gửi và chỉ trong 24 giờ từ `ngay_giao_thuc_te` của đơn `da_giao`. Hỗ trợ WEBP/video và các API xem/xử lý khiếu nại vẫn là mục tiêu chưa triển khai.
+- **Khiếu nại:** Endpoint hiện triển khai chỉ nhận một ảnh minh chứng JPG/JPEG/PNG (kiểm tra phần mở rộng và MIME type, tối đa 5 MB), chỉ chủ đơn được gửi và chỉ trong 24 giờ từ `ngay_giao_thuc_te` của đơn `da_giao`. Sales/Admin xem danh sách, Sales ghi nhận trạng thái và phản hồi; trạng thái `hoan_tien`/`giao_bu` không tự hoàn tiền hoặc tạo đơn đổi hàng.
 - **QR:** truy xuất công khai; sinh QR sau thu hoạch khi lô có nhật ký canh tác.
 - **Tích hợp ngoài:** payment, tính phí giao hàng và media phải qua interface/service; cung cấp mock service local/test.
 - **Lỗi tồn kho:** thao tác giỏ hàng trả `422` nếu yêu cầu vượt tồn khả dụng; duyệt đơn trả `422` với JSON lỗi chuẩn và rollback toàn bộ transaction nếu FEFO không đủ hàng.

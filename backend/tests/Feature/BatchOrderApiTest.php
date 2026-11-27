@@ -230,6 +230,50 @@ class BatchOrderApiTest extends TestCase
         $this->assertDatabaseHas('order_details', ['order_id' => $orderId, 'batch_id' => null]);
     }
 
+    public function test_customer_can_view_only_their_order_details_and_cancel_while_pending(): void
+    {
+        $customer = User::query()->whereHas(
+            'role',
+            fn ($query) => $query->where('ten_vai_tro', 'customer'),
+        )->firstOrFail();
+        $customerToken = app(JwtTokenService::class)->issue($customer);
+        $product = Product::query()->where('slug', 'ca-chua-huu-co-fefo-test')->firstOrFail();
+        CartItem::query()->create([
+            'user_id' => $customer->getKey(),
+            'product_id' => $product->getKey(),
+            'so_luong' => '1.00',
+        ]);
+
+        $orderId = $this->withToken($customerToken)
+            ->postJson('/api/orders', [
+                'ten_nguoi_nhan' => 'Khách kiểm thử',
+                'sdt_nguoi_nhan' => '0901234567',
+                'dia_chi_giao' => 'Địa chỉ kiểm thử',
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $this->withToken($customerToken)
+            ->getJson('/api/orders/'.$orderId)
+            ->assertOk()
+            ->assertJsonPath('data.id', $orderId)
+            ->assertJsonPath('data.details.0.product.ten_san_pham', $product->ten_san_pham);
+
+        $otherCustomer = User::factory()->create(['role_id' => $customer->role_id]);
+        $otherToken = app(JwtTokenService::class)->issue($otherCustomer);
+        $this->withToken($otherToken)->getJson('/api/orders/'.$orderId)->assertNotFound();
+
+        $this->withToken($customerToken)
+            ->postJson('/api/orders/'.$orderId.'/cancel')
+            ->assertOk()
+            ->assertJsonPath('data.trang_thai', 'da_huy');
+        $this->assertDatabaseHas('orders', ['id' => $orderId, 'trang_thai' => 'da_huy']);
+
+        $this->withToken($customerToken)
+            ->postJson('/api/orders/'.$orderId.'/cancel')
+            ->assertStatus(409);
+    }
+
     public function test_sales_can_confirm_delivery_with_put_and_see_customer_names_in_order_list(): void
     {
         $customer = User::query()->where('email', 'khachhang@nonganhlanh.local')->firstOrFail();

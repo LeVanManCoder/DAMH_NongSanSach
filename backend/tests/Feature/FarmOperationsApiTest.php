@@ -102,6 +102,7 @@ class FarmOperationsApiTest extends TestCase
 
         $this->getJson('/api/trace/'.urlencode($qrCode))
             ->assertOk()
+            ->assertJsonPath('data.trang_thai', 'con_hang')
             ->assertJsonPath('data.farming_logs.0.ghi_chu', 'Tưới nước sạch và theo dõi tình trạng cây.');
     }
 

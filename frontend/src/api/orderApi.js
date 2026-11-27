@@ -5,7 +5,11 @@ const orderApi = {
     axiosClient.get('/orders', { ...config, params }),
   getMyOrders: (params, config) =>
     axiosClient.get('/orders', { ...config, params }),
+  getMyOrder: (orderId, config) =>
+    axiosClient.get(`/orders/${orderId}`, config),
   create: (data) => axiosClient.post('/orders', data),
+  cancel: (orderId) => axiosClient.post(`/orders/${orderId}/cancel`),
+  approve: (orderId) => axiosClient.patch(`/orders/${orderId}/approve`),
   updateStatus: (orderId, status) =>
     axiosClient.put(`/orders/${orderId}/status`, { trang_thai: status }),
   confirmVietQrPayment: (orderId) =>

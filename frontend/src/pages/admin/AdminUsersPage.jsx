@@ -21,6 +21,16 @@ function AdminUsersPage() {
   const [role, setRole] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [query, setQuery] = useState({})
+  const [isCreateFormOpen, setIsCreateFormOpen] = useState(false)
+  const [isCreatingStaff, setIsCreatingStaff] = useState(false)
+  const [staffForm, setStaffForm] = useState({
+    ho_ten: '',
+    email: '',
+    so_dien_thoai: '',
+    role: 'farm_staff',
+    password: '',
+    password_confirmation: '',
+  })
   const [isLoading, setIsLoading] = useState(true)
   const [busyUserId, setBusyUserId] = useState(null)
   const [errorMessage, setErrorMessage] = useState('')
@@ -101,13 +111,139 @@ function AdminUsersPage() {
     }
   }
 
+  async function createStaffUser(event) {
+    event.preventDefault()
+    setIsCreatingStaff(true)
+    try {
+      await adminApi.createStaffUser(staffForm)
+      setStaffForm({
+        ho_ten: '',
+        email: '',
+        so_dien_thoai: '',
+        role: 'farm_staff',
+        password: '',
+        password_confirmation: '',
+      })
+      setIsCreateFormOpen(false)
+      setSearch('')
+      setRole('')
+      setStatusFilter('')
+      setQuery({})
+      setToast({ message: 'Đã tạo tài khoản nhân viên.', type: 'success' })
+      await loadUsers(1, {})
+    } catch (error) {
+      const validationMessage = Object.values(error.response?.data?.errors ?? {})
+        .flat()
+        .find(Boolean)
+      setToast({
+        message: validationMessage ?? error.response?.data?.message ?? 'Không tạo được tài khoản nhân viên.',
+        type: 'error',
+      })
+    } finally {
+      setIsCreatingStaff(false)
+    }
+  }
+
   return (
     <section>
       {toast && <ToastNotification message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-      <header className="page-heading mb-6 py-1">
-        <p className="section-kicker">Quản trị hệ thống</p>
-        <h1 className="mt-2 text-3xl font-bold text-slate-900">Quản lý tài khoản</h1>
+      <header className="page-heading mb-6 flex flex-wrap items-end justify-between gap-4 py-1">
+        <div>
+          <p className="section-kicker">Quản trị hệ thống</p>
+          <h1 className="mt-2 text-3xl font-bold text-slate-900">Quản lý tài khoản</h1>
+        </div>
+        <Button onClick={() => setIsCreateFormOpen((current) => !current)}>
+          {isCreateFormOpen ? 'Đóng biểu mẫu' : 'Tạo nhân viên mới'}
+        </Button>
       </header>
+
+      {isCreateFormOpen && (
+        <form onSubmit={createStaffUser} className="mb-5 grid gap-4 rounded-2xl bg-white p-5 shadow-sm sm:grid-cols-2 xl:grid-cols-3">
+          <h2 className="text-lg font-bold text-slate-900 sm:col-span-2 xl:col-span-3">Thông tin tài khoản nhân viên</h2>
+          <label className="text-sm font-medium text-slate-700">
+            Họ và tên
+            <input
+              required
+              maxLength={100}
+              autoComplete="name"
+              value={staffForm.ho_ten}
+              onChange={(event) => setStaffForm((current) => ({ ...current, ho_ten: event.target.value }))}
+              className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 px-3"
+            />
+          </label>
+          <label className="text-sm font-medium text-slate-700">
+            Email
+            <input
+              required
+              type="email"
+              maxLength={150}
+              autoComplete="email"
+              value={staffForm.email}
+              onChange={(event) => setStaffForm((current) => ({ ...current, email: event.target.value }))}
+              className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 px-3"
+            />
+          </label>
+          <label className="text-sm font-medium text-slate-700">
+            Số điện thoại (không bắt buộc)
+            <input
+              type="tel"
+              maxLength={15}
+              autoComplete="tel"
+              value={staffForm.so_dien_thoai}
+              onChange={(event) => setStaffForm((current) => ({ ...current, so_dien_thoai: event.target.value }))}
+              className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 px-3"
+            />
+          </label>
+          <label className="text-sm font-medium text-slate-700">
+            Vai trò nhân viên
+            <select
+              value={staffForm.role}
+              onChange={(event) => setStaffForm((current) => ({ ...current, role: event.target.value }))}
+              className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3"
+            >
+              <option value="farm_staff">Nhân viên nông trại</option>
+              <option value="sales">Nhân viên bán hàng</option>
+            </select>
+          </label>
+          <label className="text-sm font-medium text-slate-700">
+            Mật khẩu (ít nhất 8 ký tự, có hoa, thường và số)
+            <input
+              required
+              type="password"
+              minLength={8}
+              autoComplete="new-password"
+              value={staffForm.password}
+              onChange={(event) => setStaffForm((current) => ({ ...current, password: event.target.value }))}
+              className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 px-3"
+            />
+          </label>
+          <label className="text-sm font-medium text-slate-700">
+            Nhập lại mật khẩu
+            <input
+              required
+              type="password"
+              minLength={8}
+              autoComplete="new-password"
+              value={staffForm.password_confirmation}
+              onChange={(event) => setStaffForm((current) => ({ ...current, password_confirmation: event.target.value }))}
+              className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 px-3"
+            />
+          </label>
+          <div className="flex flex-wrap gap-3 sm:col-span-2 xl:col-span-3">
+            <Button type="submit" disabled={isCreatingStaff}>
+              {isCreatingStaff ? 'Đang tạo...' : 'Tạo tài khoản'}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setIsCreateFormOpen(false)}
+              disabled={isCreatingStaff}
+            >
+              Hủy
+            </Button>
+          </div>
+        </form>
+      )}
 
       <form onSubmit={applyFilters} className="filter-panel mb-5 grid gap-3 rounded-2xl bg-white p-4 sm:grid-cols-2 lg:grid-cols-[minmax(12rem,1fr)_12rem_12rem_auto]">
         <input

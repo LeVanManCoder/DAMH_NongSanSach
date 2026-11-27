@@ -19,6 +19,7 @@ function ProfilePage() {
   const { user } = useAuth()
   const [addresses, setAddresses] = useState([])
   const [form, setForm] = useState(INITIAL_FORM)
+  const [editingAddressId, setEditingAddressId] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [busyAddressId, setBusyAddressId] = useState(null)
@@ -49,24 +50,53 @@ function ProfilePage() {
     setForm((current) => ({ ...current, [name]: type === 'checkbox' ? checked : value }))
   }
 
+  function resetAddressForm() {
+    setEditingAddressId(null)
+    setForm({ ...INITIAL_FORM })
+  }
+
+  function editAddress(address) {
+    setEditingAddressId(address.id)
+    setForm({
+      ten_nguoi_nhan: address.ten_nguoi_nhan,
+      so_dien_thoai: address.so_dien_thoai,
+      dia_chi: address.dia_chi,
+      vi_do: address.vi_do ?? '',
+      kinh_do: address.kinh_do ?? '',
+      la_mac_dinh: Boolean(address.la_mac_dinh),
+    })
+    setErrorMessage('')
+  }
+
   async function submitAddress(event) {
     event.preventDefault()
     setIsSaving(true)
     setErrorMessage('')
     try {
-      const response = await addressApi.create({
+      const payload = {
         ...form,
         vi_do: form.vi_do === '' ? null : Number(form.vi_do),
         kinh_do: form.kinh_do === '' ? null : Number(form.kinh_do),
-      })
-      setAddresses((current) => [
-        ...current.map((item) =>
-          response.data.data.la_mac_dinh ? { ...item, la_mac_dinh: false } : item,
-        ),
-        response.data.data,
-      ])
-      setForm(INITIAL_FORM)
-      setToast({ message: 'Đã lưu địa chỉ giao hàng.', type: 'success' })
+      }
+      if (editingAddressId) {
+        const updatePayload = { ...payload }
+        delete updatePayload.la_mac_dinh
+        const response = await addressApi.update(editingAddressId, updatePayload)
+        setAddresses((current) => current.map((item) =>
+          item.id === editingAddressId ? response.data.data : item,
+        ))
+        setToast({ message: 'Đã cập nhật địa chỉ giao hàng.', type: 'success' })
+      } else {
+        const response = await addressApi.create(payload)
+        setAddresses((current) => [
+          ...current.map((item) =>
+            response.data.data.la_mac_dinh ? { ...item, la_mac_dinh: false } : item,
+          ),
+          response.data.data,
+        ])
+        setToast({ message: 'Đã lưu địa chỉ giao hàng.', type: 'success' })
+      }
+      resetAddressForm()
     } catch (error) {
       setErrorMessage(
         Object.values(error.response?.data?.errors ?? {}).flat().find(Boolean) ??
@@ -100,6 +130,7 @@ function ProfilePage() {
   }
 
   async function deleteAddress(addressId) {
+    if (!window.confirm('Bạn có chắc muốn xóa địa chỉ giao hàng này?')) return
     setBusyAddressId(addressId)
     try {
       await addressApi.remove(addressId)
@@ -150,7 +181,9 @@ function ProfilePage() {
       )}
 
       <section className="rounded-2xl bg-white p-5 shadow-sm sm:p-7">
-        <h2 className="text-lg font-bold text-slate-900">Thêm địa chỉ mới</h2>
+        <h2 className="text-lg font-bold text-slate-900">
+          {editingAddressId ? 'Cập nhật địa chỉ' : 'Thêm địa chỉ mới'}
+        </h2>
         <form className="mt-4 grid gap-4 sm:grid-cols-2" onSubmit={submitAddress}>
           <label className="text-sm font-medium text-slate-700">
             Tên người nhận
@@ -211,20 +244,33 @@ function ProfilePage() {
               className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 px-3"
             />
           </label>
-          <label className="flex items-center gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
-            <input
-              name="la_mac_dinh"
-              type="checkbox"
-              checked={form.la_mac_dinh}
-              onChange={updateField}
-              className="h-4 w-4 accent-green-700"
-            />
-            Đặt làm địa chỉ mặc định
-          </label>
+          {!editingAddressId && (
+            <label className="flex items-center gap-2 text-sm font-medium text-slate-700 sm:col-span-2">
+              <input
+                name="la_mac_dinh"
+                type="checkbox"
+                checked={form.la_mac_dinh}
+                onChange={updateField}
+                className="h-4 w-4 accent-green-700"
+              />
+              Đặt làm địa chỉ mặc định
+            </label>
+          )}
           <div className="sm:col-span-2">
             <Button type="submit" disabled={isSaving}>
-              {isSaving ? <><LoadingSpinner label="Đang lưu địa chỉ" className="mr-2" />Đang lưu...</> : 'Lưu địa chỉ'}
+              {isSaving ? <><LoadingSpinner label="Đang lưu địa chỉ" className="mr-2" />Đang lưu...</> : editingAddressId ? 'Cập nhật địa chỉ' : 'Lưu địa chỉ'}
             </Button>
+            {editingAddressId && (
+              <Button
+                type="button"
+                variant="secondary"
+                className="ml-2"
+                onClick={resetAddressForm}
+                disabled={isSaving}
+              >
+                Hủy sửa
+              </Button>
+            )}
           </div>
         </form>
       </section>
@@ -252,12 +298,20 @@ function ProfilePage() {
               )}
             </div>
             <div className="mt-4 flex shrink-0 gap-3 sm:mt-0">
+              <button
+                type="button"
+                onClick={() => editAddress(address)}
+                disabled={busyAddressId !== null || isSaving}
+                className="min-h-11 rounded-lg px-3 text-sm font-semibold text-green-800 hover:bg-green-50 disabled:opacity-50"
+              >
+                Sửa
+              </button>
               {!address.la_mac_dinh && (
                 <button
                   type="button"
                   onClick={() => setDefault(address.id)}
                   disabled={busyAddressId !== null}
-                  className="text-sm font-semibold text-green-800 hover:underline disabled:opacity-50"
+                  className="min-h-11 rounded-lg px-3 text-sm font-semibold text-green-800 hover:bg-green-50 disabled:opacity-50"
                 >
                   Đặt mặc định
                 </button>
@@ -266,7 +320,7 @@ function ProfilePage() {
                 type="button"
                 onClick={() => deleteAddress(address.id)}
                 disabled={busyAddressId !== null}
-                className="text-sm font-semibold text-red-700 hover:underline disabled:opacity-50"
+                className="min-h-11 rounded-lg px-3 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
               >
                 Xóa
               </button>

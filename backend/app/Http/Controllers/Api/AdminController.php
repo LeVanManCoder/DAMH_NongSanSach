@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CreateStaffUserRequest;
 use App\Http\Requests\UpdateUserStatusRequest;
 use App\Models\AuditLog;
 use App\Models\Batch;
 use App\Models\Order;
+use App\Models\Role;
 use App\Models\User;
 use App\Models\WasteLog;
 use App\Services\AuditLogService;
@@ -135,6 +137,51 @@ class AdminController extends Controller
     }
 
     /**
+     * @OA\Post(
+     *     path="/api/admin/users",
+     *     tags={"Quản trị"},
+     *     summary="Tạo tài khoản nhân viên",
+     *     description="Admin chỉ tạo role Farm Staff hoặc Sales; không tạo tài khoản Admin qua giao diện này.",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(response=201, description="Tài khoản nhân viên đã được tạo."),
+     *     @OA\Response(response=403, description="Chỉ Admin được tạo tài khoản nhân viên."),
+     *     @OA\Response(response=422, description="Thông tin hoặc role không hợp lệ.")
+     * )
+     */
+    public function createStaffUser(
+        CreateStaffUserRequest $request,
+        AuditLogService $auditLogs,
+    ): JsonResponse {
+        $validated = $request->validated();
+
+        $user = DB::transaction(function () use ($request, $validated, $auditLogs): User {
+            $role = Role::query()->where('ten_vai_tro', $validated['role'])->firstOrFail();
+            $user = new User([
+                'ho_ten' => $validated['ho_ten'],
+                'email' => $validated['email'],
+                'so_dien_thoai' => $validated['so_dien_thoai'] ?? null,
+                'password' => $validated['password'],
+            ]);
+            $user->role()->associate($role);
+            $user->save();
+
+            $auditLogs->record(
+                $request->user(),
+                'tao_tai_khoan_nhan_vien',
+                'users',
+                (int) $user->getKey(),
+                null,
+                ['email' => $user->email, 'role' => $role->ten_vai_tro],
+                $request->ip(),
+            );
+
+            return $user->load('role:id,ten_vai_tro');
+        });
+
+        return response()->json(['data' => $user], 201);
+    }
+
+    /**
      * @OA\Patch(
      *     path="/api/admin/users/{id}/status",
      *     tags={"Quản trị"},
@@ -200,6 +247,9 @@ class AdminController extends Controller
      *
      *     @OA\Parameter(name="hanh_dong", in="query", required=false, @OA\Schema(type="string")),
      *     @OA\Parameter(name="doi_tuong", in="query", required=false, @OA\Schema(type="string")),
+     *     @OA\Parameter(name="nguoi_thuc_hien", in="query", required=false, @OA\Schema(type="string")),
+     *     @OA\Parameter(name="tu_ngay", in="query", required=false, @OA\Schema(type="string", format="date")),
+     *     @OA\Parameter(name="den_ngay", in="query", required=false, @OA\Schema(type="string", format="date")),
      *
      *     @OA\Response(response=200, description="Nhật ký mới nhất, phân trang và có thông tin người thao tác.")
      * )
@@ -209,8 +259,21 @@ class AdminController extends Controller
         $filters = $request->validate([
             'hanh_dong' => ['sometimes', 'nullable', 'string', 'max:50'],
             'doi_tuong' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'nguoi_thuc_hien' => ['sometimes', 'nullable', 'string', 'max:150'],
+            'tu_ngay' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
+            'den_ngay' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
             'per_page' => ['sometimes', 'integer', 'between:1,100'],
         ]);
+
+        if (
+            filled($filters['tu_ngay'] ?? null)
+            && filled($filters['den_ngay'] ?? null)
+            && $filters['den_ngay'] < $filters['tu_ngay']
+        ) {
+            throw ValidationException::withMessages([
+                'den_ngay' => ['Ngày kết thúc phải bằng hoặc sau ngày bắt đầu.'],
+            ]);
+        }
 
         $logs = AuditLog::query()
             ->with('user:id,ho_ten,email')
@@ -221,6 +284,20 @@ class AdminController extends Controller
             ->when(
                 filled($filters['doi_tuong'] ?? null),
                 fn ($query) => $query->where('doi_tuong', $filters['doi_tuong']),
+            )
+            ->when(
+                filled($filters['nguoi_thuc_hien'] ?? null),
+                fn ($query) => $query->whereHas('user', fn ($userQuery) => $userQuery
+                    ->where('ho_ten', 'like', '%'.$filters['nguoi_thuc_hien'].'%')
+                    ->orWhere('email', 'like', '%'.$filters['nguoi_thuc_hien'].'%')),
+            )
+            ->when(
+                filled($filters['tu_ngay'] ?? null),
+                fn ($query) => $query->whereDate('created_at', '>=', $filters['tu_ngay']),
+            )
+            ->when(
+                filled($filters['den_ngay'] ?? null),
+                fn ($query) => $query->whereDate('created_at', '<=', $filters['den_ngay']),
             )
             ->latest('created_at')
             ->paginate((int) ($filters['per_page'] ?? 20));

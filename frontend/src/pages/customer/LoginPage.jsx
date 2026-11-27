@@ -117,8 +117,8 @@ function LoginPage() {
           </form>
 
           <p className="login-continue">
-            Chưa muốn đăng nhập?{' '}
-            <Link to="/products">Tiếp tục xem sản phẩm</Link>
+            Chưa có tài khoản?{' '}
+            <Link to="/register">Đăng ký khách hàng</Link>
           </p>
         </div>
       </div>

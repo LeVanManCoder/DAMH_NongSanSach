@@ -14,7 +14,7 @@ class UpdateComplaintRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'trang_thai' => ['required', 'in:chap_nhan,tu_choi'],
+            'trang_thai' => ['required', 'in:chap_nhan,hoan_tien,giao_bu,tu_choi'],
             'phan_hoi' => ['required', 'string', 'max:2000'],
         ];
     }
@@ -23,7 +23,7 @@ class UpdateComplaintRequest extends FormRequest
     {
         return [
             'trang_thai.required' => 'Vui lòng chọn kết quả xử lý khiếu nại.',
-            'trang_thai.in' => 'Kết quả xử lý chỉ có thể là chấp nhận hoặc từ chối.',
+            'trang_thai.in' => 'Kết quả xử lý khiếu nại không hợp lệ.',
             'phan_hoi.required' => 'Vui lòng nhập ghi chú phản hồi cho khách hàng.',
             'phan_hoi.max' => 'Ghi chú phản hồi không được vượt quá 2.000 ký tự.',
         ];
